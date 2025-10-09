@@ -7,6 +7,12 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2/jwks"
 	"github.com/clerk/clerk-sdk-go/v2/jwt"
 	"github.com/clerk/clerk-sdk-go/v2/user"
+	"github.com/jftuga/TtlMap"
+	"time"
+)
+
+const (
+	jwkCacheKey = "jwk"
 )
 
 type Client interface {
@@ -16,6 +22,7 @@ type Client interface {
 
 type client struct {
 	jwksClient *jwks.Client
+	cache      *TtlMap.TtlMap[string]
 }
 
 func NewClient(secretKey string) *client {
@@ -24,6 +31,8 @@ func NewClient(secretKey string) *client {
 	config.Key = clerk.String(secretKey)
 	return &client{
 		jwksClient: jwks.NewClient(config),
+		// cache JWK for an hour
+		cache: TtlMap.New[string](time.Hour, 1, 30*time.Minute, false),
 	}
 }
 
@@ -34,20 +43,17 @@ func (c *client) VerifyToken(ctx context.Context, token string) (string, error) 
 		return "", fmt.Errorf("ClerkClient::VerifyToken: could not decode JWT token: %w", err)
 	}
 
-	// fetch the JSON Web Key (this makes API request)
-	// TODO: cache the JWK for like an hour
-	jwk, err := jwt.GetJSONWebKey(ctx, &jwt.GetJSONWebKeyParams{
-		KeyID:      jwtClaims.KeyID,
-		JWKSClient: c.jwksClient,
-	})
+	// get the JSON Web Key
+	jwk, err := c.getJWK(ctx, jwtClaims.KeyID)
 	if err != nil {
-		return "", fmt.Errorf("ClerkClient::VerifyToken: could not fetch JWK: %w", err)
+		return "", fmt.Errorf("ClerkClient::VerifyToken: could not get JWK: %w", err)
 	}
 
 	// verify session (offline)
 	sessionClaims, err := jwt.Verify(ctx, &jwt.VerifyParams{
-		Token: token,
-		JWK:   jwk,
+		Token:  token,
+		JWK:    jwk,
+		Leeway: time.Minute * 5, // add some leeway to account for potential clock skews
 	})
 	if err != nil {
 		return "", fmt.Errorf("ClerkClient::VerifyToken: could not verify session: %w", err)
@@ -64,4 +70,31 @@ func (c *client) GetUser(ctx context.Context, clerkUserID string) (*clerk.User, 
 	}
 
 	return clerkUser, nil
+}
+
+func (c *client) getJWK(ctx context.Context, keyID string) (*clerk.JSONWebKey, error) {
+	// check if in cache
+	jwk, ok := c.cache.Get(jwkCacheKey).(*clerk.JSONWebKey)
+	if jwk != nil {
+		if ok {
+			return jwk, nil
+		} else {
+			return nil, fmt.Errorf("getJWK: (cache hit) could not cast to type")
+		}
+	}
+
+	// if reached here, then it is not in cache
+	// fetch the JSON Web Key (this makes API request)
+	jwk, err := jwt.GetJSONWebKey(ctx, &jwt.GetJSONWebKeyParams{
+		KeyID:      keyID,
+		JWKSClient: c.jwksClient,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("getJWK: (cache miss) could not fetch JWK from Clerk: %w", err)
+	}
+
+	// put in cache
+	c.cache.Put(jwkCacheKey, jwk)
+
+	return jwk, nil
 }

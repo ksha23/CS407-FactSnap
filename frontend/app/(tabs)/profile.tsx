@@ -6,37 +6,38 @@ import {useCallback, useEffect} from "react";
 import {Alert} from "react-native";
 
 export default function ProfilePage() {
-    const authUserData = useGetAuthUser()
+    const authUserQuery = useGetAuthUser()
+    const authUser = authUserQuery.data
     const {signOut} = useClerk()
 
     useEffect(() => {
-        if (authUserData.error) {
-            Alert.alert("Error getting profile", authUserData.error.message)
+        if (authUserQuery.error) {
+            Alert.alert("Error loading profile", authUserQuery.error.message)
         }
-    }, [authUserData.error]);
+    }, [authUserQuery.error]);
 
     return (
         <View>
             <Text>Profile Page</Text>
-            {authUserData.isFetching ? (
+            {authUserQuery.isFetching || authUserQuery.isPending ? (
                 <Text>Loading</Text>
-            ) : (authUserData.error) ? (
-                <Text color={"red"}>{authUserData.error.message}</Text>
+            ) : (authUserQuery.error || !authUser) ? (
+                <Text color={"red"}>{authUserQuery.isError ? authUserQuery.error.message : "Could not load profile"}</Text>
             ) : (
                 <View>
                     <Avatar circular size={100}>
                         <Avatar.Image
-                            srcSet={authUserData.data!.avatar_url}
+                            srcSet={authUser.avatar_url}
                         />
                         <Avatar.Fallback backgroundColor={"$blue8"} />
                     </Avatar>
-                    <Text>Email: {authUserData.data!.email}</Text>
-                    <Text>Username: {authUserData.data!.username}</Text>
-                    <Text>Display Name: {authUserData.data!.display_name}</Text>
+                    <Text>Email: {authUser.email}</Text>
+                    <Text>Username: {authUser.username}</Text>
+                    <Text>Display Name: {authUser.display_name}</Text>
                 </View>
             )}
             <Button onPress={() => signOut()}>Sign Out</Button>
-            <Button onPress={() => authUserData.refetch()}>Refresh</Button>
+            <Button onPress={() => authUserQuery.refetch()}>Refresh</Button>
         </View>
     )
 }
