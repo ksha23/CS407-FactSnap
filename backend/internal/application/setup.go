@@ -71,8 +71,8 @@ func (app *App) initDependencies() error {
 
 func (app *App) initGinServer() error {
 	const (
-		// maxRequestSize is the max bytes size on request payloads
-		maxRequestSize = 2 * 1024 * 1024 // 2 MB
+		maxRequestSize         = 2 * 1024 * 1024 // 2 MB
+		requestTimeoutDuration = 10 * time.Second
 	)
 
 	baseUrl := fmt.Sprintf("/%s", app.Config.Server.BaseURL)
@@ -96,7 +96,7 @@ func (app *App) initGinServer() error {
 	router.Use(middleware.Logger())
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Error())
-	router.Use(middleware.Timeout(app.Config.Server.RequestTimeoutDuration))
+	router.Use(middleware.Timeout(requestTimeoutDuration))
 
 	// setup no router handler
 	router.NoRoute(mainHandler.NoRoute)

@@ -1,0 +1,17 @@
+name: "FactSnap"
+environment: "local"
+
+server:
+  port: "8080"
+  baseUrl: "api"
+
+postgres:
+  host: "localhost"
+  port: "5432"
+  user: "user"
+  password: "pw"
+  name: "server-db"
+  sslmode: "disable"
+
+clerk:
+  secretKey:

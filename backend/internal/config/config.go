@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/viper"
-	"time"
 )
 
 type Config struct {
@@ -16,9 +15,8 @@ type Config struct {
 }
 
 type Server struct {
-	Port                   string        `mapstructure:"port"`
-	BaseURL                string        `mapstructure:"baseUrl"`
-	RequestTimeoutDuration time.Duration `mapstructure:"requestTimeoutDuration"`
+	Port    string `mapstructure:"port"`
+	BaseURL string `mapstructure:"baseUrl"`
 }
 
 type Postgres struct {
