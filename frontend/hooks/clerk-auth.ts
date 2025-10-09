@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {getClerkInstance, useAuth, useSSO} from "@clerk/clerk-expo";
+import {getClerkInstance, isClerkAPIResponseError, useAuth, useSSO} from "@clerk/clerk-expo";
 import {Provider} from "@/models/provider";
 import {OAuthStrategy} from "@clerk/types";
 import {Alert, Platform} from "react-native";
@@ -43,7 +43,11 @@ export function useClerkOAuth() {
                 })
             }
         } catch (err) {
-            Alert.alert("Error", `Failed to sign in with ${provider}. Please try again.`)
+            if (isClerkAPIResponseError(err)) {
+                Alert.alert("Error", err.message)
+            } else {
+                Alert.alert("Error", JSON.stringify(err, null, 2))
+            }
         } finally {
             setIsLoading(false)
         }
