@@ -1,10 +1,19 @@
 import {Avatar, Button, Text, useTheme, View} from "tamagui";
 import {useClerk} from "@clerk/clerk-expo";
 import {useGetAuthUser} from "@/hooks/tanstack/user";
+import {useFocusEffect} from "expo-router";
+import {useCallback, useEffect} from "react";
+import {Alert} from "react-native";
 
 export default function ProfilePage() {
     const authUserData = useGetAuthUser()
     const {signOut} = useClerk()
+
+    useEffect(() => {
+        if (authUserData.error) {
+            Alert.alert("Error getting profile", authUserData.error.message)
+        }
+    }, [authUserData.error]);
 
     return (
         <View>
@@ -27,6 +36,7 @@ export default function ProfilePage() {
                 </View>
             )}
             <Button onPress={() => signOut()}>Sign Out</Button>
+            <Button onPress={() => authUserData.refetch()}>Refresh</Button>
         </View>
     )
 }

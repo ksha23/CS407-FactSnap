@@ -25,3 +25,8 @@ export const SignUpFormSchema = z.object({
     message: 'Passwords did not match',
     path: ['confirmPassword'],
 });
+
+export const SignInFormSchema = z.object({
+    email: z.string().email().nonempty({message: "Email cannot be empty"}),
+    password: z.string().nonempty({message: "Password cannot be empty"}),
+})

@@ -1,18 +1,46 @@
-import {Button, Card, H1, H3, Input, Label, Paragraph, Separator, SizableText, Spinner, View, YStack} from "tamagui";
+import {
+    Button,
+    Card,
+    H1,
+    H3,
+    Input,
+    Label,
+    Paragraph,
+    Separator,
+    SizableText,
+    Spinner,
+    Text,
+    View,
+    YStack
+} from "tamagui";
 import {useRouter} from "expo-router";
-import {useClerkOAuth} from "@/hooks/clerk-auth";
+import {useClerkAuth} from "@/hooks/clerk-auth";
 import {Provider} from "@/models/provider";
 import {maybeCompleteAuthSession} from 'expo-web-browser'
 import GoogleIcon from "@/components/icon/google-icon";
 import {KeyboardAvoidingView} from "react-native";
+import {Controller, useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {SignInFormSchema} from "@/validation/validation";
 
 // Handle any pending authentication sessions
 maybeCompleteAuthSession()
 
-
 export default function SignInForm() {
     const router = useRouter();
-    const {isLoading, handleOAuth} = useClerkOAuth()
+    const {isLoading, handleOAuth, handleCredentials} = useClerkAuth()
+
+    const {control, handleSubmit: submit, formState: {errors}} = useForm({
+        defaultValues: {
+            email: "",
+            password: "",
+        },
+        resolver: zodResolver(SignInFormSchema)
+    })
+
+    async function handleSubmit(values: {email: string, password: string}) {
+        await handleCredentials(values.email, values.password)
+    }
 
     return (
         <KeyboardAvoidingView  behavior={"padding"} style={{ flex: 1 }}>
@@ -33,7 +61,25 @@ export default function SignInForm() {
                             <Label>
                                 Email
                             </Label>
-                            <Input placeholder={"email@example.com"} disabled={isLoading}/>
+                            <Controller
+                                name={"email"}
+                                control={control}
+                                render={({field}) => (
+                                    <Input
+                                        placeholder={"email@example.com"}
+                                        disabled={isLoading}
+                                        textContentType={"emailAddress"}
+                                        keyboardType={"email-address"}
+                                        ref={field.ref}
+                                        value={field.value}
+                                        onChangeText={field.onChange}
+                                        onBlur={field.onBlur}
+                                    />
+                                )}
+                            />
+                            {errors.email && (
+                                <Text color={"red"}>{errors.email.message}</Text>
+                            )}
                         </YStack>
 
                         {/* Password Input*/}
@@ -41,11 +87,25 @@ export default function SignInForm() {
                             <Label>
                                 Password
                             </Label>
-                            <Input
-                                placeholder={"Enter password"}
-                                secureTextEntry textContentType={"password"}
-                                disabled={isLoading}
+                            <Controller
+                                name={"password"}
+                                control={control}
+                                render={({field}) => (
+                                    <Input
+                                        placeholder={"Enter password"}
+                                        secureTextEntry={true}
+                                        textContentType={"password"}
+                                        disabled={isLoading}
+                                        ref={field.ref}
+                                        value={field.value}
+                                        onChangeText={field.onChange}
+                                        onBlur={field.onBlur}
+                                    />
+                                )}
                             />
+                            {errors.password && (
+                                <Text color={"red"}>{errors.password.message}</Text>
+                            )}
                         </YStack>
 
                         {isLoading ? (
@@ -53,9 +113,7 @@ export default function SignInForm() {
                                 <Spinner size="large"/>
                             </Button>
                         ) : (
-                            <Button onPress={() => {
-                                // TODO: credentials
-                            }}>
+                            <Button onPress={submit(handleSubmit)}>
                                 <Paragraph>Sign In</Paragraph>
                             </Button>
                         )}
