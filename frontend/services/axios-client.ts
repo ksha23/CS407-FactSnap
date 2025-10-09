@@ -1,5 +1,6 @@
 import {getClerkInstance} from "@clerk/clerk-expo";
-import axios, {AxiosInstance} from "axios";
+import axios from "axios";
+import {Alert} from "react-native";
 
 export const PAGE_SIZE = 10;
 
@@ -19,4 +20,16 @@ apiClient.interceptors.request.use(async (config) => {
     return config;
 });
 
+apiClient.interceptors.response.use(
+    response => response,
+    async (error) => {
+        // sign out whenever we get 401 (unauthenticated) status code.
+        // usually this means session token is no longer valid.
+        if (error.response?.status === 401) {
+            Alert.alert("Your session is no longer valid", "Please sign in again")
+            await getClerkInstance().signOut()
+        }
+        return Promise.reject(error);
+    }
+)
 
