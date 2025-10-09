@@ -1,13 +1,17 @@
 import {Redirect, Tabs} from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import {Spinner, Text, useTheme, View, YStack} from "tamagui";
-import {useAuth} from "@clerk/clerk-expo";
+import {getClerkInstance, useAuth} from "@clerk/clerk-expo";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
+import {syncClerkUser} from "@/services/auth-service";
+import {useClerkSyncUser} from "@/hooks/clerk-auth";
 
 export default function TabsLayout(){
     const {isSignedIn, isLoaded} = useAuth()
     const theme = useTheme()
     const insets = useSafeAreaInsets()
+
+    useClerkSyncUser()
 
     if (!isLoaded) {
         return (

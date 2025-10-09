@@ -23,8 +23,7 @@ func toDomainUser(user User) model.User {
 
 func toDomainAuthUser(user User) model.AuthUser {
 	return model.AuthUser{
-		User:    toDomainUser(user),
-		ClerkID: user.ClerkUserID,
-		Email:   user.Email,
+		User:  toDomainUser(user),
+		Email: user.Email,
 	}
 }

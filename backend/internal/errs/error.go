@@ -43,12 +43,12 @@ func ErrType(err error) Type {
 	return ""
 }
 
-func UnauthorizedError(msg string, err error) error {
+func UnauthenticatedError(msg string, err error) error {
 	if err == nil {
 		err = errors.New(msg)
 	}
 	return Error{
-		Type:     TypeUnauthorized,
+		Type:     TypeUnauthenticated,
 		Message:  msg,
 		Internal: err,
 	}

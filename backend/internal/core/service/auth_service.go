@@ -3,9 +3,7 @@ package service
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base32"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/ksha23/CS407-FactSnap/internal/clerk"
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
@@ -27,20 +25,18 @@ func NewAuthService(clerkClient clerk.Client, userRepo port.UserRepository) *aut
 	}
 }
 
-func (s *authService) VerifyClerkToken(ctx context.Context, token string) (uuid.UUID, error) {
-	metadata, err := s.clerkClient.VerifyToken(ctx, token)
+func (s *authService) VerifyClerkToken(ctx context.Context, token string) (string, error) {
+	clerkID, err := s.clerkClient.VerifyToken(ctx, token)
 	if err != nil {
-		return uuid.UUID{}, fmt.Errorf("AuthService::VerifyClerkToken: %w", err)
+		return "", fmt.Errorf("AuthService::VerifyClerkToken: %w", err)
 	}
 
-	return metadata.InternalUserID, nil
+	return clerkID, nil
 }
 
-func (s *authService) SyncClerkUser(ctx context.Context, clerkID string) (model.AuthUser, error) {
-	//TODO implement me
-
+func (s *authService) SyncClerkUser(ctx context.Context, userID string) (model.AuthUser, error) {
 	// check if user already exists in db
-	authUser, err := s.userRepo.GetAuthUserByClerkID(ctx, clerkID)
+	authUser, err := s.userRepo.GetAuthUserByID(ctx, userID)
 	if err == nil {
 		// user exists, so return it
 		return authUser, nil
@@ -51,7 +47,7 @@ func (s *authService) SyncClerkUser(ctx context.Context, clerkID string) (model.
 
 	// if reached here, then user doesn't exist, so create new user from Clerk data
 	// NOTE: this makes API request to Clerk
-	clerkUser, err := s.clerkClient.GetUser(ctx, clerkID)
+	clerkUser, err := s.clerkClient.GetUser(ctx, userID)
 	if err != nil {
 		return model.AuthUser{}, fmt.Errorf("AuthService::SyncClerkUser: could not get clerk user: %w", err)
 	}
@@ -65,7 +61,7 @@ func (s *authService) SyncClerkUser(ctx context.Context, clerkID string) (model.
 	}
 
 	newUser, err := s.userRepo.CreateUser(ctx, model.CreateUserParams{
-		ClerkUserID: clerkUser.ID,
+		ID:          clerkUser.ID,
 		Username:    username,
 		Email:       email,
 		DisplayName: displayName,
@@ -79,10 +75,19 @@ func (s *authService) SyncClerkUser(ctx context.Context, clerkID string) (model.
 	return newUser, err
 }
 
+func (s *authService) GetAuthUser(ctx context.Context, userID string) (model.AuthUser, error) {
+	authUser, err := s.userRepo.GetAuthUserByID(ctx, userID)
+	if err != nil {
+		return model.AuthUser{}, fmt.Errorf("AuthService::GetAuthUser: %w", err)
+	}
+
+	return authUser, nil
+}
+
 func (s *authService) generateNewUsername(username string) string {
 	b := make([]byte, 2)
 	rand.Read(b)
-	token := base32.StdEncoding.EncodeToString(b)
+	token := fmt.Sprintf("%x", b)
 	length := validate.MaxUsernameLength - (len(token) + 1)
 	if len(username) > length {
 		username = username[:length]

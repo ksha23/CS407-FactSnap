@@ -22,7 +22,7 @@ func NewUserRepo(db *pgxpool.Pool) *userRepo {
 
 func (r *userRepo) CreateUser(ctx context.Context, params model.CreateUserParams) (model.AuthUser, error) {
 	createdAuthUser, err := r.query.CreateUser(ctx, sqlc.CreateUserParams{
-		ClerkUserID: params.ClerkUserID,
+		ID:          params.ID,
 		Username:    params.Username,
 		Email:       params.Email,
 		DisplayName: params.DisplayName,
@@ -36,8 +36,8 @@ func (r *userRepo) CreateUser(ctx context.Context, params model.CreateUserParams
 	return createdAuthUser.ToDomainModel(), nil
 }
 
-func (r *userRepo) GetAuthUserByClerkID(ctx context.Context, clerkID string) (model.AuthUser, error) {
-	authUser, err := r.query.GetUserByClerkID(ctx, clerkID)
+func (r *userRepo) GetAuthUserByID(ctx context.Context, clerkID string) (model.AuthUser, error) {
+	authUser, err := r.query.GetUserByID(ctx, clerkID)
 	if err != nil {
 		return model.AuthUser{}, fmt.Errorf("UserRepo::GetAuthUserByClerkID: %w", wrapError(err))
 	}

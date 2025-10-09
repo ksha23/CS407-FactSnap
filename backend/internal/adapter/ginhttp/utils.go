@@ -12,7 +12,6 @@ import (
 const (
 	RequestUserIDKey = "request_user_id"
 	RequestIDKey     = "request_id"
-	AuthUserIDKey    = "auth_user_id"
 )
 
 func registerValidations(v *validator.Validate) {
@@ -30,4 +29,9 @@ func IsRequestTimedOut(c *gin.Context) bool {
 		return true
 	}
 	return false
+}
+
+// getAuthUserID returns the request user id attached in the given Gin context, or empty string if it's not there.
+func getAuthUserID(c *gin.Context) string {
+	return c.Request.Context().Value(RequestUserIDKey).(string)
 }

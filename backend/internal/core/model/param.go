@@ -1,7 +1,7 @@
 package model
 
 type CreateUserParams struct {
-	ClerkUserID string
+	ID          string
 	Username    string
 	Email       string
 	DisplayName string

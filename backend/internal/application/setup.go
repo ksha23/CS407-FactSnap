@@ -82,11 +82,11 @@ func (app *App) initGinServer() error {
 	logger.AddContextKey(
 		ginhttp.RequestIDKey,
 		ginhttp.RequestUserIDKey,
-		clerk.UserIDKey,
 	)
 
 	// register handlers
 	mainHandler := ginhttp.NewMainHandler()
+	authHandler := ginhttp.NewAuthHandler(app.AuthService)
 
 	// register router
 	router := gin.New()
@@ -108,7 +108,10 @@ func (app *App) initGinServer() error {
 	baseRouter := router.Group(baseUrl)
 
 	// register routes
+	clerkAuthMiddleware := middleware.ClerkAuth(app.AuthService)
+
 	mainHandler.RegisterRoutes(baseRouter)
+	authHandler.RegisterRoutes(baseRouter, clerkAuthMiddleware)
 
 	// init gin server
 	server, err := ginhttp.NewServer(baseUrl, port, config.IsLocal(app.Config.Env), router)

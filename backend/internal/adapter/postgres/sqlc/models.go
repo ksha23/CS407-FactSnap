@@ -6,13 +6,10 @@ package sqlc
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type User struct {
-	ID          uuid.UUID
-	ClerkUserID string
+	ID          string
 	Username    string
 	Email       string
 	DisplayName string

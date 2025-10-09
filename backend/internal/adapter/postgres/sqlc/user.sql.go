@@ -7,18 +7,16 @@ package sqlc
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (clerk_user_id, username, email, display_name, avatar_url, role)
+INSERT INTO users (id, username, email, display_name, avatar_url, role)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, clerk_user_id, username, email, display_name, role, about_me, avatar_url, created_at
+RETURNING id, username, email, display_name, role, about_me, avatar_url, created_at
 `
 
 type CreateUserParams struct {
-	ClerkUserID string
+	ID          string
 	Username    string
 	Email       string
 	DisplayName string
@@ -28,7 +26,7 @@ type CreateUserParams struct {
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
-		arg.ClerkUserID,
+		arg.ID,
 		arg.Username,
 		arg.Email,
 		arg.DisplayName,
@@ -38,29 +36,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.ClerkUserID,
-		&i.Username,
-		&i.Email,
-		&i.DisplayName,
-		&i.Role,
-		&i.AboutMe,
-		&i.AvatarUrl,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const getUserByClerkID = `-- name: GetUserByClerkID :one
-SELECT id, clerk_user_id, username, email, display_name, role, about_me, avatar_url, created_at FROM users
-WHERE clerk_user_id = $1 LIMIT 1
-`
-
-func (q *Queries) GetUserByClerkID(ctx context.Context, clerkUserID string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByClerkID, clerkUserID)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.ClerkUserID,
 		&i.Username,
 		&i.Email,
 		&i.DisplayName,
@@ -73,16 +48,15 @@ func (q *Queries) GetUserByClerkID(ctx context.Context, clerkUserID string) (Use
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, clerk_user_id, username, email, display_name, role, about_me, avatar_url, created_at FROM users
+SELECT id, username, email, display_name, role, about_me, avatar_url, created_at FROM users
 WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.ClerkUserID,
 		&i.Username,
 		&i.Email,
 		&i.DisplayName,

@@ -1,6 +1,6 @@
 import {Button, Card, H1, H3, Input, Label, Paragraph, Separator, SizableText, Spinner, View, YStack} from "tamagui";
 import {useRouter} from "expo-router";
-import useClerkOAuth from "@/hooks/clerk-auth";
+import {useClerkOAuth} from "@/hooks/clerk-auth";
 import {Provider} from "@/models/provider";
 import {maybeCompleteAuthSession} from 'expo-web-browser'
 import GoogleIcon from "@/components/icon/google-icon";

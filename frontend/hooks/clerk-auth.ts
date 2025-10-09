@@ -1,14 +1,15 @@
 import {useEffect, useState} from "react";
-import {useSSO} from "@clerk/clerk-expo";
+import {getClerkInstance, useAuth, useSSO} from "@clerk/clerk-expo";
 import {Provider} from "@/models/provider";
 import {OAuthStrategy} from "@clerk/types";
 import {Alert, Platform} from "react-native";
 import {coolDownAsync, warmUpAsync} from "expo-web-browser";
 import {makeRedirectUri} from "expo-auth-session";
 import {useRouter} from "expo-router";
+import {useSyncAuthUser} from "@/hooks/tanstack/user";
 
 
-export default function useClerkOAuth() {
+export function useClerkOAuth() {
     // Preloads the browser for Android devices to reduce authentication load time
     // See: https://docs.expo.dev/guides/authentication/#improving-user-experience
     useEffect(() => {
@@ -39,9 +40,6 @@ export default function useClerkOAuth() {
             if (createdSessionId && setActive) {
                 await setActive({
                     session: createdSessionId,
-                    navigate: async ({session}) => {
-                        router.push("/")
-                    }
                 })
             }
         } catch (err) {
@@ -52,4 +50,16 @@ export default function useClerkOAuth() {
     }
 
     return {isLoading, handleOAuth}
+}
+
+export function useClerkSyncUser() {
+    const { isSignedIn } = useAuth();
+    const mutation = useSyncAuthUser()
+
+    useEffect(() => {
+        // if the user is signed in, and hasn't synced yet, then sync the user
+        if (isSignedIn && !mutation.data) {
+            mutation.mutate()
+        }
+    }, [isSignedIn]);
 }
