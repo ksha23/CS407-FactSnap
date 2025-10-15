@@ -6,6 +6,7 @@ import (
 )
 
 type UserService interface {
+	EditUser(ctx context.Context, params model.EditUserParams)
 }
 
 type UserRepository interface {

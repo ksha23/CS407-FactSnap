@@ -5,8 +5,132 @@
 package sqlc
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type CategoryEnum string
+
+const (
+	CategoryEnumRestaurant     CategoryEnum = "restaurant"
+	CategoryEnumStore          CategoryEnum = "store"
+	CategoryEnumTransportation CategoryEnum = "transportation"
+	CategoryEnumEvent          CategoryEnum = "event"
+)
+
+func (e *CategoryEnum) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CategoryEnum(s)
+	case string:
+		*e = CategoryEnum(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CategoryEnum: %T", src)
+	}
+	return nil
+}
+
+type NullCategoryEnum struct {
+	CategoryEnum CategoryEnum
+	Valid        bool // Valid is true if CategoryEnum is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCategoryEnum) Scan(value interface{}) error {
+	if value == nil {
+		ns.CategoryEnum, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CategoryEnum.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCategoryEnum) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CategoryEnum), nil
+}
+
+type QuestionType string
+
+const (
+	QuestionTypeWaitTime    QuestionType = "wait_time"
+	QuestionTypeAvailabilty QuestionType = "availabilty"
+	QuestionTypeRule        QuestionType = "rule"
+	QuestionTypeWeather     QuestionType = "weather"
+	QuestionTypeStatus      QuestionType = "status"
+)
+
+func (e *QuestionType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = QuestionType(s)
+	case string:
+		*e = QuestionType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for QuestionType: %T", src)
+	}
+	return nil
+}
+
+type NullQuestionType struct {
+	QuestionType QuestionType
+	Valid        bool // Valid is true if QuestionType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullQuestionType) Scan(value interface{}) error {
+	if value == nil {
+		ns.QuestionType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.QuestionType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullQuestionType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.QuestionType), nil
+}
+
+type Location struct {
+	ID       uuid.UUID
+	Location pgtype.Point
+	Name     string
+}
+
+type Question struct {
+	ID         uuid.UUID
+	AuthorID   string
+	Type       QuestionType
+	Title      string
+	Body       *string
+	LocationID uuid.UUID
+	ImageUrls  []string
+	Category   CategoryEnum
+	Summary    *string
+	CreatedAt  time.Time
+	EditedAt   time.Time
+}
+
+type Response struct {
+	ID         uuid.UUID
+	AuthorID   string
+	QuestionID uuid.UUID
+	Body       *string
+	Data       []byte
+	CreatedAt  time.Time
+	EditedAt   time.Time
+}
 
 type User struct {
 	ID          string
