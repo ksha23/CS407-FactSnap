@@ -1,50 +1,18 @@
-# Welcome to your Expo app 👋
+# Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+We are using the following:
+- [Expo](https://docs.expo.dev/) - React Native framework
+- [Tamagui](https://tamagui.dev/ui/intro) - React Native UI library
+- [Tanstack Query](https://tanstack.com/query/latest) - Formerly known as React Query. This is a data fetching and mutation library that allows us to sync with server-state.
+- [Clerk](https://clerk.com/docs) - Authentication library
 
-## Get started
+## Development & Local Testing
 
-1. Install dependencies
+### Prerequisites
+1. Install [Node.js and npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Installation
+1. Create `.env` file and put your variables there. Use `.env.example` as reference.
+2. Run `npm install` to install all the Node packages we're using
+3. Run `npx expo start` to start the Expo server. In the output, use [Expo Go](https://expo.dev/go) to run the app on your phone (can be either iOS or Android).
+   > Tip: Pass in `-- --tunnel` to the command if you want to expose the Expo server. it uses ngrok under the hood.
