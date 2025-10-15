@@ -24,5 +24,9 @@ Check `go.mod` file to see all the Go packages we are using.
 6. Run `make run` to run the backend API locally
 
 ### Notes
-Check the Makefile for other useful commands. You'll likely want to run `make sqlc` after making any adjustments to
+Check the Makefile for other useful commands. 
+
+You'll likely want to run `make sqlc` after making any adjustments to
 `sql/` so that you can regenerate the code to interact with the new SQL tables or queries.
+
+When you run the API, it will run SQL migrations for you during the initialization process.
