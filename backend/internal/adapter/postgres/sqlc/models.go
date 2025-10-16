@@ -13,58 +13,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type CategoryEnum string
+type CategoryType string
 
 const (
-	CategoryEnumRestaurant     CategoryEnum = "restaurant"
-	CategoryEnumStore          CategoryEnum = "store"
-	CategoryEnumTransportation CategoryEnum = "transportation"
-	CategoryEnumEvent          CategoryEnum = "event"
+	CategoryTypeRestaurant     CategoryType = "restaurant"
+	CategoryTypeStore          CategoryType = "store"
+	CategoryTypeTransportation CategoryType = "transportation"
+	CategoryTypeEvent          CategoryType = "event"
 )
 
-func (e *CategoryEnum) Scan(src interface{}) error {
+func (e *CategoryType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = CategoryEnum(s)
+		*e = CategoryType(s)
 	case string:
-		*e = CategoryEnum(s)
+		*e = CategoryType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for CategoryEnum: %T", src)
+		return fmt.Errorf("unsupported scan type for CategoryType: %T", src)
 	}
 	return nil
 }
 
-type NullCategoryEnum struct {
-	CategoryEnum CategoryEnum
-	Valid        bool // Valid is true if CategoryEnum is not NULL
+type NullCategoryType struct {
+	CategoryType CategoryType
+	Valid        bool // Valid is true if CategoryType is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullCategoryEnum) Scan(value interface{}) error {
+func (ns *NullCategoryType) Scan(value interface{}) error {
 	if value == nil {
-		ns.CategoryEnum, ns.Valid = "", false
+		ns.CategoryType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.CategoryEnum.Scan(value)
+	return ns.CategoryType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullCategoryEnum) Value() (driver.Value, error) {
+func (ns NullCategoryType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.CategoryEnum), nil
+	return string(ns.CategoryType), nil
 }
 
 type QuestionType string
 
 const (
-	QuestionTypeWaitTime    QuestionType = "wait_time"
-	QuestionTypeAvailabilty QuestionType = "availabilty"
-	QuestionTypeRule        QuestionType = "rule"
-	QuestionTypeWeather     QuestionType = "weather"
-	QuestionTypeStatus      QuestionType = "status"
+	QuestionTypeWaitTime     QuestionType = "wait_time"
+	QuestionTypeAvailability QuestionType = "availability"
+	QuestionTypeRule         QuestionType = "rule"
+	QuestionTypeWeather      QuestionType = "weather"
+	QuestionTypeStatus       QuestionType = "status"
 )
 
 func (e *QuestionType) Scan(src interface{}) error {
@@ -116,7 +116,7 @@ type Question struct {
 	Body       *string
 	LocationID uuid.UUID
 	ImageUrls  []string
-	Category   CategoryEnum
+	Category   CategoryType
 	Summary    *string
 	CreatedAt  time.Time
 	EditedAt   time.Time
@@ -128,6 +128,7 @@ type Response struct {
 	QuestionID uuid.UUID
 	Body       *string
 	Data       []byte
+	ImageUrls  []string
 	CreatedAt  time.Time
 	EditedAt   time.Time
 }

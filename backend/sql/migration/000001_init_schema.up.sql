@@ -15,8 +15,8 @@ CREATE TABLE "locations" (
     "name" text NOT NULL
 );
 
-CREATE TYPE category_enum AS ENUM ('restaurant', 'store', 'transportation', 'event');
-CREATE TYPE question_type AS ENUM ('wait_time', 'availabilty', 'rule', 'weather', 'status');
+CREATE TYPE category_type AS ENUM ('restaurant', 'store', 'transportation', 'event');
+CREATE TYPE question_type AS ENUM ('wait_time', 'availability', 'rule', 'weather', 'status');
 
 CREATE TABLE "questions" (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -26,7 +26,7 @@ CREATE TABLE "questions" (
     "body" text NULL,
     "location_id" uuid NOT NULL,
     "image_urls" text[] NULL,
-    "category" category_enum NOT NULL,
+    "category" category_type NOT NULL,
     "summary" text NULL,
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp,
     "edited_at" timestamptz NOT NULL DEFAULT current_timestamp,

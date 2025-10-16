@@ -4,7 +4,7 @@ type QuestionType string
 
 const (
 	QuestionTypeWaitTime     QuestionType = "wait_time"
-	QuestionTypeAvailabiilty QuestionType = "availabilty"
+	QuestionTypeAvailability QuestionType = "availability"
 	QuestionTypeRule         QuestionType = "rule"
 	QuestionTypeWeather      QuestionType = "weather"
 	QuestionTypeStatus       QuestionType = "status"
