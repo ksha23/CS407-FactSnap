@@ -97,6 +97,7 @@ func (app *App) initGinServer() error {
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Error())
 	router.Use(middleware.Timeout(requestTimeoutDuration))
+	router.Use(middleware.ClerkAuth(app.AuthService)) // all routes will be protected
 
 	// setup no router handler
 	router.NoRoute(mainHandler.NoRoute)
@@ -108,10 +109,8 @@ func (app *App) initGinServer() error {
 	baseRouter := router.Group(baseUrl)
 
 	// register routes
-	clerkAuthMiddleware := middleware.ClerkAuth(app.AuthService)
-
 	mainHandler.RegisterRoutes(baseRouter)
-	authHandler.RegisterRoutes(baseRouter, clerkAuthMiddleware)
+	authHandler.RegisterRoutes(baseRouter)
 
 	// init gin server
 	server, err := ginhttp.NewServer(baseUrl, port, config.IsLocal(app.Config.Env), router)

@@ -16,8 +16,8 @@ func NewAuthHandler(authService port.AuthService) *AuthHandler {
 	return &AuthHandler{AuthService: authService}
 }
 
-func (h *AuthHandler) RegisterRoutes(r *gin.RouterGroup, clerkAuth gin.HandlerFunc) {
-	authRoutes := r.Group("/auth", clerkAuth)
+func (h *AuthHandler) RegisterRoutes(r *gin.RouterGroup) {
+	authRoutes := r.Group("/auth")
 	authRoutes.POST("/sync-clerk", h.SyncClerkUser)
 	authRoutes.GET("/me", h.GetAuthUser)
 }

@@ -5,16 +5,16 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres/sqlc"
 )
 
-type questionRepo struct {
+type responseRepo struct {
 	query *sqlc.Queries
 	db    *pgxpool.Pool
 }
 
-func NewQuestionRepo(db *pgxpool.Pool) *questionRepo {
-	return &questionRepo{
+func NewResponseRepo(db *pgxpool.Pool) *responseRepo {
+	return &responseRepo{
 		query: sqlc.New(db),
 		db:    db,
 	}
 }
 
-// TODO: implement QuestionRepo interface methods
+// TODO: implement ResponseRepo interface methods

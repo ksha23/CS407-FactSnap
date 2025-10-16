@@ -21,10 +21,9 @@ type CreateQuestionParams struct {
 }
 
 type GetQuestionsParams struct {
-	Latitude      string
-	Longitude     string
-	Radius        int
-	QuestionTitle *string
+	Latitude  string
+	Longitude string
+	Radius    int
 }
 
 type EditQuestionParams struct {
@@ -35,11 +34,6 @@ type EditQuestionParams struct {
 	Type       QuestionType
 	Category   Category
 	ImageURLs  []string
-}
-
-type PageParams struct {
-	Limit  int
-	Offset int
 }
 
 type CreateResponseParams struct {
