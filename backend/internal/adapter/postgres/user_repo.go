@@ -44,3 +44,8 @@ func (r *userRepo) GetAuthUserByID(ctx context.Context, clerkID string) (model.A
 
 	return authUser.ToDomainModel(), nil
 }
+
+func (r *userRepo) EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error) {
+	//TODO implement me
+	panic("implement me")
+}

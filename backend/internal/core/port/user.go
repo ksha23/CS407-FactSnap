@@ -6,9 +6,11 @@ import (
 )
 
 type UserService interface {
+	EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error)
 }
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, params model.CreateUserParams) (model.AuthUser, error)
 	GetAuthUserByID(ctx context.Context, clerkID string) (model.AuthUser, error)
+	EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error)
 }

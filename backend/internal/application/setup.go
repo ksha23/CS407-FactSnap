@@ -62,9 +62,14 @@ func (app *App) initDependencies() error {
 
 	// register repos
 	app.UserRepo = postgres.NewUserRepo(app.PostgresDB)
+	app.QuestionRepo = postgres.NewQuestionRepo(app.PostgresDB)
+	app.ResponseRepo = postgres.NewResponseRepo(app.PostgresDB)
 
 	// register services
 	app.AuthService = service.NewAuthService(app.ClerkClient, app.UserRepo)
+	app.UserService = service.NewUserService(app.UserRepo)
+	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
+	app.ResponseService = service.NewResponseService(app.ResponseService)
 
 	return nil
 }
@@ -87,6 +92,9 @@ func (app *App) initGinServer() error {
 	// register handlers
 	mainHandler := ginhttp.NewMainHandler()
 	authHandler := ginhttp.NewAuthHandler(app.AuthService)
+	userHandler := ginhttp.NewUserHandler(app.UserService)
+	questionHandler := ginhttp.NewQuestionHandler(app.QuestionService)
+	responseHandler := ginhttp.NewResponseHandler(app.ResponseService)
 
 	// register router
 	router := gin.New()
@@ -97,6 +105,7 @@ func (app *App) initGinServer() error {
 	router.Use(middleware.Recovery())
 	router.Use(middleware.Error())
 	router.Use(middleware.Timeout(requestTimeoutDuration))
+	router.Use(middleware.ClerkAuth(app.AuthService)) // all routes will be protected
 
 	// setup no router handler
 	router.NoRoute(mainHandler.NoRoute)
@@ -108,10 +117,11 @@ func (app *App) initGinServer() error {
 	baseRouter := router.Group(baseUrl)
 
 	// register routes
-	clerkAuthMiddleware := middleware.ClerkAuth(app.AuthService)
-
 	mainHandler.RegisterRoutes(baseRouter)
-	authHandler.RegisterRoutes(baseRouter, clerkAuthMiddleware)
+	authHandler.RegisterRoutes(baseRouter)
+	userHandler.RegisterRoutes(baseRouter)
+	questionHandler.RegisterRoutes(baseRouter)
+	responseHandler.RegisterRoutes(baseRouter)
 
 	// init gin server
 	server, err := ginhttp.NewServer(baseUrl, port, config.IsLocal(app.Config.Env), router)

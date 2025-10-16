@@ -24,10 +24,15 @@ type App struct {
 	PostgresDB *pgxpool.Pool
 
 	// services
-	AuthService port.AuthService
+	AuthService     port.AuthService
+	UserService     port.UserService
+	QuestionService port.QuestionService
+	ResponseService port.ResponseService
 
 	// repos
-	UserRepo port.UserRepository
+	UserRepo     port.UserRepository
+	QuestionRepo port.QuestionRepo
+	ResponseRepo port.ResponseRepo
 
 	// third-party integrations
 	ClerkClient clerk.Client
