@@ -1,6 +1,10 @@
 package service
 
-import "github.com/ksha23/CS407-FactSnap/internal/core/port"
+import (
+	"context"
+	"github.com/ksha23/CS407-FactSnap/internal/core/model"
+	"github.com/ksha23/CS407-FactSnap/internal/core/port"
+)
 
 type userService struct {
 	userRepo port.UserRepository
@@ -10,4 +14,7 @@ func NewUserService(userRepo port.UserRepository) *userService {
 	return &userService{userRepo: userRepo}
 }
 
-// TODO: implement UserService interface methods
+func (s *userService) EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error) {
+	//TODO implement me
+	panic("implement me")
+}
