@@ -2,6 +2,10 @@ package application
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/middleware"
@@ -10,10 +14,8 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/service"
 	"github.com/ksha23/CS407-FactSnap/internal/logger"
+	"github.com/ksha23/CS407-FactSnap/internal/uploadthing"
 	"github.com/lmittmann/tint"
-	"log/slog"
-	"os"
-	"time"
 )
 
 func (app *App) initLogger() error {
@@ -59,6 +61,10 @@ func (app *App) initPostgres() error {
 func (app *App) initDependencies() error {
 	// register clients
 	app.ClerkClient = clerk.NewClient(app.Config.Clerk.SecretKey)
+	uploadthingClient, err := uploadthing.NewClient(app.Config.Uploadthing)
+	if err != nil {
+		return fmt.Errorf("error initializing UploadThing client: %w", err)
+	}
 
 	// register repos
 	app.UserRepo = postgres.NewUserRepo(app.PostgresDB)
@@ -70,6 +76,7 @@ func (app *App) initDependencies() error {
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
 	app.ResponseService = service.NewResponseService(app.ResponseService)
+	app.MediaService = service.NewMediaService(uploadthingClient)
 
 	return nil
 }
@@ -95,6 +102,7 @@ func (app *App) initGinServer() error {
 	userHandler := ginhttp.NewUserHandler(app.UserService)
 	questionHandler := ginhttp.NewQuestionHandler(app.QuestionService)
 	responseHandler := ginhttp.NewResponseHandler(app.ResponseService)
+	mediaHandler := ginhttp.NewMediaHandler(app.MediaService)
 
 	// register router
 	router := gin.New()
@@ -122,6 +130,7 @@ func (app *App) initGinServer() error {
 	userHandler.RegisterRoutes(baseRouter)
 	questionHandler.RegisterRoutes(baseRouter)
 	responseHandler.RegisterRoutes(baseRouter)
+	mediaHandler.RegisterRoutes(baseRouter)
 
 	// init gin server
 	server, err := ginhttp.NewServer(baseUrl, port, config.IsLocal(app.Config.Env), router)

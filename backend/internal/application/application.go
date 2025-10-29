@@ -28,6 +28,7 @@ type App struct {
 	UserService     port.UserService
 	QuestionService port.QuestionService
 	ResponseService port.ResponseService
+	MediaService    port.MediaService
 
 	// repos
 	UserRepo     port.UserRepository

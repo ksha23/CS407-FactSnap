@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	Name     string   `mapstructure:"name"`
-	Env      Env      `mapstructure:"environment"`
-	Server   Server   `mapstructure:"server"`
-	Postgres Postgres `mapstructure:"postgres"`
-	Clerk    Clerk    `mapstructure:"clerk"`
+	Name        string      `mapstructure:"name"`
+	Env         Env         `mapstructure:"environment"`
+	Server      Server      `mapstructure:"server"`
+	Postgres    Postgres    `mapstructure:"postgres"`
+	Clerk       Clerk       `mapstructure:"clerk"`
+	Uploadthing Uploadthing `mapstructure:"uploadthing"`
 }
 
 type Server struct {
@@ -31,6 +32,18 @@ type Postgres struct {
 type Clerk struct {
 	SecretKey string `mapstructure:"secretKey"`
 }
+
+type Uploadthing struct {
+	AppID      string `mapstructure:"appId"`
+	SecretKey  string `mapstructure:"secretKey"`
+	BaseURL    string `mapstructure:"baseUrl"`
+	CDNBaseURL string `mapstructure:"cdnBaseUrl"`
+}
+
+const (
+	defaultUploadthingBaseURL    = "https://api.uploadthing.com"
+	defaultUploadthingCDNBaseURL = "https://utfs.io/f"
+)
 
 func Load(path string) (*Config, error) {
 	viper.AddConfigPath(path)
@@ -60,6 +73,13 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("unsupported environment: %w", err)
 	}
 	config.Env = env
+
+	if config.Uploadthing.BaseURL == "" {
+		config.Uploadthing.BaseURL = defaultUploadthingBaseURL
+	}
+	if config.Uploadthing.CDNBaseURL == "" {
+		config.Uploadthing.CDNBaseURL = defaultUploadthingCDNBaseURL
+	}
 
 	return config, nil
 }
