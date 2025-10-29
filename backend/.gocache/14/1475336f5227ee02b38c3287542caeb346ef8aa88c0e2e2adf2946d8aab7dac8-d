@@ -1,0 +1,10 @@
+./category.go
+./location.go
+./media.go
+./page.go
+./param.go
+./question.go
+./question_type.go
+./response.go
+./role.go
+./user.go

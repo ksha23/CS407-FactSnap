@@ -9,6 +9,7 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/clerk"
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
+	"github.com/ksha23/CS407-FactSnap/internal/uploadthing"
 	"golang.org/x/sync/errgroup"
 	"log/slog"
 )
@@ -28,6 +29,7 @@ type App struct {
 	UserService     port.UserService
 	QuestionService port.QuestionService
 	ResponseService port.ResponseService
+	MediaService    port.MediaService
 
 	// repos
 	UserRepo     port.UserRepository
@@ -35,7 +37,8 @@ type App struct {
 	ResponseRepo port.ResponseRepo
 
 	// third-party integrations
-	ClerkClient clerk.Client
+	ClerkClient       clerk.Client
+	UploadthingClient *uploadthing.Client
 
 	Closers []func() error
 }
