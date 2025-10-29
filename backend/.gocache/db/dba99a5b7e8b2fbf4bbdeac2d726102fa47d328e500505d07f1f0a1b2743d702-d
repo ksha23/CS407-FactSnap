@@ -1,6 +1,0 @@
-./clerk_middleware.go
-./error_middleware.go
-./logger_middleware.go
-./recovery_middleware.go
-./request_size_middleware.go
-./timeout_middleware.go

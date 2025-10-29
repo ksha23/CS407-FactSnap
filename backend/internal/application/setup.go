@@ -10,7 +10,6 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/service"
 	"github.com/ksha23/CS407-FactSnap/internal/logger"
-	"github.com/ksha23/CS407-FactSnap/internal/uploadthing"
 	"github.com/lmittmann/tint"
 	"log/slog"
 	"os"
@@ -60,9 +59,6 @@ func (app *App) initPostgres() error {
 func (app *App) initDependencies() error {
 	// register clients
 	app.ClerkClient = clerk.NewClient(app.Config.Clerk.SecretKey)
-	app.UploadthingClient = uploadthing.NewClient(app.Config.Upload.SecretKey, app.Config.Upload.AppID)
-	app.UploadthingClient.BaseURL = app.Config.Upload.BaseURL
-	app.UploadthingClient.CDNBaseURL = app.Config.Upload.CDNBaseURL
 
 	// register repos
 	app.UserRepo = postgres.NewUserRepo(app.PostgresDB)
@@ -73,15 +69,14 @@ func (app *App) initDependencies() error {
 	app.AuthService = service.NewAuthService(app.ClerkClient, app.UserRepo)
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
-	app.ResponseService = service.NewResponseService(app.ResponseRepo)
-	app.MediaService = service.NewMediaService(app.UploadthingClient)
+	app.ResponseService = service.NewResponseService(app.ResponseService)
 
 	return nil
 }
 
 func (app *App) initGinServer() error {
 	const (
-		maxRequestSize         = 25 * 1024 * 1024 // 25 MB
+		maxRequestSize         = 2 * 1024 * 1024 // 2 MB
 		requestTimeoutDuration = 10 * time.Second
 	)
 
@@ -100,7 +95,6 @@ func (app *App) initGinServer() error {
 	userHandler := ginhttp.NewUserHandler(app.UserService)
 	questionHandler := ginhttp.NewQuestionHandler(app.QuestionService)
 	responseHandler := ginhttp.NewResponseHandler(app.ResponseService)
-	mediaHandler := ginhttp.NewMediaHandler(app.MediaService)
 
 	// register router
 	router := gin.New()
@@ -128,7 +122,6 @@ func (app *App) initGinServer() error {
 	userHandler.RegisterRoutes(baseRouter)
 	questionHandler.RegisterRoutes(baseRouter)
 	responseHandler.RegisterRoutes(baseRouter)
-	mediaHandler.RegisterRoutes(baseRouter)
 
 	// init gin server
 	server, err := ginhttp.NewServer(baseUrl, port, config.IsLocal(app.Config.Env), router)

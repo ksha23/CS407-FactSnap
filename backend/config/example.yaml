@@ -15,9 +15,3 @@ postgres:
 
 clerk:
   secretKey:
-
-uploadthing:
-  appId:
-  secretKey:
-  baseUrl: "https://api.uploadthing.com"
-  cdnBaseUrl: "https://utfs.io/f"

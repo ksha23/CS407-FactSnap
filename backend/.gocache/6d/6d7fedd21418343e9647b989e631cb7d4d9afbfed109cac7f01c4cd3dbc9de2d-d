@@ -1,5 +1,0 @@
-./error.go
-./question_repo.go
-./response_repo.go
-./user_repo.go
-./utils.go
