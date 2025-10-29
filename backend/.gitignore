@@ -20,3 +20,5 @@ go.sum
 # ignore all configs except example config
 config/*
 !config/example.yaml
+
+**/.gochache
