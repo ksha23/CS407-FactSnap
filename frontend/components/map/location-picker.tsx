@@ -308,8 +308,7 @@ export default function LocationPicker({
       }
       await startNewSelection({
         nextCoords: currentLoc.coordinates,
-        seedLabel: "Current Location",
-        source: "current",
+        source: "map",
       });
     } catch (error) {
       console.error("Failed to load current location:", error);

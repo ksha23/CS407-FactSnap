@@ -6,15 +6,15 @@ import (
 )
 
 type Question struct {
-	ID        uuid.UUID    `json:"id,omitempty"`
-	Type      QuestionType `json:"type,omitempty"`
+	ID        uuid.UUID    `json:"id"`
+	Type      QuestionType `json:"type"`
+	Category  Category     `json:"category"`
 	Author    User         `json:"author"`
-	Title     string       `json:"title,omitempty"`
-	Body      *string      `json:"body,omitempty"`
+	Title     string       `json:"title"`
+	Body      *string      `json:"body"`
 	Location  Location     `json:"location"`
-	ImageURLs []string     `json:"image_ur_ls,omitempty"`
-	Category  Category     `json:"category,omitempty"`
-	Summary   *string      `json:"summary,omitempty"`
+	ImageURLs []string     `json:"image_urls"`
+	Summary   *string      `json:"summary"`
 	CreatedAt time.Time    `json:"created_at"`
 	EditedAt  time.Time    `json:"edited_at"`
 }

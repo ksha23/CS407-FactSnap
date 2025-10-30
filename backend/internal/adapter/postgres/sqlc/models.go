@@ -20,6 +20,7 @@ const (
 	CategoryTypeStore          CategoryType = "store"
 	CategoryTypeTransportation CategoryType = "transportation"
 	CategoryTypeEvent          CategoryType = "event"
+	CategoryTypeGeneral        CategoryType = "general"
 )
 
 func (e *CategoryType) Scan(src interface{}) error {
@@ -105,7 +106,8 @@ func (ns NullQuestionType) Value() (driver.Value, error) {
 type Location struct {
 	ID       uuid.UUID
 	Location pgtype.Point
-	Name     string
+	Name     *string
+	Address  *string
 }
 
 type Question struct {

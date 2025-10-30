@@ -66,7 +66,7 @@ export default function ProfilePage() {
                 <Button onPress={() => authUserQuery.refetch()} theme="blue">
                   Refresh Profile
                 </Button>
-                <Button onPress={() => signOut()} theme="red">
+                <Button backgroundColor={"$red8"} onPress={() => signOut()} theme="red">
                   Sign Out
                 </Button>
               </YStack>

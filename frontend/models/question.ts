@@ -1,4 +1,5 @@
 import { User } from "@/models/user";
+import {Location} from "@/models/location";
 
 export enum QuestionType {
   WAIT_TIME = 'wait_time',
@@ -16,36 +17,31 @@ export enum Category {
   GENERAL = 'general',
 }
 
-export type Location = {
-  latitude: number;
-  longitude: number;
-};
-
 export type Question = {
   id: string;
   type: QuestionType;
+  category: Category;
   author: User;
   title: string;
-  body?: string | null;
+  body?: string;
   location: Location;
   image_urls?: string[];
-  category?: Category;
-  summary?: string | null;
+  summary?: string;
   created_at: string;
   edited_at: string;
 };
 
-export type CreateQuestionParams = {
-  questionType: QuestionType;
-  category: Category;
-  title: string;
-  body?: string;
-  location: Location;
-  imageUrls?: string[];
-};
-
-export type GetQuestionsParams = {
-  latitude: string;
-  longitude: string;
-  radius: number;
-};
+// export type CreateQuestionParams = {
+//   questionType: QuestionType;
+//   category: Category;
+//   title: string;
+//   body?: string;
+//   location: Location;
+//   imageUrls?: string[];
+// };
+//
+// export type GetQuestionsParams = {
+//   latitude: string;
+//   longitude: string;
+//   radius: number;
+// };

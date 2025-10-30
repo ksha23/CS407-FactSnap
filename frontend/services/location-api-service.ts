@@ -4,7 +4,6 @@ import { apiClient } from './axios-client';
 import { Coordinates } from './location-service';
 import { NearbyLocation } from './notification-service';
 import type { Question } from '@/models/question';
-import type { CreateQuestionParams, GetQuestionsParams } from '@/models/question';
 
 /**
  * Fetch questions/locations within a radius of a center point

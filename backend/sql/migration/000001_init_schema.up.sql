@@ -12,10 +12,11 @@ CREATE TABLE "users" (
 CREATE TABLE "locations" (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     "location" point NOT NULL,
-    "name" text NOT NULL
+    "name" text NULL,
+    "address" text NULL
 );
 
-CREATE TYPE category_type AS ENUM ('restaurant', 'store', 'transportation', 'event');
+CREATE TYPE category_type AS ENUM ('restaurant', 'store', 'transportation', 'event', 'general');
 CREATE TYPE question_type AS ENUM ('wait_time', 'availability', 'rule', 'weather', 'status');
 
 CREATE TABLE "questions" (
