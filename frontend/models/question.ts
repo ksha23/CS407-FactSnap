@@ -2,11 +2,7 @@ import { User } from "@/models/user";
 import {Location} from "@/models/location";
 
 export enum QuestionType {
-  WAIT_TIME = 'wait_time',
-  AVAILABILITY = 'availability',
-  RULE = 'rule',
-  WEATHER = 'weather',
-  STATUS = 'status',
+  POLL = "poll",
 }
 
 export enum Category {
@@ -19,7 +15,7 @@ export enum Category {
 
 export type Question = {
   id: string;
-  type: QuestionType;
+  type?: QuestionType;
   category: Category;
   author: User;
   title: string;

@@ -61,11 +61,7 @@ func (ns NullCategoryType) Value() (driver.Value, error) {
 type QuestionType string
 
 const (
-	QuestionTypeWaitTime     QuestionType = "wait_time"
-	QuestionTypeAvailability QuestionType = "availability"
-	QuestionTypeRule         QuestionType = "rule"
-	QuestionTypeWeather      QuestionType = "weather"
-	QuestionTypeStatus       QuestionType = "status"
+	QuestionTypePoll QuestionType = "poll"
 )
 
 func (e *QuestionType) Scan(src interface{}) error {
@@ -110,10 +106,31 @@ type Location struct {
 	Address  *string
 }
 
+type Poll struct {
+	ID         uuid.UUID
+	QuestionID uuid.UUID
+	CreatedAt  time.Time
+	ExpiresAt  time.Time
+}
+
+type PollOption struct {
+	ID     uuid.UUID
+	PollID uuid.UUID
+	Label  string
+	Index  int
+}
+
+type PollVote struct {
+	PollID    uuid.UUID
+	OptionID  uuid.UUID
+	UserID    string
+	CreatedAt time.Time
+}
+
 type Question struct {
 	ID         uuid.UUID
 	AuthorID   string
-	Type       QuestionType
+	Type       NullQuestionType
 	Title      string
 	Body       *string
 	LocationID uuid.UUID

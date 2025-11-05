@@ -19,7 +19,7 @@ CREATE TABLE poll_options (
 CREATE TABLE poll_votes (
     "poll_id" uuid NOT NULL,
     "option_id" uuid NOT NULL,
-    "user_id" uuid NOT NULL,
+    "user_id" text NOT NULL,
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp,
     PRIMARY KEY (poll_id, user_id),
     FOREIGN KEY (poll_id) REFERENCES "polls" (id) ON DELETE CASCADE,
