@@ -17,12 +17,12 @@ CREATE TABLE "locations" (
 );
 
 CREATE TYPE category_type AS ENUM ('restaurant', 'store', 'transportation', 'event', 'general');
-CREATE TYPE question_type AS ENUM ('wait_time', 'availability', 'rule', 'weather', 'status');
+CREATE TYPE question_type AS ENUM ('poll');
 
 CREATE TABLE "questions" (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     "author_id" text NOT NULL,
-    "type" question_type NOT NULL,
+    "type" question_type NULL,
     "title" text NOT NULL,
     "body" text NULL,
     "location_id" uuid NOT NULL,
