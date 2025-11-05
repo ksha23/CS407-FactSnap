@@ -22,14 +22,13 @@ export async function fetchQuestionsInRadius(
     // Example: GET /api/questions?lat={center.latitude}&lng={center.longitude}&radius={radiusMiles}
     console.log('Fetching questions in region from API:', center, radiusMiles);
 
-    const params: GetQuestionsParams = {
-      latitude: String(center.latitude),
-      longitude: String(center.longitude),
-      radius: Math.max(0, Math.round(radiusMiles)),
-    }
+    // const params: GetQuestionsParams = {
+    //   latitude: String(center.latitude),
+    //   longitude: String(center.longitude),
+    //   radius: Math.max(0, Math.round(radiusMiles)),
+    // }
 
     const response = await apiClient.get('/questions', {
-      params,
       timeout: 5000, // Shorter timeout for location queries (5 seconds)
     });
 
@@ -71,43 +70,6 @@ export async function fetchNearbyLocationsForNotifications(
   } catch (error) {
     console.error('Error fetching nearby locations for notifications:', error);
     return [];
-  }
-}
-
-/**
- * Create a new question with location
- * 
- * @param title - Question title
- * @param description - Question description
- * @param location - Question location coordinates
- * @param address - Optional address string
- * @returns Created question
- */
-export async function createQuestion(
-  params: CreateQuestionParams
-): Promise<Question> {
-  try {
-    // TODO: Replace with your actual API endpoint
-    // Example: POST /api/questions
-    
-    const body = {
-      questionType: params.questionType,
-      category: params.category,
-      title: params.title,
-      body: params.body,
-      location: {
-        latitude: params.location.latitude,
-        longitude: params.location.longitude,
-      },
-      imageUrls: params.imageUrls ?? [],
-    }
-
-    const response = await apiClient.post('/questions', body);
-
-    return response.data;
-  } catch (error) {
-    console.error('Error creating question:', error);
-    throw error;
   }
 }
 

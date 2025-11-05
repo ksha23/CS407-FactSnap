@@ -2,7 +2,6 @@ CREATE TABLE polls (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     "question_id" uuid NOT NULL,
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp,
-    "expires_at" timestamptz NOT NULL,
     UNIQUE (question_id),
     FOREIGN KEY (question_id) REFERENCES "questions" (id) ON DELETE CASCADE
 );

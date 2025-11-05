@@ -16,22 +16,19 @@ CREATE TABLE "locations" (
     "address" text NULL
 );
 
-CREATE TYPE category_type AS ENUM ('restaurant', 'store', 'transportation', 'event', 'general');
-CREATE TYPE question_type AS ENUM ('poll');
-
 CREATE TABLE "questions" (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     "author_id" text NOT NULL,
-    "type" question_type NULL,
+    "content_type" text NOT NULL,
     "title" text NOT NULL,
     "body" text NULL,
     "location_id" uuid NOT NULL,
     "image_urls" text[] NULL,
-    "category" category_type NOT NULL,
-    "summary" text NULL,
+    "category" text NOT NULL,
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp,
     "edited_at" timestamptz NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY (author_id) REFERENCES "users" (id),
+    "expired_at" timestamptz NOT NULL,
+    FOREIGN KEY (author_id) REFERENCES "users" (id) ON DELETE CASCADE,
     FOREIGN KEY (location_id) REFERENCES "locations" (id)
 );
 
@@ -39,11 +36,10 @@ CREATE TABLE "responses" (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     "author_id" text NOT NULL,
     "question_id" uuid NOT NULL,
-    "body" text NULL,
-    "data" JSONB NOT NULL,
+    "body" text NOT NULL,
     "image_urls" text[] NULL,
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp,
     "edited_at" timestamptz NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY (author_id) REFERENCES "users" (id),
-    FOREIGN KEY (question_id) REFERENCES "questions" (id)
+    FOREIGN KEY (author_id) REFERENCES "users" (id) ON DELETE CASCADE,
+    FOREIGN KEY (question_id) REFERENCES "questions" (id) ON DELETE CASCADE
 );

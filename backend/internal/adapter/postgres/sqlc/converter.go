@@ -27,3 +27,13 @@ func toDomainAuthUser(user User) model.AuthUser {
 		Email: user.Email,
 	}
 }
+
+func toDomainLocation(location Location) model.Location {
+	return model.Location{
+		ID:        location.ID,
+		Latitude:  location.Location.P.X,
+		Longitude: location.Location.P.Y,
+		Name:      location.Name,
+		Address:   location.Address,
+	}
+}

@@ -5,12 +5,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
-  createQuestion,
   fetchQuestionsInRadius,
   getQuestion,
 } from "@/services/location-api-service";
 import type {
-  CreateQuestionParams,
   Question,
 } from "@/models/question";
 import type { Coordinates } from "@/services/location-service";
@@ -73,24 +71,3 @@ export function useQuestion(questionId: string | null, enabled = true) {
     placeholderData: keepPreviousData,
   });
 }
-
-/**
- * Create a question and invalidate cached question lists on success.
- */
-export function useCreateQuestion() {
-  const queryClient = useQueryClient();
-
-  return useMutation<Question, Error, CreateQuestionParams>({
-    mutationFn: async (variables) => {
-      return await createQuestion(variables);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUESTIONS_QUERY_KEY] });
-    },
-  });
-}
-
-export const questionQueryKeys = {
-  root: QUESTIONS_QUERY_KEY,
-  detail: QUESTION_QUERY_KEY,
-};

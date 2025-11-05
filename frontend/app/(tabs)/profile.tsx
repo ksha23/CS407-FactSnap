@@ -15,7 +15,6 @@ import LocationNotificationSettings from "@/components/settings/location-notific
 
 export default function ProfilePage() {
   const authUserQuery = useGetAuthUser();
-  const authUser = authUserQuery.data;
   const { signOut } = useClerk();
 
   useEffect(() => {
@@ -32,46 +31,43 @@ export default function ProfilePage() {
             Profile
           </Text>
 
-          {authUserQuery.isFetching || authUserQuery.isPending ? (
+          {authUserQuery.isPending || authUserQuery.isFetching ? (
             <Text>Loading...</Text>
-          ) : authUserQuery.error || !authUser ? (
+          ) : authUserQuery.isError ? (
             <Text color={"red"}>
-              {authUserQuery.isError
-                ? authUserQuery.error.message
-                : "Could not load profile"}
+              {authUserQuery.error ? authUserQuery.error.message : "Could not load profile"}
             </Text>
           ) : (
             <YStack gap="$4">
               <View alignItems="center" gap="$3">
                 <Avatar circular size={100}>
-                  <Avatar.Image srcSet={authUser.avatar_url} />
+                  <Avatar.Image srcSet={authUserQuery.data.avatar_url} />
                   <Avatar.Fallback backgroundColor={"$blue8"} />
                 </Avatar>
                 <YStack alignItems="center">
                   <Text fontSize="$6" fontWeight="bold">
-                    {authUser.display_name}
+                    {authUserQuery.data.display_name}
                   </Text>
                   <Text fontSize="$4" color="$gray11">
-                    @{authUser.username}
+                    @{authUserQuery.data.username}
                   </Text>
                   <Text fontSize="$3" color="$gray11">
-                    {authUser.email}
+                    {authUserQuery.data.email}
                   </Text>
                 </YStack>
               </View>
 
               <LocationNotificationSettings />
-
-              <YStack gap="$3">
-                <Button onPress={() => authUserQuery.refetch()} theme="blue">
-                  Refresh Profile
-                </Button>
-                <Button backgroundColor={"$red8"} onPress={() => signOut()} theme="red">
-                  Sign Out
-                </Button>
-              </YStack>
             </YStack>
           )}
+          <YStack gap="$3">
+            <Button onPress={() => authUserQuery.refetch()} theme="blue">
+              Refresh Profile
+            </Button>
+            <Button backgroundColor={"$red8"} onPress={() => signOut()} theme="red">
+              Sign Out
+            </Button>
+          </YStack>
         </YStack>
       </ScrollView>
     </SafeAreaView>
