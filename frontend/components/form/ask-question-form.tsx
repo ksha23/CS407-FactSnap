@@ -21,13 +21,14 @@ import LocationPicker from "@/components/map/location-picker";
 import {Location} from "@/models/location";
 import {useState} from "react";
 import AskQuestionAdditionalForm from "@/components/form/ask-question-additional-form";
-import {useCreateQuestion} from "@/hooks/tanstack/question";
+import {useCreatePoll, useCreateQuestion} from "@/hooks/tanstack/question";
 import DurationInput from "@/components/input/duration-input";
 
 export default function AskQuestionForm() {
     const router = useRouter();
     const [locPickerKey, setLocPickerKey] = useState(0)
     const createQuestionMutation = useCreateQuestion()
+    const createPollMutation = useCreatePoll()
 
     const {control, handleSubmit: submit, formState: {errors, isSubmitting: isLoading}, reset} = useForm({
         defaultValues: {
@@ -50,7 +51,7 @@ export default function AskQuestionForm() {
         // TODO: upload any images first
 
         // make api request to backend to create the question
-        let createdQuestion;
+        let questionId;
         try {
             const req : CreateQuestionReq = {
                 title: values.title,
@@ -58,9 +59,10 @@ export default function AskQuestionForm() {
                 category: values.category,
                 location: values.location,
                 duration: values.duration,
+                content_type: values.content.content_type,
                 // image_urls: values.image_urls,
             }
-            createdQuestion = await createQuestionMutation.mutateAsync(req);
+            questionId = await createQuestionMutation.mutateAsync(req);
         } catch {
             // error notification will be shown
             return
@@ -70,13 +72,13 @@ export default function AskQuestionForm() {
         switch (values.content.content_type as ContentType) {
             case ContentType.POLL:
                 try {
-                    // TODO: FINISH IMPL
                     const req : CreatePollReq = {
-                        question_id: createdQuestion.id,
+                        question_id: questionId,
                         option_labels: values.content.option_labels,
                     }
-
+                    await createPollMutation.mutateAsync(req)
                 } catch {
+                    // error notification will be shown
                     return
                 }
                 break;
@@ -87,11 +89,10 @@ export default function AskQuestionForm() {
         }
 
         // finally, navigate to question details page
-        router.navigate({
+        router.push({
             pathname: "/question/[id]",
-            params: {id: createdQuestion.id},
+            params: {id: questionId},
         })
-
     }
 
     return (

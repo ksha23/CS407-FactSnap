@@ -22,8 +22,8 @@ func (h *QuestionHandler) RegisterRoutes(r *gin.RouterGroup) {
 	// TODO: add API routes for questions
 	questionRoutes := r.Group("/questions")
 	questionRoutes.POST("", h.CreateQuestion)
-	questionRoutes.GET("/question_id", h.GetQuestionByID)
-	//questionRoutes.POST("/poll", h.CreatePoll)
+	questionRoutes.GET("/:question_id", h.GetQuestionByID)
+	questionRoutes.POST("/poll", h.CreatePoll)
 }
 
 func (h *QuestionHandler) CreateQuestion(c *gin.Context) {
@@ -35,7 +35,7 @@ func (h *QuestionHandler) CreateQuestion(c *gin.Context) {
 		return
 	}
 
-	newQuestion, err := h.QuestionService.CreateQuestion(c.Request.Context(), userID, model.CreateQuestionParams{
+	questionID, err := h.QuestionService.CreateQuestion(c.Request.Context(), userID, model.CreateQuestionParams{
 		Title:     req.Title,
 		Body:      req.Body,
 		Category:  req.Category,
@@ -48,7 +48,28 @@ func (h *QuestionHandler) CreateQuestion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, dto.CreateQuestionRes{Question: newQuestion})
+	c.JSON(http.StatusCreated, dto.CreateQuestionRes{QuestionID: questionID})
+}
+
+func (h *QuestionHandler) CreatePoll(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	var req dto.CreatePollReq
+	if err := unmarshalAndValidateReq(c, &req); err != nil {
+		c.Error(BadRequestJSON(c, err, fmt.Errorf("%s: %w", "QuestionHandler::CreatePoll", err)))
+		return
+	}
+
+	pollID, err := h.QuestionService.CreatePoll(c.Request.Context(), userID, model.CreatePollParams{
+		QuestionID:   req.QuestionID,
+		OptionLabels: req.OptionLabels,
+	})
+	if err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "QuestionHandler::CreatePoll", err))
+		return
+	}
+
+	c.JSON(http.StatusCreated, dto.CreatePollRes{PollID: pollID})
 }
 
 func (h *QuestionHandler) GetQuestionByID(c *gin.Context) {
@@ -68,15 +89,3 @@ func (h *QuestionHandler) GetQuestionByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.GetQuestionByIDRes{Question: question})
 }
-
-//func (h *QuestionHandler) CreatePoll(c *gin.Context) {
-//	userID := getAuthUserID(c)
-//
-//	var req dto.CreatePollReq
-//	if err := unmarshalAndValidateReq(c, &req); err != nil {
-//		c.Error(BadRequestJSON(c, err, fmt.Errorf("%s: %w", "QuestionHandler::CreatePoll", err)))
-//		return
-//	}
-//
-//
-//}

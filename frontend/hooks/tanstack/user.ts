@@ -1,4 +1,4 @@
-import {useMutation, useQuery} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {userKeys} from "@/hooks/tanstack/query-keys";
 import {getAuthUser, syncClerkUser} from "@/services/auth-service";
 import {Alert} from "react-native";
@@ -16,7 +16,7 @@ export function useSyncAuthUser() {
     return useMutation({
         mutationFn: () => syncClerkUser(),
         onError: (error) => {
-            Alert.alert("Error syncing Clerk user", error.message)
+            console.warn("Error syncing Clerk user (can usually ignore this)", error.message)
         }
     })
 }

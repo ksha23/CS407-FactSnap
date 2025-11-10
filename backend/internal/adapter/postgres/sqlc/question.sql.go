@@ -12,6 +12,25 @@ import (
 	"github.com/google/uuid"
 )
 
+const createPoll = `-- name: CreatePoll :one
+INSERT INTO polls (question_id)
+VALUES ($1)
+RETURNING id, question_id, created_at
+`
+
+func (q *Queries) CreatePoll(ctx context.Context, questionID uuid.UUID) (Poll, error) {
+	row := q.db.QueryRow(ctx, createPoll, questionID)
+	var i Poll
+	err := row.Scan(&i.ID, &i.QuestionID, &i.CreatedAt)
+	return i, err
+}
+
+type CreatePollOptionsParams struct {
+	PollID uuid.UUID
+	Label  string
+	Index  int
+}
+
 const createQuestion = `-- name: CreateQuestion :one
 WITH new_question AS (
     INSERT INTO questions (
@@ -107,6 +126,99 @@ func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) 
 	return i, err
 }
 
+const getPollByQuestionID = `-- name: GetPollByQuestionID :one
+SELECT p.id, p.question_id, p.created_at
+FROM polls p
+WHERE p.question_id = $1
+`
+
+type GetPollByQuestionIDRow struct {
+	Poll Poll
+}
+
+func (q *Queries) GetPollByQuestionID(ctx context.Context, questionID uuid.UUID) (GetPollByQuestionIDRow, error) {
+	row := q.db.QueryRow(ctx, getPollByQuestionID, questionID)
+	var i GetPollByQuestionIDRow
+	err := row.Scan(&i.Poll.ID, &i.Poll.QuestionID, &i.Poll.CreatedAt)
+	return i, err
+}
+
+const getPollOptions = `-- name: GetPollOptions :many
+SELECT po.id, po.poll_id, po.label, po.index
+FROM
+    polls p
+    JOIN poll_options po ON p.id = po.poll_id
+WHERE p.id = $1
+GROUP BY po.id
+ORDER BY po.index
+`
+
+type GetPollOptionsRow struct {
+	PollOption PollOption
+}
+
+func (q *Queries) GetPollOptions(ctx context.Context, id uuid.UUID) ([]GetPollOptionsRow, error) {
+	rows, err := q.db.Query(ctx, getPollOptions, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPollOptionsRow{}
+	for rows.Next() {
+		var i GetPollOptionsRow
+		if err := rows.Scan(
+			&i.PollOption.ID,
+			&i.PollOption.PollID,
+			&i.PollOption.Label,
+			&i.PollOption.Index,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPollVotes = `-- name: GetPollVotes :many
+SELECT
+    po.index,
+    COUNT(pv.user_id)         AS num_votes,
+    BOOL_OR(pv.user_id = $2)  AS is_selected
+FROM poll_options po
+    JOIN poll_votes pv ON pv.option_id = po.id
+WHERE po.poll_id = $1
+GROUP BY po.id
+`
+
+type GetPollVotesRow struct {
+	Index      int
+	NumVotes   int
+	IsSelected bool
+}
+
+func (q *Queries) GetPollVotes(ctx context.Context, pollID uuid.UUID, userID string) ([]GetPollVotesRow, error) {
+	rows, err := q.db.Query(ctx, getPollVotes, pollID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPollVotesRow{}
+	for rows.Next() {
+		var i GetPollVotesRow
+		if err := rows.Scan(&i.Index, &i.NumVotes, &i.IsSelected); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getQuestionByID = `-- name: GetQuestionByID :one
 SELECT
     q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.created_at, q.edited_at, q.expired_at,
@@ -160,4 +272,15 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 		&i.IsOwned,
 	)
 	return i, err
+}
+
+const setQuestionContentType = `-- name: SetQuestionContentType :exec
+UPDATE questions
+SET content_type = $2
+WHERE id = $1
+`
+
+func (q *Queries) SetQuestionContentType(ctx context.Context, iD uuid.UUID, contentType string) error {
+	_, err := q.db.Exec(ctx, setQuestionContentType, iD, contentType)
+	return err
 }

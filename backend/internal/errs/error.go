@@ -53,3 +53,14 @@ func UnauthenticatedError(msg string, err error) error {
 		Internal: err,
 	}
 }
+
+func UnauthorizedError(msg string, err error) error {
+	if err == nil {
+		err = errors.New(msg)
+	}
+	return Error{
+		Type:     TypeUnauthorized,
+		Message:  msg,
+		Internal: err,
+	}
+}

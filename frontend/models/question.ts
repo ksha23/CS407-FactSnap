@@ -2,21 +2,37 @@ import { User } from "@/models/user";
 import {Location} from "@/models/location";
 
 export enum ContentType {
-  POLL = "poll",
-  NONE = "none",
+  POLL = "Poll",
+  NONE = "None",
 }
 
 export enum Category {
-  RESTAURANT = 'restaurant',
-  STORE = 'store',
-  TRANSPORTATION = 'transportation',
-  EVENT = 'event',
-  GENERAL = 'general',
+  RESTAURANT = 'Restaurant',
+  STORE = 'Store',
+  TRANSPORTATION = 'Transportation',
+  EVENT = 'Event',
+  GENERAL = 'General',
 }
 
 export type QuestionContent = {
-  Type: ContentType,
-  Data: any,
+  type: ContentType,
+  data: any,
+}
+
+export type PollOption = {
+  id: string;
+  is_selected: boolean;
+  label: string;
+  num_votes: number;
+}
+
+export type Poll = {
+  id: string;
+  question_id: string;
+  options: PollOption[];
+  num_total_votes: number;
+  created_at: string;
+  expired_at: string;
 }
 
 export type Question = {
@@ -31,7 +47,7 @@ export type Question = {
   is_owned: boolean;
   created_at: string;
   edited_at: string;
-  expires_at: string;
+  expired_at: string;
 };
 
 // DTOs
@@ -44,10 +60,11 @@ export type CreateQuestionReq = {
   location: Location;
   image_urls?: string[];
   duration: string;
+  content_type: ContentType;
 }
 
 export type CreateQuestionRes = {
-  question: Question;
+  question_id: string;
 }
 
 // GET QUESTION BY ID
@@ -59,6 +76,10 @@ export type GetQuestionByIdRes = {
 export type CreatePollReq = {
   question_id: string;
   option_labels: string[];
+}
+
+export type CreatePollRes = {
+  poll_id: string;
 }
 
 // export type CreateQuestionParams = {

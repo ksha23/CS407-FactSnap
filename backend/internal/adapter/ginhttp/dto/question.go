@@ -40,7 +40,7 @@ func (r *CreateQuestionReq) Validate() error {
 	// validate category
 	category, err := model.ParseCategory(string(r.Category))
 	if err != nil {
-		errsMap["question_type"] = err
+		errsMap["category"] = err
 	}
 	r.Category = category
 
@@ -83,7 +83,7 @@ func (r *CreateQuestionReq) Validate() error {
 }
 
 type CreateQuestionRes struct {
-	Question model.Question `json:"question"`
+	QuestionID uuid.UUID `json:"question_id"`
 }
 
 // CREATE POLL
@@ -105,6 +105,10 @@ func (r *CreatePollReq) Validate() error {
 		return errsMap
 	}
 	return nil
+}
+
+type CreatePollRes struct {
+	PollID uuid.UUID `json:"poll_id"`
 }
 
 // GET QUESTION BY ID

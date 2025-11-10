@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type CreateUserParams struct {
 	ID          string
@@ -20,9 +23,11 @@ type CreateQuestionParams struct {
 	ExpiresAt time.Time
 }
 
-//type CreatePollParams struct {
-//	// TODO: fill in
-//}
+type CreatePollParams struct {
+	QuestionID   uuid.UUID
+	OptionLabels []string
+}
+
 //
 //type GetQuestionsParams struct {
 //	Latitude  string

@@ -7,7 +7,8 @@ import (
 )
 
 type QuestionService interface {
-	CreateQuestion(ctx context.Context, userID string, params model.CreateQuestionParams) (model.Question, error)
+	CreateQuestion(ctx context.Context, userID string, params model.CreateQuestionParams) (uuid.UUID, error)
+	CreatePoll(ctx context.Context, userID string, params model.CreatePollParams) (uuid.UUID, error)
 	//GetQuestions(ctx context.Context, userID string, params model.GetQuestionsParams, page model.PageParams) ([]model.Question, error)
 	//DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error)
 	//EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error)
@@ -16,7 +17,8 @@ type QuestionService interface {
 }
 
 type QuestionRepo interface {
-	CreateQuestion(ctx context.Context, userID string, params model.CreateQuestionParams) (model.Question, error)
+	CreateQuestion(ctx context.Context, userID string, params model.CreateQuestionParams) (uuid.UUID, error)
+	CreatePoll(ctx context.Context, userID string, params model.CreatePollParams) (uuid.UUID, error)
 	//GetQuestions(ctx context.Context, userID string, params model.GetQuestionsParams, page model.PageParams) ([]model.Question, error)
 	//DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error)
 	//EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error)

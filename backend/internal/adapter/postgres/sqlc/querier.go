@@ -12,10 +12,16 @@ import (
 
 type Querier interface {
 	CreateLocation(ctx context.Context, point float64, point_2 float64, name *string, address *string) (Location, error)
+	CreatePoll(ctx context.Context, questionID uuid.UUID) (Poll, error)
+	CreatePollOptions(ctx context.Context, arg []CreatePollOptionsParams) (int64, error)
 	CreateQuestion(ctx context.Context, arg CreateQuestionParams) (CreateQuestionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetPollByQuestionID(ctx context.Context, questionID uuid.UUID) (GetPollByQuestionIDRow, error)
+	GetPollOptions(ctx context.Context, id uuid.UUID) ([]GetPollOptionsRow, error)
+	GetPollVotes(ctx context.Context, pollID uuid.UUID, userID string) ([]GetPollVotesRow, error)
 	GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID string) (GetQuestionByIDRow, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
+	SetQuestionContentType(ctx context.Context, iD uuid.UUID, contentType string) error
 }
 
 var _ Querier = (*Queries)(nil)
