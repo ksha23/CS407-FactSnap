@@ -41,6 +41,26 @@ func (s *questionService) CreatePoll(ctx context.Context, userID string, params 
 	return pollID, nil
 }
 
+func (s *questionService) VotePoll(ctx context.Context, userID string, pollID uuid.UUID, optionID uuid.UUID) error {
+	// first ensure that the poll hasn't expired yet
+	isExpired, err := s.questionRepo.IsPollExpired(ctx, pollID)
+	if err != nil {
+		return fmt.Errorf("QuestionService::VotePoll: %w", err)
+	}
+	if isExpired {
+		err := errs.UnauthorizedError("This poll has expired", fmt.Errorf("poll id %s has expired", pollID))
+		return fmt.Errorf("QuestionService::VotePoll: %w", err)
+	}
+
+	// place new poll vote
+	err = s.questionRepo.VotePoll(ctx, userID, pollID, optionID)
+	if err != nil {
+		return fmt.Errorf("QuestionService::VotePoll: %w", err)
+	}
+
+	return nil
+}
+
 func (s *questionService) GetQuestionByID(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error) {
 	question, err := s.questionRepo.GetQuestionByID(ctx, userID, questionID)
 	if err != nil {
@@ -82,14 +102,14 @@ func (s *questionService) authorizeUser(ctx context.Context, userID string, ques
 
 	// we need to ensure that the user owns the question
 	if !question.IsOwned {
-		err := errs.UnauthorizedError("You must own this question", nil)
-		return fmt.Errorf("authorizeUser: %w", err)
+		err := fmt.Errorf("user id %s does not own question id %s", userID, questionID)
+		return fmt.Errorf("authorizeUser: %w", errs.UnauthorizedError("You must own this question", err))
 	}
 
 	// also, we need to ensure that the question hasn't expired yet
 	if time.Now().After(question.ExpiredAt) {
-		err := errs.UnauthorizedError("This question has expired", nil)
-		return fmt.Errorf("authorizeUser: %w", err)
+		err := fmt.Errorf("question id %s has expired", questionID)
+		return fmt.Errorf("authorizeUser: %w", errs.UnauthorizedError("This question has expired", err))
 	}
 
 	return nil

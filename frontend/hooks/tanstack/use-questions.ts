@@ -14,7 +14,6 @@ import type {
 import type { Coordinates } from "@/services/location-service";
 
 const QUESTIONS_QUERY_KEY = "questions";
-const QUESTION_QUERY_KEY = "question";
 
 /**
  * Fetch questions within a radius of a coordinate. Falls back to an empty array
@@ -45,27 +44,6 @@ export function useQuestionsInRadius(
     enabled: enabled && center !== null,
     staleTime: 30_000,
     gcTime: 5 * 60 * 1000,
-    retry: 1,
-    refetchOnWindowFocus: false,
-    placeholderData: keepPreviousData,
-  });
-}
-
-/**
- * Fetch a single question by identifier.
- */
-export function useQuestion(questionId: string | null, enabled = true) {
-  return useQuery<Question | null>({
-    queryKey: [QUESTION_QUERY_KEY, questionId],
-    queryFn: async () => {
-      if (!questionId) {
-        return null;
-      }
-      return await getQuestion(questionId);
-    },
-    enabled: enabled && Boolean(questionId),
-    staleTime: 60_000,
-    gcTime: 10 * 60 * 1000,
     retry: 1,
     refetchOnWindowFocus: false,
     placeholderData: keepPreviousData,

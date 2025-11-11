@@ -67,8 +67,8 @@ export function formatExpirationDate(timestamp: string): string {
     const diffHr = Math.floor(diffMin / 60)
     const diffDay = Math.floor(diffHr / 24)
 
-    if (diffDay >= 1) return `${diffDay}d`
-    if (diffHr >= 1) return `${diffHr}h`
-    if (diffMin >= 1) return `${diffMin}m`
-    return `${diffSec}s`
+    if (diffDay >= 1) return `${diffDay}d left`
+    if (diffHr >= 1) return `${diffHr}h left`
+    if (diffMin >= 1) return `${diffMin}m left`
+    return `${diffSec}s left`
 }

@@ -1,15 +1,14 @@
 import React, {useMemo, useState} from "react"
 import { XStack, YStack, Text, Progress, RadioGroup, Button } from "tamagui"
-import { Poll, PollOption } from "@/models/question"
+import {Poll, PollOption, VotePollReq} from "@/models/question"
+import {useVotePoll} from "@/hooks/tanstack/question";
 
 type Props = {
     poll: Poll
 }
 
 export function QuestionPollCard({ poll }: Props) {
-    const [selected, setSelected] = useState<string | null>(
-        poll.options.find((o: PollOption) => o.is_selected)?.id ?? null
-    )
+    const votePollMutation = useVotePoll()
 
     const isExpired = useMemo(() => {
         const expiry = new Date(poll.expired_at)
@@ -17,22 +16,30 @@ export function QuestionPollCard({ poll }: Props) {
         return now.getTime() >= expiry.getTime()
     }, [poll.expired_at])
 
+    const selectedOptionId =  poll.options.find((o: PollOption) => o.is_selected)?.id ?? null
+
     async function onSubmit(optionId: string) {
+        if (isExpired || optionId === selectedOptionId) {
+            return
+        }
+        
+        console.log("POLL_SUBMISSION", "option id", optionId)
 
-    }
-
-    const [isVoting, setIsVoting] = useState(false)
-
-    const handleVote = async (optionId: string) => {
-        if (isExpired || isVoting) return
-        setSelected(optionId)
-        setIsVoting(true)
         try {
-            await onSubmit(optionId)
-        } finally {
-            setIsVoting(false)
+            const req : VotePollReq = {
+                question_id: poll.question_id,
+                poll_id: poll.id,
+                option_id: optionId,
+            }
+            await votePollMutation.mutateAsync(req)
+        } catch (e) {
+            // error alert already shown
+            console.error("could not vote on poll", e)
+            return
         }
     }
+
+
 
     return (
         <YStack gap="$3" padding="$3" backgroundColor="$background" borderRadius="$4" borderWidth={1} borderColor="$gray5">
@@ -41,12 +48,17 @@ export function QuestionPollCard({ poll }: Props) {
                 <Text fontSize="$2" color="$gray10">
                     {poll.num_total_votes} votes
                 </Text>
+                {isExpired && (
+                    <Text fontSize="$2" color="red">
+                        Poll has expired
+                    </Text>
+                )}
             </YStack>
 
             <RadioGroup
-                value={selected ?? ""}
-                onValueChange={handleVote}
-                disabled={isExpired || isVoting}
+                value={selectedOptionId ?? ""}
+                onValueChange={onSubmit}
+                disabled={isExpired || votePollMutation.isPending}
             >
                 {poll.options.map((option: PollOption) => {
                     const percent =
@@ -54,7 +66,7 @@ export function QuestionPollCard({ poll }: Props) {
                             ? Math.round((option.num_votes / poll.num_total_votes) * 100)
                             : 0
 
-                    const isSelected = selected === option.id
+                    const isSelected = selectedOptionId === option.id
 
                     return (
                         <YStack key={option.id} gap="$1">
@@ -65,7 +77,7 @@ export function QuestionPollCard({ poll }: Props) {
                                 backgroundColor={isSelected ? "$blue3" : "$gray3"}
                                 paddingHorizontal="$3"
                                 paddingVertical="$2"
-                                onPress={() => handleVote(option.id)}
+                                onPress={() => onSubmit(option.id)}
                             >
                                 <XStack alignItems="center" gap="$2">
                                     <RadioGroup.Item value={option.id}>

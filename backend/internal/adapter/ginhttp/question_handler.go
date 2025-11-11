@@ -23,7 +23,10 @@ func (h *QuestionHandler) RegisterRoutes(r *gin.RouterGroup) {
 	questionRoutes := r.Group("/questions")
 	questionRoutes.POST("", h.CreateQuestion)
 	questionRoutes.GET("/:question_id", h.GetQuestionByID)
-	questionRoutes.POST("/poll", h.CreatePoll)
+
+	pollRoutes := questionRoutes.Group("/poll")
+	pollRoutes.POST("", h.CreatePoll)
+	pollRoutes.POST("/vote", h.VotePoll)
 }
 
 func (h *QuestionHandler) CreateQuestion(c *gin.Context) {
@@ -70,6 +73,24 @@ func (h *QuestionHandler) CreatePoll(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, dto.CreatePollRes{PollID: pollID})
+}
+
+func (h *QuestionHandler) VotePoll(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	var req dto.VotePollReq
+	if err := unmarshalAndValidateReq(c, &req); err != nil {
+		c.Error(BadRequestJSON(c, err, fmt.Errorf("%s: %w", "QuestionHandler::VotePoll", err)))
+		return
+	}
+
+	err := h.QuestionService.VotePoll(c.Request.Context(), userID, req.PollID, req.OptionID)
+	if err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "QuestionHandler::VotePoll", err))
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (h *QuestionHandler) GetQuestionByID(c *gin.Context) {

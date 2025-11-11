@@ -1,8 +1,8 @@
-import React from "react"
+import React, { useRef } from "react"
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
-import { View, Text } from "tamagui"
+import { View, Text, Button } from "tamagui"
 import { StyleSheet, Platform } from "react-native"
-import {Location} from "@/models/location";
+import { Location } from "@/models/location"
 
 type Props = {
     location: Location
@@ -10,6 +10,8 @@ type Props = {
 }
 
 export default function QuestionMap({ location, height = 250 }: Props) {
+    const mapRef = useRef<MapView>(null)
+
     const region: Region = {
         latitude: location.latitude,
         longitude: location.longitude,
@@ -17,9 +19,14 @@ export default function QuestionMap({ location, height = 250 }: Props) {
         longitudeDelta: 0.01,
     }
 
+    const handleReset = () => {
+        mapRef.current?.animateToRegion(region, 500)
+    }
+
     return (
-        <View borderRadius="$4" overflow="hidden" height={height}>
+        <View borderRadius="$4" overflow="hidden" height={height} position="relative">
             <MapView
+                ref={mapRef}
                 style={styles.map}
                 provider={
                     Platform.OS === "android" || Platform.OS === "ios"
@@ -28,7 +35,7 @@ export default function QuestionMap({ location, height = 250 }: Props) {
                 }
                 initialRegion={region}
                 showsUserLocation
-                showsMyLocationButton
+                showsMyLocationButton={false}
                 scrollEnabled
                 zoomEnabled
                 pitchEnabled
@@ -43,6 +50,19 @@ export default function QuestionMap({ location, height = 250 }: Props) {
                     description={location.address}
                 />
             </MapView>
+
+            {/* Floating reset button */}
+            <Button
+                position="absolute"
+                bottom="$3"
+                right="$3"
+                size="$3"
+                circular
+                theme="blue"
+                onPress={handleReset}
+            >
+                📍
+            </Button>
 
             {(location.name || location.address) && (
                 <View padding="$2">

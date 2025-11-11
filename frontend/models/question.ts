@@ -82,6 +82,13 @@ export type CreatePollRes = {
   poll_id: string;
 }
 
+// VOTE POLL
+export type VotePollReq = {
+  question_id: string;
+  poll_id: string;
+  option_id: string;
+}
+
 // export type CreateQuestionParams = {
 //   questionType: QuestionType;
 //   category: Category;

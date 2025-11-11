@@ -3,7 +3,7 @@ import {
     CreatePollRes,
     CreateQuestionReq,
     CreateQuestionRes,
-    GetQuestionByIdRes
+    GetQuestionByIdRes, VotePollReq
 } from "@/models/question";
 import {apiClient} from "@/services/axios-client";
 
@@ -21,4 +21,8 @@ export async function createQuestion(req: CreateQuestionReq) {
 
 export async function createPoll(req: CreatePollReq) {
     return (await apiClient.post<CreatePollRes>(`/questions/poll`, req)).data.poll_id
+}
+
+export async function votePoll(req: VotePollReq) {
+    return await apiClient.post(`/questions/poll/vote`, req)
 }

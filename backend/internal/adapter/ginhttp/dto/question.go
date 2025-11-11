@@ -116,3 +116,15 @@ type CreatePollRes struct {
 type GetQuestionByIDRes struct {
 	Question model.Question `json:"question"`
 }
+
+// VOTE POLL
+
+type VotePollReq struct {
+	PollID   uuid.UUID `json:"poll_id" binding:"required"`
+	OptionID uuid.UUID `json:"option_id" binding:"required"`
+}
+
+func (r *VotePollReq) Validate() error {
+	// binding already checks if the fields are passed or not
+	return nil
+}

@@ -76,4 +76,18 @@ FROM poll_options po
 WHERE po.poll_id = $1
 GROUP BY po.id;
 
+-- name: IsPollExpired :one
+SELECT q.expired_at < now() AS is_expired
+FROM
+    polls p
+    JOIN questions q ON q.id = p.question_id
+WHERE p.id = $1;
+
+-- name: DeletePollVote :exec
+DELETE FROM poll_votes
+WHERE user_id = $1 AND poll_id = $2;
+
+-- name: CreatePollVote :exec
+INSERT INTO poll_votes (poll_id, option_id, user_id)
+VALUES ($1, $2, $3);
 

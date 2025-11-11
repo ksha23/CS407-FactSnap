@@ -102,6 +102,35 @@ func (r *questionRepo) CreatePoll(ctx context.Context, userID string, params mod
 	return pollID, nil
 }
 
+func (r *questionRepo) IsPollExpired(ctx context.Context, pollID uuid.UUID) (bool, error) {
+	isExpired, err := r.query.IsPollExpired(ctx, pollID)
+	if err != nil {
+		return false, fmt.Errorf("QuestionRepo::IsPollExpired: %w", wrapError(err))
+	}
+	return isExpired, nil
+}
+
+func (r *questionRepo) VotePoll(ctx context.Context, userID string, pollID uuid.UUID, optionID uuid.UUID) error {
+	err := execTx(ctx, r.db, func(query *sqlc.Queries) error {
+		// in a single transaction:
+		// - first, delete the previous poll vote (in case it exists)
+		if err := query.DeletePollVote(ctx, userID, pollID); err != nil {
+			return fmt.Errorf("DeletePollVote: %w", wrapError(err))
+		}
+
+		// - then, create new poll vote
+		if err := query.CreatePollVote(ctx, pollID, optionID, userID); err != nil {
+			return fmt.Errorf("CreatePollVote: %w", wrapError(err))
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("QuestionRepo::VotePoll: %w", err)
+	}
+	return nil
+}
+
 func (r *questionRepo) GetQuestionByID(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error) {
 	// get question
 	questionRow, err := r.query.GetQuestionByID(ctx, questionID, userID)

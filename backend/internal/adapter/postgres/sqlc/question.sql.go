@@ -31,6 +31,16 @@ type CreatePollOptionsParams struct {
 	Index  int
 }
 
+const createPollVote = `-- name: CreatePollVote :exec
+INSERT INTO poll_votes (poll_id, option_id, user_id)
+VALUES ($1, $2, $3)
+`
+
+func (q *Queries) CreatePollVote(ctx context.Context, pollID uuid.UUID, optionID uuid.UUID, userID string) error {
+	_, err := q.db.Exec(ctx, createPollVote, pollID, optionID, userID)
+	return err
+}
+
 const createQuestion = `-- name: CreateQuestion :one
 WITH new_question AS (
     INSERT INTO questions (
@@ -124,6 +134,16 @@ func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) 
 		&i.IsOwned,
 	)
 	return i, err
+}
+
+const deletePollVote = `-- name: DeletePollVote :exec
+DELETE FROM poll_votes
+WHERE user_id = $1 AND poll_id = $2
+`
+
+func (q *Queries) DeletePollVote(ctx context.Context, userID string, pollID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deletePollVote, userID, pollID)
+	return err
 }
 
 const getPollByQuestionID = `-- name: GetPollByQuestionID :one
@@ -272,6 +292,21 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 		&i.IsOwned,
 	)
 	return i, err
+}
+
+const isPollExpired = `-- name: IsPollExpired :one
+SELECT q.expired_at < now() AS is_expired
+FROM
+    polls p
+    JOIN questions q ON q.id = p.question_id
+WHERE p.id = $1
+`
+
+func (q *Queries) IsPollExpired(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, isPollExpired, id)
+	var is_expired bool
+	err := row.Scan(&is_expired)
+	return is_expired, err
 }
 
 const setQuestionContentType = `-- name: SetQuestionContentType :exec
