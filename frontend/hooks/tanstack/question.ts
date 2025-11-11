@@ -73,13 +73,17 @@ export function useVotePoll() {
                     if (prevSelected) {
                         prevSelected.is_selected = false
                         prevSelected.num_votes = Math.max(prevSelected.num_votes - 1, 0)
+                        poll.num_total_votes = Math.max(prevSelected.num_votes - 1, 0)
                     }
 
                     // select new option
-                    const newSelected = poll.options.find((o) => o.id === req.option_id)
-                    if (newSelected) {
-                        newSelected.is_selected = true
-                        newSelected.num_votes += 1
+                    if (req.option_id) {
+                        const newSelected = poll.options.find((o) => o.id === req.option_id)
+                        if (newSelected) {
+                            newSelected.is_selected = true
+                            newSelected.num_votes += 1
+                            poll.num_total_votes += 1
+                        }
                     }
                 })
 

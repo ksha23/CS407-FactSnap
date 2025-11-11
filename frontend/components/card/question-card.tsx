@@ -1,7 +1,8 @@
 import {useGetQuestionById} from "@/hooks/tanstack/question";
 import {Avatar, Card, XStack, YStack, Text, Image, Button, H2, H3, Label} from "tamagui";
 import {Calendar, Clock, MapPin} from "@tamagui/lucide-icons";
-import {ContentType} from "@/models/question";
+import {ContentType, Question} from "@/models/question";
+import {Location} from "@/models/location"
 import QuestionMap from "@/components/map/question-map";
 import {Badge} from "@/components/card/badge";
 import {formatExpirationDate, multiFormatDateString} from "@/utils/formatter";
@@ -59,13 +60,11 @@ export default function QuestionCard(props: Props) {
                 {/* Section: Map + Location */}
                 <YStack>
                     <QuestionMap location={question.location}/>
-                    <Text color="$gray10">
-                        Location: {question.location.name}
-                    </Text>
+                    <Text color="$gray10">Location: {question.location.name}</Text>
                 </YStack>
 
                 {/* Section: Content */}
-                {question.content.type !== ContentType.NONE && (
+                {props.showDetails && question.content.type !== ContentType.NONE && (
                     question.content.type === ContentType.POLL ? (
                         <QuestionPollCard poll={question.content.data}/>
                     ) : null

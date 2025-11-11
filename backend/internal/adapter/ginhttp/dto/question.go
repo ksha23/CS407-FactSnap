@@ -120,8 +120,8 @@ type GetQuestionByIDRes struct {
 // VOTE POLL
 
 type VotePollReq struct {
-	PollID   uuid.UUID `json:"poll_id" binding:"required"`
-	OptionID uuid.UUID `json:"option_id" binding:"required"`
+	PollID   uuid.UUID  `json:"poll_id" binding:"required"`
+	OptionID *uuid.UUID `json:"option_id"`
 }
 
 func (r *VotePollReq) Validate() error {

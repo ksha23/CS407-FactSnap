@@ -1,7 +1,7 @@
-import React, {useMemo, useState} from "react"
+import React, { useMemo } from "react"
 import { XStack, YStack, Text, Progress, RadioGroup, Button } from "tamagui"
-import {Poll, PollOption, VotePollReq} from "@/models/question"
-import {useVotePoll} from "@/hooks/tanstack/question";
+import { Poll, PollOption, VotePollReq } from "@/models/question"
+import { useVotePoll } from "@/hooks/tanstack/question"
 
 type Props = {
     poll: Poll
@@ -16,33 +16,54 @@ export function QuestionPollCard({ poll }: Props) {
         return now.getTime() >= expiry.getTime()
     }, [poll.expired_at])
 
-    const selectedOptionId =  poll.options.find((o: PollOption) => o.is_selected)?.id ?? null
+    const selectedOptionId =
+        poll.options.find((o: PollOption) => o.is_selected)?.id ?? null
 
     async function onSubmit(optionId: string) {
-        if (isExpired || optionId === selectedOptionId) {
-            return
-        }
-        
-        console.log("POLL_SUBMISSION", "option id", optionId)
+        if (isExpired || optionId === selectedOptionId) return
+
+        console.log("POLL_VOTE_SUBMISSION", "option id", optionId)
 
         try {
-            const req : VotePollReq = {
+            const req: VotePollReq = {
                 question_id: poll.question_id,
                 poll_id: poll.id,
                 option_id: optionId,
             }
             await votePollMutation.mutateAsync(req)
         } catch (e) {
-            // error alert already shown
+            // error alert is already shown
             console.error("could not vote on poll", e)
-            return
         }
     }
 
+    async function onRemoveVote() {
+        if (!selectedOptionId || isExpired) return
 
+        console.log("POLL_VOTE_REMOVE", "option id", selectedOptionId)
+
+        try {
+            const req: VotePollReq = {
+                question_id: poll.question_id,
+                poll_id: poll.id,
+                option_id: undefined,
+            }
+            await votePollMutation.mutateAsync(req)
+        } catch (e) {
+            // error alert is already shown
+            console.error("could not remove poll vote", e)
+        }
+    }
 
     return (
-        <YStack gap="$3" padding="$3" backgroundColor="$background" borderRadius="$4" borderWidth={1} borderColor="$gray5">
+        <YStack
+            gap="$3"
+            padding="$3"
+            backgroundColor="$background"
+            borderRadius="$4"
+            borderWidth={1}
+            borderColor="$gray5"
+        >
             <YStack gap="$2">
                 <Text fontWeight="700">Poll</Text>
                 <Text fontSize="$2" color="$gray10">
@@ -98,6 +119,17 @@ export function QuestionPollCard({ poll }: Props) {
                     )
                 })}
             </RadioGroup>
+
+            {selectedOptionId && !isExpired && (
+                <Button
+                    backgroundColor={"$red8"}
+                    size="$2"
+                    disabled={votePollMutation.isPending}
+                    onPress={onRemoveVote}
+                >
+                    Remove Vote
+                </Button>
+            )}
         </YStack>
     )
 }

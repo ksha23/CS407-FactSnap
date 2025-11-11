@@ -41,7 +41,7 @@ func (s *questionService) CreatePoll(ctx context.Context, userID string, params 
 	return pollID, nil
 }
 
-func (s *questionService) VotePoll(ctx context.Context, userID string, pollID uuid.UUID, optionID uuid.UUID) error {
+func (s *questionService) VotePoll(ctx context.Context, userID string, pollID uuid.UUID, optionID *uuid.UUID) error {
 	// first ensure that the poll hasn't expired yet
 	isExpired, err := s.questionRepo.IsPollExpired(ctx, pollID)
 	if err != nil {
