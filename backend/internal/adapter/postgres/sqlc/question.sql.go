@@ -54,10 +54,10 @@ WITH new_question AS (
         expired_at
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id, author_id, content_type, title, body, location_id, image_urls, category, created_at, edited_at, expired_at
+    RETURNING id, author_id, content_type, title, body, location_id, image_urls, category, num_responses, created_at, edited_at, expired_at
 )
 SELECT
-    nq.id, nq.author_id, nq.content_type, nq.title, nq.body, nq.location_id, nq.image_urls, nq.category, nq.created_at, nq.edited_at, nq.expired_at,
+    nq.id, nq.author_id, nq.content_type, nq.title, nq.body, nq.location_id, nq.image_urls, nq.category, nq.num_responses, nq.created_at, nq.edited_at, nq.expired_at,
     l.id, l.location, l.name, l.address,
     u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
     TRUE AS is_owned
@@ -79,20 +79,21 @@ type CreateQuestionParams struct {
 }
 
 type CreateQuestionRow struct {
-	ID          uuid.UUID
-	AuthorID    string
-	ContentType string
-	Title       string
-	Body        *string
-	LocationID  uuid.UUID
-	ImageUrls   []string
-	Category    string
-	CreatedAt   time.Time
-	EditedAt    time.Time
-	ExpiredAt   time.Time
-	Location    Location
-	User        User
-	IsOwned     bool
+	ID           uuid.UUID
+	AuthorID     string
+	ContentType  string
+	Title        string
+	Body         *string
+	LocationID   uuid.UUID
+	ImageUrls    []string
+	Category     string
+	NumResponses int
+	CreatedAt    time.Time
+	EditedAt     time.Time
+	ExpiredAt    time.Time
+	Location     Location
+	User         User
+	IsOwned      bool
 }
 
 func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) (CreateQuestionRow, error) {
@@ -116,6 +117,7 @@ func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) 
 		&i.LocationID,
 		&i.ImageUrls,
 		&i.Category,
+		&i.NumResponses,
 		&i.CreatedAt,
 		&i.EditedAt,
 		&i.ExpiredAt,
@@ -134,6 +136,22 @@ func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) 
 		&i.IsOwned,
 	)
 	return i, err
+}
+
+const decrementResponseAmount = `-- name: DecrementResponseAmount :exec
+UPDATE questions
+SET num_responses =
+        CASE
+            WHEN num_responses > 0
+                THEN num_responses - $2
+            ELSE 0
+            END
+WHERE id = $1
+`
+
+func (q *Queries) DecrementResponseAmount(ctx context.Context, iD uuid.UUID, numResponses int) error {
+	_, err := q.db.Exec(ctx, decrementResponseAmount, iD, numResponses)
+	return err
 }
 
 const deletePollVote = `-- name: DeletePollVote :exec
@@ -241,7 +259,7 @@ func (q *Queries) GetPollVotes(ctx context.Context, pollID uuid.UUID, userID str
 
 const getQuestionByID = `-- name: GetQuestionByID :one
 SELECT
-    q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.created_at, q.edited_at, q.expired_at,
+    q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
     u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
     l.id, l.location, l.name, l.address,
     q.author_id = $2 AS is_owned
@@ -274,6 +292,7 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 		&i.Question.LocationID,
 		&i.Question.ImageUrls,
 		&i.Question.Category,
+		&i.Question.NumResponses,
 		&i.Question.CreatedAt,
 		&i.Question.EditedAt,
 		&i.Question.ExpiredAt,
@@ -292,6 +311,110 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 		&i.IsOwned,
 	)
 	return i, err
+}
+
+const getQuestionsInRadiusFeed = `-- name: GetQuestionsInRadiusFeed :many
+SELECT
+    q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
+    l.id, l.location, l.name, l.address,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    q.author_id = $1 AS is_owned
+FROM questions q
+         JOIN users u ON q.author_id = u.id
+         JOIN locations l ON q.location_id = l.id
+WHERE ST_DWithin(
+              l.location::geography,
+              ST_SetSRID(
+                      ST_MakePoint(
+                              $2::float8,
+                              $3::float8
+                      ),
+                      4326
+              )::geography,
+              $4::float8 * 1609.34
+      )
+ORDER BY q.created_at DESC
+LIMIT $6 OFFSET $5
+`
+
+type GetQuestionsInRadiusFeedParams struct {
+	UserID      string
+	Longitude   float64
+	Latitude    float64
+	RadiusMiles float64
+	OffsetNum   int32
+	LimitNum    int32
+}
+
+type GetQuestionsInRadiusFeedRow struct {
+	Question Question
+	Location Location
+	User     User
+	IsOwned  bool
+}
+
+func (q *Queries) GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestionsInRadiusFeedParams) ([]GetQuestionsInRadiusFeedRow, error) {
+	rows, err := q.db.Query(ctx, getQuestionsInRadiusFeed,
+		arg.UserID,
+		arg.Longitude,
+		arg.Latitude,
+		arg.RadiusMiles,
+		arg.OffsetNum,
+		arg.LimitNum,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetQuestionsInRadiusFeedRow{}
+	for rows.Next() {
+		var i GetQuestionsInRadiusFeedRow
+		if err := rows.Scan(
+			&i.Question.ID,
+			&i.Question.AuthorID,
+			&i.Question.ContentType,
+			&i.Question.Title,
+			&i.Question.Body,
+			&i.Question.LocationID,
+			&i.Question.ImageUrls,
+			&i.Question.Category,
+			&i.Question.NumResponses,
+			&i.Question.CreatedAt,
+			&i.Question.EditedAt,
+			&i.Question.ExpiredAt,
+			&i.Location.ID,
+			&i.Location.Location,
+			&i.Location.Name,
+			&i.Location.Address,
+			&i.User.ID,
+			&i.User.Username,
+			&i.User.Email,
+			&i.User.DisplayName,
+			&i.User.Role,
+			&i.User.AboutMe,
+			&i.User.AvatarUrl,
+			&i.User.CreatedAt,
+			&i.IsOwned,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const incrementResponseAmount = `-- name: IncrementResponseAmount :exec
+UPDATE questions
+SET num_responses = num_responses + 1
+WHERE id = $1
+`
+
+func (q *Queries) IncrementResponseAmount(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, incrementResponseAmount, id)
+	return err
 }
 
 const isPollExpired = `-- name: IsPollExpired :one

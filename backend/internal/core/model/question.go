@@ -8,18 +8,19 @@ import (
 )
 
 type Question struct {
-	ID        uuid.UUID       `json:"id"`
-	Author    User            `json:"author"`
-	Title     string          `json:"title"`
-	Body      *string         `json:"body"`
-	Category  Category        `json:"category"`
-	Content   QuestionContent `json:"content"`
-	Location  Location        `json:"location"`
-	ImageURLs []string        `json:"image_urls"`
-	IsOwned   bool            `json:"is_owned"`
-	CreatedAt time.Time       `json:"created_at"`
-	EditedAt  time.Time       `json:"edited_at"`
-	ExpiredAt time.Time       `json:"expired_at"`
+	ID              uuid.UUID       `json:"id"`
+	Author          User            `json:"author"`
+	Title           string          `json:"title"`
+	Body            *string         `json:"body"`
+	Category        Category        `json:"category"`
+	Content         QuestionContent `json:"content"`
+	Location        Location        `json:"location"`
+	ImageURLs       []string        `json:"image_urls"`
+	IsOwned         bool            `json:"is_owned"`
+	ResponsesAmount int             `json:"responses_amount"`
+	CreatedAt       time.Time       `json:"created_at"`
+	EditedAt        time.Time       `json:"edited_at"`
+	ExpiredAt       time.Time       `json:"expired_at"`
 }
 
 type ContentType string

@@ -7,25 +7,22 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/cridenour/go-postgis"
 )
 
 const createLocation = `-- name: CreateLocation :one
 INSERT INTO locations (location, name, address)
 VALUES (
-           point($1, $2), -- latitude, longitude
-           $3,   -- name
-           $4  -- address
+           $1, -- postgis.PointS
+           $2,
+           $3
        )
 RETURNING id, location, name, address
 `
 
-func (q *Queries) CreateLocation(ctx context.Context, point float64, point_2 float64, name *string, address *string) (Location, error) {
-	row := q.db.QueryRow(ctx, createLocation,
-		point,
-		point_2,
-		name,
-		address,
-	)
+func (q *Queries) CreateLocation(ctx context.Context, location postgis.PointS, name *string, address *string) (Location, error) {
+	row := q.db.QueryRow(ctx, createLocation, location, name, address)
 	var i Location
 	err := row.Scan(
 		&i.ID,

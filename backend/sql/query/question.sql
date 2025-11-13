@@ -43,6 +43,30 @@ WHERE
     q.id = $1
     LIMIT 1;
 
+-- name: GetQuestionsInRadiusFeed :many
+SELECT
+    sqlc.embed(q),
+    sqlc.embed(l),
+    sqlc.embed(u),
+    q.author_id = sqlc.arg(user_id) AS is_owned
+FROM questions q
+         JOIN users u ON q.author_id = u.id
+         JOIN locations l ON q.location_id = l.id
+WHERE ST_DWithin(
+              l.location::geography,
+              ST_SetSRID(
+                      ST_MakePoint(
+                              sqlc.arg(longitude)::float8,
+                              sqlc.arg(latitude)::float8
+                      ),
+                      4326
+              )::geography,
+              sqlc.arg(radius_miles)::float8 * 1609.34
+      )
+ORDER BY q.created_at DESC
+LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
+
+
 -- name: CreatePoll :one
 INSERT INTO polls (question_id)
 VALUES ($1)
@@ -90,4 +114,19 @@ WHERE user_id = $1 AND poll_id = $2;
 -- name: CreatePollVote :exec
 INSERT INTO poll_votes (poll_id, option_id, user_id)
 VALUES ($1, $2, $3);
+
+-- name: IncrementResponseAmount :exec
+UPDATE questions
+SET num_responses = num_responses + 1
+WHERE id = $1;
+
+-- name: DecrementResponseAmount :exec
+UPDATE questions
+SET num_responses =
+        CASE
+            WHEN num_responses > 0
+                THEN num_responses - $2
+            ELSE 0
+            END
+WHERE id = $1;
 

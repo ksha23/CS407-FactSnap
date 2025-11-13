@@ -31,8 +31,8 @@ func toDomainAuthUser(user User) model.AuthUser {
 func toDomainLocation(location Location) model.Location {
 	return model.Location{
 		ID:        location.ID,
-		Latitude:  location.Location.P.X,
-		Longitude: location.Location.P.Y,
+		Latitude:  location.Location.Y,
+		Longitude: location.Location.X,
 		Name:      location.Name,
 		Address:   location.Address,
 	}

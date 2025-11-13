@@ -10,16 +10,17 @@ func (row CreateQuestionRow) ToDomainModel() model.Question {
 		Content: model.QuestionContent{
 			Type: model.ContentTypeNone,
 		},
-		Category:  model.Category(row.Category),
-		Author:    toDomainUser(row.User),
-		Title:     row.Title,
-		Body:      row.Body,
-		Location:  toDomainLocation(row.Location),
-		ImageURLs: row.ImageUrls,
-		IsOwned:   row.IsOwned,
-		CreatedAt: row.CreatedAt,
-		EditedAt:  row.EditedAt,
-		ExpiredAt: row.ExpiredAt,
+		Category:        model.Category(row.Category),
+		Author:          toDomainUser(row.User),
+		Title:           row.Title,
+		Body:            row.Body,
+		Location:        toDomainLocation(row.Location),
+		ImageURLs:       row.ImageUrls,
+		IsOwned:         row.IsOwned,
+		ResponsesAmount: row.NumResponses,
+		CreatedAt:       row.CreatedAt,
+		EditedAt:        row.EditedAt,
+		ExpiredAt:       row.ExpiredAt,
 	}
 }
 
@@ -34,11 +35,12 @@ func (row GetQuestionByIDRow) ToDomainModel() model.Question {
 			Type: model.ContentType(row.Question.ContentType),
 			// NOTE: Content data will need to be populated elsewhere
 		},
-		Location:  toDomainLocation(row.Location),
-		ImageURLs: row.Question.ImageUrls,
-		IsOwned:   row.IsOwned,
-		CreatedAt: row.Question.CreatedAt,
-		EditedAt:  row.Question.EditedAt,
-		ExpiredAt: row.Question.ExpiredAt,
+		Location:        toDomainLocation(row.Location),
+		ImageURLs:       row.Question.ImageUrls,
+		IsOwned:         row.IsOwned,
+		ResponsesAmount: row.Question.NumResponses,
+		CreatedAt:       row.Question.CreatedAt,
+		EditedAt:        row.Question.EditedAt,
+		ExpiredAt:       row.Question.ExpiredAt,
 	}
 }

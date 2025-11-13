@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cridenour/go-postgis"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -106,4 +107,12 @@ func RunMigrations(db *pgxpool.Pool) error {
 	}
 
 	return nil
+}
+
+func toPoint(lat, lon float64) postgis.PointS {
+	return postgis.PointS{
+		SRID: 4326,
+		X:    lon,
+		Y:    lat,
+	}
 }

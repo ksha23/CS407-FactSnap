@@ -27,8 +27,7 @@ func (r *questionRepo) CreateQuestion(ctx context.Context, userID string, params
 		// in a single transaction:
 		// - insert location first
 		location, err := query.CreateLocation(ctx,
-			params.Location.Latitude,
-			params.Location.Longitude,
+			toPoint(params.Location.Latitude, params.Location.Longitude),
 			params.Location.Name,
 			params.Location.Address,
 		)

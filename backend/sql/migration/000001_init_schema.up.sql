@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+
 CREATE TABLE "users" (
     "id" text PRIMARY KEY,
     "username" text UNIQUE NOT NULL,
@@ -11,7 +13,7 @@ CREATE TABLE "users" (
 
 CREATE TABLE "locations" (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    "location" point NOT NULL,
+    "location" geometry(Point, 4326) NOT NULL, -- This stores GPS coordinate as PostGIS geometry point using the WGS-84 coordinate system
     "name" text NULL,
     "address" text NULL
 );
@@ -25,6 +27,7 @@ CREATE TABLE "questions" (
     "location_id" uuid NOT NULL,
     "image_urls" text[] NULL,
     "category" text NOT NULL,
+    "num_responses" integer NOT NULL DEFAULT 0,
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp,
     "edited_at" timestamptz NOT NULL DEFAULT current_timestamp,
     "expired_at" timestamptz NOT NULL,

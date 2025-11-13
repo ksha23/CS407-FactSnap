@@ -7,22 +7,26 @@ package sqlc
 import (
 	"context"
 
+	"github.com/cridenour/go-postgis"
 	"github.com/google/uuid"
 )
 
 type Querier interface {
-	CreateLocation(ctx context.Context, point float64, point_2 float64, name *string, address *string) (Location, error)
+	CreateLocation(ctx context.Context, location postgis.PointS, name *string, address *string) (Location, error)
 	CreatePoll(ctx context.Context, questionID uuid.UUID) (Poll, error)
 	CreatePollOptions(ctx context.Context, arg []CreatePollOptionsParams) (int64, error)
 	CreatePollVote(ctx context.Context, pollID uuid.UUID, optionID uuid.UUID, userID string) error
 	CreateQuestion(ctx context.Context, arg CreateQuestionParams) (CreateQuestionRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DecrementResponseAmount(ctx context.Context, iD uuid.UUID, numResponses int) error
 	DeletePollVote(ctx context.Context, userID string, pollID uuid.UUID) error
 	GetPollByQuestionID(ctx context.Context, questionID uuid.UUID) (GetPollByQuestionIDRow, error)
 	GetPollOptions(ctx context.Context, id uuid.UUID) ([]GetPollOptionsRow, error)
 	GetPollVotes(ctx context.Context, pollID uuid.UUID, userID string) ([]GetPollVotesRow, error)
 	GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID string) (GetQuestionByIDRow, error)
+	GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestionsInRadiusFeedParams) ([]GetQuestionsInRadiusFeedRow, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
+	IncrementResponseAmount(ctx context.Context, id uuid.UUID) error
 	IsPollExpired(ctx context.Context, id uuid.UUID) (bool, error)
 	SetQuestionContentType(ctx context.Context, iD uuid.UUID, contentType string) error
 }

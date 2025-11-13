@@ -7,13 +7,13 @@ package sqlc
 import (
 	"time"
 
+	"github.com/cridenour/go-postgis"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Location struct {
 	ID       uuid.UUID
-	Location pgtype.Point
+	Location postgis.PointS
 	Name     *string
 	Address  *string
 }
@@ -39,17 +39,18 @@ type PollVote struct {
 }
 
 type Question struct {
-	ID          uuid.UUID
-	AuthorID    string
-	ContentType string
-	Title       string
-	Body        *string
-	LocationID  uuid.UUID
-	ImageUrls   []string
-	Category    string
-	CreatedAt   time.Time
-	EditedAt    time.Time
-	ExpiredAt   time.Time
+	ID           uuid.UUID
+	AuthorID     string
+	ContentType  string
+	Title        string
+	Body         *string
+	LocationID   uuid.UUID
+	ImageUrls    []string
+	Category     string
+	NumResponses int
+	CreatedAt    time.Time
+	EditedAt     time.Time
+	ExpiredAt    time.Time
 }
 
 type Response struct {
