@@ -28,6 +28,12 @@ type CreatePollParams struct {
 	OptionLabels []string
 }
 
+type GetQuestionsInRadiusFeedParams struct {
+	Lat         float64
+	Lon         float64
+	RadiusMiles float64
+}
+
 //
 //type GetQuestionsParams struct {
 //	Latitude  string

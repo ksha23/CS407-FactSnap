@@ -8,7 +8,7 @@ import type { Question } from '@/models/question';
 /**
  * Fetch questions/locations within a radius of a center point
  * This should be connected to your backend API
- * 
+ *
  * @param center - Center coordinates
  * @param radiusMiles - Radius in miles
  * @returns Array of questions with locations
@@ -70,24 +70,5 @@ export async function fetchNearbyLocationsForNotifications(
   } catch (error) {
     console.error('Error fetching nearby locations for notifications:', error);
     return [];
-  }
-}
-
-/**
- * Get question details by ID
- * 
- * @param questionId - Question ID
- * @returns Question details
- */
-export async function getQuestion(questionId: string): Promise<Question> {
-  try {
-    // TODO: Replace with your actual API endpoint
-    // Example: GET /api/questions/{questionId}
-    
-    const response = await apiClient.get(`/questions/${questionId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error getting question:', error);
-    throw error;
   }
 }

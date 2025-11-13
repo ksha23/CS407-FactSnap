@@ -23,6 +23,7 @@ func (h *QuestionHandler) RegisterRoutes(r *gin.RouterGroup) {
 	questionRoutes := r.Group("/questions")
 	questionRoutes.POST("", h.CreateQuestion)
 	questionRoutes.GET("/:question_id", h.GetQuestionByID)
+	questionRoutes.POST("/feed", h.GetQuestionsInRadiusFeed)
 
 	pollRoutes := questionRoutes.Group("/poll")
 	pollRoutes.POST("", h.CreatePoll)
@@ -109,4 +110,37 @@ func (h *QuestionHandler) GetQuestionByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.GetQuestionByIDRes{Question: question})
+}
+
+func (h *QuestionHandler) GetQuestionsInRadiusFeed(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	var req dto.GetQuestionsInRadiusFeedReq
+	if err := unmarshalAndValidateReq(c, &req); err != nil {
+		c.Error(BadRequestJSON(c, err, fmt.Errorf("%s: %w", "QuestionHandler::GetQuestionsInRadiusFeed", err)))
+		return
+	}
+
+	params := model.GetQuestionsInRadiusFeedParams{
+		Lat:         req.Location.Latitude,
+		Lon:         req.Location.Longitude,
+		RadiusMiles: req.RadiusMiles,
+	}
+
+	page := model.PageParams{
+		Limit:  req.Limit,
+		Offset: req.Offset,
+		Filter: model.PageFilter{
+			Type:  req.PageFilterType,
+			Value: req.PageFilterValue,
+		},
+	}
+
+	questions, err := h.QuestionService.GetQuestionsInRadiusFeed(c.Request.Context(), userID, params, page)
+	if err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "QuestionHandler::GetQuestionsInRadiusFeed", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.GetQuestionsInRadiusFeedRes{Questions: questions})
 }

@@ -16,7 +16,7 @@ export function useSyncAuthUser() {
     return useMutation({
         mutationFn: () => syncClerkUser(),
         onError: (error) => {
-            console.warn("Error syncing Clerk user (can usually ignore this)", error.message)
+            Alert.alert("Error syncing Clerk user", error.message)
         }
     })
 }

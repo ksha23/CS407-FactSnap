@@ -27,7 +27,7 @@ func (r *questionRepo) CreateQuestion(ctx context.Context, userID string, params
 		// in a single transaction:
 		// - insert location first
 		location, err := query.CreateLocation(ctx,
-			toPoint(params.Location.Latitude, params.Location.Longitude),
+			toWKT(params.Location.Latitude, params.Location.Longitude),
 			params.Location.Name,
 			params.Location.Address,
 		)
@@ -148,6 +148,46 @@ func (r *questionRepo) GetQuestionByID(ctx context.Context, userID string, quest
 	}
 
 	return question, nil
+}
+
+func (r *questionRepo) GetQuestionsInRadiusFeed(
+	ctx context.Context,
+	userID string,
+	params model.GetQuestionsInRadiusFeedParams,
+	page model.PageParams,
+) ([]model.Question, error) {
+	switch page.Filter.Type {
+	case model.PageFilterTypeNone:
+		questions, err := r.query.GetQuestionsInRadiusFeed(ctx, sqlc.GetQuestionsInRadiusFeedParams{
+			UserID:      userID,
+			Longitude:   params.Lon,
+			Latitude:    params.Lat,
+			RadiusMiles: params.RadiusMiles,
+			OffsetNum:   int32(page.Offset),
+			LimitNum:    int32(page.Limit),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed (Page Filter None): %w", wrapError(err))
+		}
+		return convertRowsToDomain(questions), nil
+	case model.PageFilterTypeQuestionCategory:
+		questions, err := r.query.GetQuestionsInRadiusFeedByCategory(ctx, sqlc.GetQuestionsInRadiusFeedByCategoryParams{
+			UserID:      userID,
+			Category:    page.Filter.Value,
+			Longitude:   params.Lon,
+			Latitude:    params.Lat,
+			RadiusMiles: params.RadiusMiles,
+			OffsetNum:   int32(page.Offset),
+			LimitNum:    int32(page.Limit),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed (Page Filter Category): %w", wrapError(err))
+		}
+		return convertRowsToDomain(questions), nil
+	default:
+		err := fmt.Errorf("page filter %s is unsupported or invalid", page.Filter.Type)
+		return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed: %w", err)
+	}
 }
 
 func (r *questionRepo) getQuestionContent(ctx context.Context, question model.Question, userID string) (model.QuestionContent, error) {

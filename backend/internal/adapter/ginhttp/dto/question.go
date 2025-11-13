@@ -128,3 +128,50 @@ func (r *VotePollReq) Validate() error {
 	// binding already checks if the fields are passed or not
 	return nil
 }
+
+// GET QUESTIONS IN RADIUS FEED
+
+type GetQuestionsInRadiusFeedReq struct {
+	Location        model.Location       `json:"location" binding:"required"`
+	RadiusMiles     float64              `json:"radius_miles" binding:"required"`
+	Limit           int                  `json:"limit" binding:"omitempty"`
+	Offset          int                  `json:"offset" binding:"omitempty"`
+	PageFilterType  model.PageFilterType `json:"page_filter_type" binding:"omitempty"`
+	PageFilterValue string               `json:"page_filter_value" binding:"omitempty"`
+}
+
+func (r *GetQuestionsInRadiusFeedReq) Validate() error {
+	errsMap := make(ValidationErrs)
+
+	// validate location
+	if err := validate.Location(r.Location.Latitude, r.Location.Longitude); err != nil {
+		errsMap["location"] = err
+	}
+
+	// validate limit
+	if err := validate.PageLimit(r.Limit); err != nil {
+		errsMap["limit"] = err
+	}
+
+	// validate offset
+	if err := validate.PageOffset(r.Offset); err != nil {
+		errsMap["offset"] = err
+	}
+
+	// validate page filter type
+	pageFilterType, err := model.ParsePageFilterType(string(r.PageFilterType))
+	if err != nil {
+		errsMap["page_filter_type"] = err
+	}
+	r.PageFilterType = pageFilterType
+
+	if len(errsMap) > 0 {
+		return errsMap
+	}
+	return nil
+}
+
+type GetQuestionsInRadiusFeedRes struct {
+	// Questions will not have the content data populated.
+	Questions []model.Question `json:"questions"`
+}

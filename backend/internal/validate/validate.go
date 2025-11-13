@@ -101,3 +101,19 @@ func PollOptionLabels(optionLabels []string) error {
 
 	return nil
 }
+
+func PageLimit(limit int) error {
+	if limit < 0 {
+		return fmt.Errorf("limit %d must be >= 0", limit)
+	}
+
+	return nil
+}
+
+func PageOffset(offset int) error {
+	if offset < 0 {
+		return fmt.Errorf("offset %d must be >= 0", offset)
+	}
+
+	return nil
+}

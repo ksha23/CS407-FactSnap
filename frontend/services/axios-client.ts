@@ -4,6 +4,10 @@ import {Alert} from "react-native";
 
 export const PAGE_SIZE = 10;
 
+export enum PageFilterType {
+    NONE = "none",
+    QUESTION_CATEGORY = "question_category"
+}
 
 export const apiClient = axios.create({
     baseURL: process.env.EXPO_PUBLIC_BACKEND_API_URL,

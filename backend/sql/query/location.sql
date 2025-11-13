@@ -1,7 +1,7 @@
 -- name: CreateLocation :one
 INSERT INTO locations (location, name, address)
 VALUES (
-           sqlc.arg(location), -- postgis.PointS
+           ST_GeomFromText(sqlc.arg(wkt)::text, 4326),
            sqlc.arg(name),
            sqlc.arg(address)
        )

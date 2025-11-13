@@ -1,19 +1,77 @@
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useInfiniteQuery, useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {
     ContentType,
     CreatePollReq,
     CreateQuestionReq,
+    GetQuestionsInRadiusFeedReq,
     Poll,
-    PollOption,
     Question,
     VotePollReq
 } from "@/models/question";
-import {createPoll, createQuestion, getQuestionById, votePoll} from "@/services/question-service";
+import {
+    createPoll,
+    createQuestion,
+    getQuestionById,
+    getQuestionsInRadiusFeed,
+    votePoll
+} from "@/services/question-service";
 import {Alert} from "react-native";
 import {questionKeys} from "@/hooks/tanstack/query-keys";
 import {produce} from "immer";
+import {Coordinates} from "@/services/location-service";
+import {PAGE_SIZE, PageFilterType} from "@/services/axios-client";
+
+export type InfiniteQuestions = {
+    questionIds: string[],
+    nextPageParam?: number,
+}
 
 // QUERIES
+
+export function useGetQuestionsFeed(
+    coords: Coordinates | null,
+    radiusMiles: number,
+    filterType: PageFilterType | null,
+    filter: string | null,
+) {
+    const queryClient = useQueryClient()
+
+    const lat = coords?.latitude ?? 0
+    const lon = coords?.longitude ?? 0
+    const pageFilter = filterType ?? PageFilterType.NONE
+    const pageFilterValue = filter ?? ""
+
+    return useInfiniteQuery({
+        enabled: coords != null,
+        queryKey: questionKeys.getQuestionsFeed(lat, lon, radiusMiles, pageFilter, pageFilterValue),
+        queryFn: async ({pageParam}): Promise<InfiniteQuestions> => {
+            const req: GetQuestionsInRadiusFeedReq = {
+                // @ts-ignore backend only needs lat and long
+                location: {
+                    latitude:  lat,
+                    longitude: lon,
+                },
+                limit: PAGE_SIZE,
+                offset: pageParam,
+                radius_miles: radiusMiles,
+                page_filter_type: pageFilter,
+                page_filter_value: pageFilterValue,
+            }
+            console.debug("useGetQuestionsFeed: sending GetQuestionsInRadiusFeedReq request:", req)
+            const questions = await getQuestionsInRadiusFeed(req)
+            questions.forEach(question => {
+                queryClient.setQueryData(questionKeys.getQuestionById(question.id), question)
+            })
+            return {
+                questionIds: questions.map(question => question.id),
+                nextPageParam: questions.length === PAGE_SIZE ? pageParam + PAGE_SIZE : undefined,
+            }
+        },
+        // staleTime: 0,
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextPageParam,
+    })
+}
 
 export function useGetQuestionById(id: string, forceFetch = false) {
     return useQuery({

@@ -10,6 +10,7 @@ export default function QuestionDetailsPage() {
     const { id } = useLocalSearchParams();
     const navigation = useNavigation();
 
+    // always fetch the question
     const questionQuery = useGetQuestionById(id as string, true)
 
     useEffect(() => {

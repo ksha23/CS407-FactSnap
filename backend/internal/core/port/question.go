@@ -14,6 +14,8 @@ type QuestionService interface {
 	//DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error)
 	//EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error)
 	GetQuestionByID(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error)
+	GetQuestionsInRadiusFeed(ctx context.Context, userID string, params model.GetQuestionsInRadiusFeedParams, page model.PageParams) ([]model.Question, error)
+
 	//GetQuestionsByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Question, error)
 }
 
@@ -26,5 +28,6 @@ type QuestionRepo interface {
 	//DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error)
 	//EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error)
 	GetQuestionByID(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error)
+	GetQuestionsInRadiusFeed(ctx context.Context, userID string, params model.GetQuestionsInRadiusFeedParams, page model.PageParams) ([]model.Question, error)
 	//GetQuestionsByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Question, error)
 }

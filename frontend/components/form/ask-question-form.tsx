@@ -289,6 +289,7 @@ export default function AskQuestionForm() {
                                         key={locPickerKey}
                                         height={400}
                                         onChange={(loc) => {
+                                            // @ts-ignore dont need location id
                                             const newLoc: Location = {
                                                 latitude: loc.coords.latitude,
                                                 longitude: loc.coords.longitude,

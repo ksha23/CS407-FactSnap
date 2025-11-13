@@ -51,7 +51,6 @@ export default function ProfilePage() {
             />
           }
       >
-        {}
         <YStack padding="$4" gap="$4">
           <Text fontSize="$8" fontWeight="bold">
             Profile

@@ -7,7 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/dto"
+	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -45,4 +47,38 @@ func unmarshalAndValidateReq(c *gin.Context, req dto.Request) error {
 	}
 
 	return nil
+}
+
+func validateLimitQueryParam(limitQuery string) (int, error) {
+	limit, err := strconv.ParseInt(limitQuery, 10, 32)
+	if err != nil {
+		return 0, errors.New("limit must be an integer")
+	}
+	if limit < 0 {
+		return 0, errors.New("limit must be greater than or equal to 0")
+	}
+
+	return int(limit), nil
+}
+
+func validateOffsetQueryParam(offsetQuery string) (int, error) {
+	offset, err := strconv.ParseInt(offsetQuery, 10, 32)
+	if err != nil {
+		return 0, errors.New("offset must be an integer")
+	}
+	if offset < 0 {
+		return 0, errors.New("offset must be greater than or equal to 0")
+	}
+	return int(offset), nil
+}
+
+func validatePageFilterQueryParam(filterTypeQuery string, filterValQuery string) (model.PageFilter, error) {
+	filter, err := model.ParsePageFilterType(filterTypeQuery)
+	if err != nil {
+		return model.PageFilter{}, err
+	}
+	return model.PageFilter{
+		Type:  filter,
+		Value: filterValQuery,
+	}, nil
 }

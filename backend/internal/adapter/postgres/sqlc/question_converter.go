@@ -44,3 +44,45 @@ func (row GetQuestionByIDRow) ToDomainModel() model.Question {
 		ExpiredAt:       row.Question.ExpiredAt,
 	}
 }
+
+func (row GetQuestionsInRadiusFeedRow) ToDomainModel() model.Question {
+	return model.Question{
+		ID:       row.Question.ID,
+		Author:   toDomainUser(row.User),
+		Title:    row.Question.Title,
+		Body:     row.Question.Body,
+		Category: model.Category(row.Question.Category),
+		Content: model.QuestionContent{
+			Type: model.ContentType(row.Question.ContentType),
+			// NOTE: Content data will need to be populated elsewhere
+		},
+		Location:        toDomainLocation(row.Location),
+		ImageURLs:       row.Question.ImageUrls,
+		IsOwned:         row.IsOwned,
+		ResponsesAmount: row.Question.NumResponses,
+		CreatedAt:       row.Question.CreatedAt,
+		EditedAt:        row.Question.EditedAt,
+		ExpiredAt:       row.Question.ExpiredAt,
+	}
+}
+
+func (row GetQuestionsInRadiusFeedByCategoryRow) ToDomainModel() model.Question {
+	return model.Question{
+		ID:       row.Question.ID,
+		Author:   toDomainUser(row.User),
+		Title:    row.Question.Title,
+		Body:     row.Question.Body,
+		Category: model.Category(row.Question.Category),
+		Content: model.QuestionContent{
+			Type: model.ContentType(row.Question.ContentType),
+			// NOTE: Content data will need to be populated elsewhere
+		},
+		Location:        toDomainLocation(row.Location),
+		ImageURLs:       row.Question.ImageUrls,
+		IsOwned:         row.IsOwned,
+		ResponsesAmount: row.Question.NumResponses,
+		CreatedAt:       row.Question.CreatedAt,
+		EditedAt:        row.Question.EditedAt,
+		ExpiredAt:       row.Question.ExpiredAt,
+	}
+}

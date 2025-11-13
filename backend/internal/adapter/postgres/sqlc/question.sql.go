@@ -406,6 +406,103 @@ func (q *Queries) GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestions
 	return items, nil
 }
 
+const getQuestionsInRadiusFeedByCategory = `-- name: GetQuestionsInRadiusFeedByCategory :many
+SELECT
+    q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
+    l.id, l.location, l.name, l.address,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    q.author_id = $1 AS is_owned
+FROM questions q
+         JOIN users u ON q.author_id = u.id
+         JOIN locations l ON q.location_id = l.id
+WHERE
+    q.category = $2
+    AND ST_DWithin(
+              l.location::geography,
+              ST_SetSRID(
+                      ST_MakePoint(
+                              $3::float8,
+                              $4::float8
+                      ),
+                      4326
+              )::geography,
+              $5::float8 * 1609.34
+      )
+ORDER BY q.created_at DESC
+LIMIT $7 OFFSET $6
+`
+
+type GetQuestionsInRadiusFeedByCategoryParams struct {
+	UserID      string
+	Category    string
+	Longitude   float64
+	Latitude    float64
+	RadiusMiles float64
+	OffsetNum   int32
+	LimitNum    int32
+}
+
+type GetQuestionsInRadiusFeedByCategoryRow struct {
+	Question Question
+	Location Location
+	User     User
+	IsOwned  bool
+}
+
+func (q *Queries) GetQuestionsInRadiusFeedByCategory(ctx context.Context, arg GetQuestionsInRadiusFeedByCategoryParams) ([]GetQuestionsInRadiusFeedByCategoryRow, error) {
+	rows, err := q.db.Query(ctx, getQuestionsInRadiusFeedByCategory,
+		arg.UserID,
+		arg.Category,
+		arg.Longitude,
+		arg.Latitude,
+		arg.RadiusMiles,
+		arg.OffsetNum,
+		arg.LimitNum,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetQuestionsInRadiusFeedByCategoryRow{}
+	for rows.Next() {
+		var i GetQuestionsInRadiusFeedByCategoryRow
+		if err := rows.Scan(
+			&i.Question.ID,
+			&i.Question.AuthorID,
+			&i.Question.ContentType,
+			&i.Question.Title,
+			&i.Question.Body,
+			&i.Question.LocationID,
+			&i.Question.ImageUrls,
+			&i.Question.Category,
+			&i.Question.NumResponses,
+			&i.Question.CreatedAt,
+			&i.Question.EditedAt,
+			&i.Question.ExpiredAt,
+			&i.Location.ID,
+			&i.Location.Location,
+			&i.Location.Name,
+			&i.Location.Address,
+			&i.User.ID,
+			&i.User.Username,
+			&i.User.Email,
+			&i.User.DisplayName,
+			&i.User.Role,
+			&i.User.AboutMe,
+			&i.User.AvatarUrl,
+			&i.User.CreatedAt,
+			&i.IsOwned,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const incrementResponseAmount = `-- name: IncrementResponseAmount :exec
 UPDATE questions
 SET num_responses = num_responses + 1

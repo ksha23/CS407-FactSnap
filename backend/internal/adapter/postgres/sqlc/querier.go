@@ -7,12 +7,11 @@ package sqlc
 import (
 	"context"
 
-	"github.com/cridenour/go-postgis"
 	"github.com/google/uuid"
 )
 
 type Querier interface {
-	CreateLocation(ctx context.Context, location postgis.PointS, name *string, address *string) (Location, error)
+	CreateLocation(ctx context.Context, wkt string, name *string, address *string) (Location, error)
 	CreatePoll(ctx context.Context, questionID uuid.UUID) (Poll, error)
 	CreatePollOptions(ctx context.Context, arg []CreatePollOptionsParams) (int64, error)
 	CreatePollVote(ctx context.Context, pollID uuid.UUID, optionID uuid.UUID, userID string) error
@@ -25,6 +24,7 @@ type Querier interface {
 	GetPollVotes(ctx context.Context, pollID uuid.UUID, userID string) ([]GetPollVotesRow, error)
 	GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID string) (GetQuestionByIDRow, error)
 	GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestionsInRadiusFeedParams) ([]GetQuestionsInRadiusFeedRow, error)
+	GetQuestionsInRadiusFeedByCategory(ctx context.Context, arg GetQuestionsInRadiusFeedByCategoryParams) ([]GetQuestionsInRadiusFeedByCategoryRow, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
 	IncrementResponseAmount(ctx context.Context, id uuid.UUID) error
 	IsPollExpired(ctx context.Context, id uuid.UUID) (bool, error)

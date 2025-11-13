@@ -1,5 +1,6 @@
 import { User } from "@/models/user";
 import {Location} from "@/models/location";
+import {PageFilterType} from "@/services/axios-client";
 
 export enum ContentType {
   POLL = "Poll",
@@ -43,6 +44,7 @@ export type Question = {
   category: Category;
   content: QuestionContent;
   location: Location;
+  responses_amount: number;
   image_urls?: string[];
   is_owned: boolean;
   created_at: string;
@@ -89,17 +91,16 @@ export type VotePollReq = {
   option_id?: string;
 }
 
-// export type CreateQuestionParams = {
-//   questionType: QuestionType;
-//   category: Category;
-//   title: string;
-//   body?: string;
-//   location: Location;
-//   imageUrls?: string[];
-// };
-//
-// export type GetQuestionsParams = {
-//   latitude: string;
-//   longitude: string;
-//   radius: number;
-// };
+// GET QUESTIONS IN RADIUS FEED
+export type GetQuestionsInRadiusFeedReq = {
+  location: Location;
+  radius_miles: number;
+  limit: number;
+  offset: number;
+  page_filter_type: PageFilterType;
+  page_filter_value: string;
+}
+
+export type GetQuestionsInRadiusFeedRes = {
+  questions: Question[];
+}

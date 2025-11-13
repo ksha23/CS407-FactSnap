@@ -109,6 +109,10 @@ func RunMigrations(db *pgxpool.Pool) error {
 	return nil
 }
 
+func toWKT(lat, lon float64) string {
+	return fmt.Sprintf("SRID=4326;POINT(%f %f)", lon, lat)
+}
+
 func toPoint(lat, lon float64) postgis.PointS {
 	return postgis.PointS{
 		SRID: 4326,

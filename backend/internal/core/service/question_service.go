@@ -69,6 +69,19 @@ func (s *questionService) GetQuestionByID(ctx context.Context, userID string, qu
 	return question, err
 }
 
+func (s *questionService) GetQuestionsInRadiusFeed(
+	ctx context.Context,
+	userID string,
+	params model.GetQuestionsInRadiusFeedParams,
+	page model.PageParams,
+) ([]model.Question, error) {
+	questions, err := s.questionRepo.GetQuestionsInRadiusFeed(ctx, userID, params, page)
+	if err != nil {
+		return nil, fmt.Errorf("QuestionService::GetQuestionsInRadiusFeed: %w", err)
+	}
+	return questions, nil
+}
+
 //func (s *questionService) GetQuestions(ctx context.Context, userID string, params model.GetQuestionsParams, page model.PageParams) ([]model.Question, error) {
 //	//TODO implement me
 //	panic("implement me")

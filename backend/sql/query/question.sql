@@ -66,6 +66,31 @@ WHERE ST_DWithin(
 ORDER BY q.created_at DESC
 LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
 
+-- name: GetQuestionsInRadiusFeedByCategory :many
+SELECT
+    sqlc.embed(q),
+    sqlc.embed(l),
+    sqlc.embed(u),
+    q.author_id = sqlc.arg(user_id) AS is_owned
+FROM questions q
+         JOIN users u ON q.author_id = u.id
+         JOIN locations l ON q.location_id = l.id
+WHERE
+    q.category = sqlc.arg(category)
+    AND ST_DWithin(
+              l.location::geography,
+              ST_SetSRID(
+                      ST_MakePoint(
+                              sqlc.arg(longitude)::float8,
+                              sqlc.arg(latitude)::float8
+                      ),
+                      4326
+              )::geography,
+              sqlc.arg(radius_miles)::float8 * 1609.34
+      )
+ORDER BY q.created_at DESC
+LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
+
 
 -- name: CreatePoll :one
 INSERT INTO polls (question_id)

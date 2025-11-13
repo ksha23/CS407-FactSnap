@@ -3,14 +3,20 @@ import {
     CreatePollRes,
     CreateQuestionReq,
     CreateQuestionRes,
-    GetQuestionByIdRes, VotePollReq
+    GetQuestionByIdRes, GetQuestionsInRadiusFeedReq, GetQuestionsInRadiusFeedRes, VotePollReq
 } from "@/models/question";
 import {apiClient} from "@/services/axios-client";
+import {Coordinates} from "@/services/location-service";
 
 
 // QUERIES
+
 export async function getQuestionById(questionId: string) {
     return (await apiClient.get<GetQuestionByIdRes>(`/questions/${questionId}`)).data.question
+}
+
+export async function getQuestionsInRadiusFeed(req: GetQuestionsInRadiusFeedReq) {
+    return (await apiClient.post<GetQuestionsInRadiusFeedRes>(`/questions/feed`, req)).data.questions
 }
 
 // MUTATIONS
