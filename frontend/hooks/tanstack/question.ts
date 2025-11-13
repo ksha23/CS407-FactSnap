@@ -70,6 +70,7 @@ export function useGetQuestionsFeed(
         // staleTime: 0,
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPageParam,
+        gcTime: 1000, // remove inactive feeds from the cache after 1 sec
     })
 }
 

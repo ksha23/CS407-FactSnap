@@ -3,7 +3,7 @@ import {Coordinates} from "@/services/location-service";
 import {PageFilterType} from "@/services/axios-client";
 import {useEffect, useState} from "react";
 import {Button, Spinner, Text, YStack} from "tamagui";
-import {FlatList, RefreshControl} from "react-native";
+import {Alert, FlatList, RefreshControl} from "react-native";
 import QuestionCard from "@/components/card/question-card";
 import {Question} from "@/models/question";
 import {useQueryClient} from "@tanstack/react-query";
@@ -26,6 +26,12 @@ export default function QuestionsFeed(props: Props) {
         pageFilterType,
         pageFilter,
     )
+
+    useEffect(() => {
+        if (query.error) {
+            Alert.alert("Could not fetch questions feed", query.error.message)
+        }
+    }, [query.error]);
 
     function handleFeedRefresh() {
         query.refetch()
@@ -63,7 +69,12 @@ export default function QuestionsFeed(props: Props) {
 
     return (
         <YStack paddingTop={10} gap={5}>
-            <Button onPress={handleFeedRefresh}>Refresh Feed</Button>
+            <Button
+                onPress={handleFeedRefresh}
+                disabled={isLoading()}
+            >
+                Refresh Feed
+            </Button>
             <FlatList
                 data={questionIds}
                 scrollEnabled={false} // we assume this feed is placed into outer ScrollView component
@@ -73,11 +84,15 @@ export default function QuestionsFeed(props: Props) {
                 onEndReached={onEndReached}
                 onEndReachedThreshold={0.5}
                 ListEmptyComponent={
-                    !isLoading() ? (
-                        <YStack f={1} jc="center" ai="center" p="$4">
-                            <Text>No questions found</Text>
-                        </YStack>
-                    ) : null
+                    query.error ? (
+                            <YStack f={1} jc="center" ai="center" p="$4">
+                                <Text color={"red"}>Error fetching questions feed</Text>
+                            </YStack>
+                        ) : !isLoading() ? (
+                            <YStack f={1} jc="center" ai="center" p="$4">
+                                <Text>No questions found</Text>
+                            </YStack>
+                        ) : null
                 }
                 ListFooterComponent={
                     isLoading() ? (
