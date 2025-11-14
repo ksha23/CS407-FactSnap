@@ -13,10 +13,10 @@ import {
     View,
     YStack
 } from "tamagui";
-import {useGetQuestionById} from "@/hooks/tanstack/question";
+import {useGetQuestionById, useUpdateQuestion} from "@/hooks/tanstack/question";
 import {useRouter} from "expo-router";
 import {Controller, useForm} from "react-hook-form";
-import {Category, ContentType} from "@/models/question";
+import {Category, ContentType, UpdateQuestionReq} from "@/models/question";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {EditQuestionFormSchema} from "@/validation/validation";
 import {Check, ChevronDown} from "@tamagui/lucide-icons";
@@ -33,6 +33,8 @@ export default function EditQuestionForm(props: Props) {
     const question = questionQuery.data
     const [locPickerKey, setLocPickerKey] = useState(0)
 
+    const updateQuestionMutation = useUpdateQuestion()
+
 
     const router = useRouter()
 
@@ -47,9 +49,26 @@ export default function EditQuestionForm(props: Props) {
     })
 
     async function handleSubmit(values: any) {
-        console.debug("SUBMIT_QUESTION_FORM", values)
+        values.location.id = question!!.location.id
+        console.debug("EDIT_QUESTION_FORM", values)
 
-        // TODO: finish impl
+       // make api request to backend to update the question
+        try {
+            const req: UpdateQuestionReq = {
+                question_id: props.questionId,
+                title: values.title,
+                body: values.body,
+                category: values.category,
+                location: values.location
+            }
+            await updateQuestionMutation.mutateAsync(req);
+        } catch {
+            // error notification will be shown
+            return
+        }
+
+        // if successful, pop stack
+        router.back()
     }
 
     if (!question) {
@@ -198,8 +217,8 @@ export default function EditQuestionForm(props: Props) {
                                     initialLocation={field.value}
                                     height={400}
                                     onChange={(loc) => {
-                                        // @ts-ignore dont need location id
                                         const newLoc: Location = {
+                                            id: question.location.id,
                                             latitude: loc.coords.latitude,
                                             longitude: loc.coords.longitude,
                                             name: loc.label,

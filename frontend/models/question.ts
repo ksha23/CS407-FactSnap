@@ -104,3 +104,16 @@ export type GetQuestionsInRadiusFeedReq = {
 export type GetQuestionsInRadiusFeedRes = {
   questions: Question[];
 }
+
+// UPDATE QUESTION
+export type UpdateQuestionReq = {
+  question_id: string;
+  title: string;
+  body?: string;
+  category: Category;
+  location: Location;
+}
+
+export type UpdateQuestionRes = {
+  question: Question;
+}

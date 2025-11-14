@@ -164,6 +164,84 @@ func (q *Queries) DeletePollVote(ctx context.Context, userID string, pollID uuid
 	return err
 }
 
+const editQuestion = `-- name: EditQuestion :one
+WITH edited_question AS (
+    UPDATE questions
+    SET
+        title = $1,
+        body = $2,
+        category = $3,
+        edited_at = current_timestamp
+    WHERE questions.id = $4
+    RETURNING id, author_id, content_type, title, body, location_id, image_urls, category, num_responses, created_at, edited_at, expired_at
+)
+SELECT
+    eq.id, eq.author_id, eq.content_type, eq.title, eq.body, eq.location_id, eq.image_urls, eq.category, eq.num_responses, eq.created_at, eq.edited_at, eq.expired_at,
+    l.id, l.location, l.name, l.address,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    TRUE AS is_owned
+FROM
+    edited_question eq
+        JOIN users u ON eq.author_id = u.id
+        JOIN locations l ON eq.location_id = l.id
+`
+
+type EditQuestionRow struct {
+	ID           uuid.UUID
+	AuthorID     string
+	ContentType  string
+	Title        string
+	Body         *string
+	LocationID   uuid.UUID
+	ImageUrls    []string
+	Category     string
+	NumResponses int
+	CreatedAt    time.Time
+	EditedAt     time.Time
+	ExpiredAt    time.Time
+	Location     Location
+	User         User
+	IsOwned      bool
+}
+
+func (q *Queries) EditQuestion(ctx context.Context, title string, body *string, category string, iD uuid.UUID) (EditQuestionRow, error) {
+	row := q.db.QueryRow(ctx, editQuestion,
+		title,
+		body,
+		category,
+		iD,
+	)
+	var i EditQuestionRow
+	err := row.Scan(
+		&i.ID,
+		&i.AuthorID,
+		&i.ContentType,
+		&i.Title,
+		&i.Body,
+		&i.LocationID,
+		&i.ImageUrls,
+		&i.Category,
+		&i.NumResponses,
+		&i.CreatedAt,
+		&i.EditedAt,
+		&i.ExpiredAt,
+		&i.Location.ID,
+		&i.Location.Location,
+		&i.Location.Name,
+		&i.Location.Address,
+		&i.User.ID,
+		&i.User.Username,
+		&i.User.Email,
+		&i.User.DisplayName,
+		&i.User.Role,
+		&i.User.AboutMe,
+		&i.User.AvatarUrl,
+		&i.User.CreatedAt,
+		&i.IsOwned,
+	)
+	return i, err
+}
+
 const getPollByQuestionID = `-- name: GetPollByQuestionID :one
 SELECT p.id, p.question_id, p.created_at
 FROM polls p

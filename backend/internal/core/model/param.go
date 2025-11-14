@@ -34,22 +34,14 @@ type GetQuestionsInRadiusFeedParams struct {
 	RadiusMiles float64
 }
 
-//
-//type GetQuestionsParams struct {
-//	Latitude  string
-//	Longitude string
-//	Radius    int
-//}
-//
-//type EditQuestionParams struct {
-//	QuestionID uuid.UUID
-//	Title      string
-//	Body       *string
-//	Location   Location
-//	Type       QuestionType
-//	Category   Category
-//	ImageURLs  []string
-//}
+type EditQuestionParams struct {
+	QuestionID uuid.UUID
+	Title      string
+	Body       *string
+	Category   Category
+	Location   Location
+}
+
 //
 //type CreateResponseParams struct {
 //	QuestionID uuid.UUID

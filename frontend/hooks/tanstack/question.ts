@@ -13,14 +13,14 @@ import {
     CreateQuestionReq,
     GetQuestionsInRadiusFeedReq,
     Poll,
-    Question,
+    Question, UpdateQuestionReq,
     VotePollReq
 } from "@/models/question";
 import {
     createPoll,
     createQuestion,
     getQuestionById,
-    getQuestionsInRadiusFeed,
+    getQuestionsInRadiusFeed, updateQuestion,
     votePoll
 } from "@/services/question-service";
 import {Alert} from "react-native";
@@ -125,6 +125,27 @@ export function useCreateQuestion() {
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({queryKey: questionKeys.all})
+        }
+    })
+}
+
+export function useUpdateQuestion() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (req: UpdateQuestionReq) => updateQuestion(req),
+        onError: (error) => {
+            Alert.alert("Failed to edit question. Please try again.", error.message)
+        },
+        onSuccess: (data, variables, onMutateResult, context) => {
+            // Cancel any outgoing refetches so that they don't overwrite our updates
+            queryClient.cancelQueries({queryKey: questionKeys.getQuestionById(variables.question_id)})
+
+            // update the question details cache
+            const oldQuestion = queryClient.getQueryData(questionKeys.getQuestionById(variables.question_id)) as Question
+            if (oldQuestion) {
+                queryClient.setQueryData(questionKeys.getQuestionById(variables.question_id), data)
+            }
         }
     })
 }

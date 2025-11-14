@@ -19,6 +19,8 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DecrementResponseAmount(ctx context.Context, iD uuid.UUID, numResponses int) error
 	DeletePollVote(ctx context.Context, userID string, pollID uuid.UUID) error
+	EditLocation(ctx context.Context, wkt string, name *string, address *string, iD uuid.UUID) (Location, error)
+	EditQuestion(ctx context.Context, title string, body *string, category string, iD uuid.UUID) (EditQuestionRow, error)
 	GetPollByQuestionID(ctx context.Context, questionID uuid.UUID) (GetPollByQuestionIDRow, error)
 	GetPollOptions(ctx context.Context, id uuid.UUID) ([]GetPollOptionsRow, error)
 	GetPollVotes(ctx context.Context, pollID uuid.UUID, userID string) ([]GetPollVotesRow, error)

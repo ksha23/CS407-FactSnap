@@ -150,6 +150,45 @@ func (r *questionRepo) GetQuestionByID(ctx context.Context, userID string, quest
 	return question, nil
 }
 
+func (r *questionRepo) EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error) {
+	var questionRow sqlc.EditQuestionRow
+	err := execTx(ctx, r.db, func(query *sqlc.Queries) error {
+		// in a single transaction
+		// - edit the location
+		_, err := query.EditLocation(
+			ctx,
+			toWKT(params.Location.Latitude, params.Location.Longitude),
+			params.Location.Name,
+			params.Location.Address,
+			params.Location.ID,
+		)
+		if err != nil {
+			return fmt.Errorf("EditLocation: %w", wrapError(err))
+		}
+
+		// - edit the question
+		questionRow, err = query.EditQuestion(ctx, params.Title, params.Body, string(params.Category), params.QuestionID)
+		if err != nil {
+			return fmt.Errorf("EditQuestion: %w", wrapError(err))
+		}
+
+		return nil
+	})
+	if err != nil {
+		return model.Question{}, fmt.Errorf("QuestionRepo::EditQuestion: %w", err)
+	}
+
+	question := questionRow.ToDomainModel()
+
+	// set question content (if applicable)
+	question.Content, err = r.getQuestionContent(ctx, question, userID)
+	if err != nil {
+		return model.Question{}, fmt.Errorf("QuestionRepo::EditQuestion: %w", err)
+	}
+
+	return question, nil
+}
+
 func (r *questionRepo) GetQuestionsInRadiusFeed(
 	ctx context.Context,
 	userID string,
@@ -261,10 +300,6 @@ func (r *questionRepo) getPoll(ctx context.Context, question model.Question, use
 //	panic("implement me")
 //}
 //
-//func (r *questionRepo) EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
 //
 //
 //func (r *questionRepo) GetQuestionsByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Question, error) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
+	"github.com/ksha23/CS407-FactSnap/internal/obj"
 	"github.com/ksha23/CS407-FactSnap/internal/validate"
 	"time"
 )
@@ -48,6 +49,10 @@ func (r *CreateQuestionReq) Validate() error {
 	if err := validate.Location(r.Location.Latitude, r.Location.Longitude); err != nil {
 		errsMap["location"] = err
 	}
+	// we also need to ensure the location id is not empty
+	if obj.IsZero(r.Location.ID) {
+		errsMap["location"] = fmt.Errorf("location id cannot be empty")
+	}
 
 	// validate image urls
 	if len(r.ImageURLs) > 0 {
@@ -84,6 +89,53 @@ func (r *CreateQuestionReq) Validate() error {
 
 type CreateQuestionRes struct {
 	QuestionID uuid.UUID `json:"question_id"`
+}
+
+// UPDATE QUESTION
+
+type UpdateQuestionReq struct {
+	QuestionID uuid.UUID      `json:"question_id" binding:"required"`
+	Title      string         `json:"title" binding:"required"`
+	Body       *string        `json:"body" binding:"omitempty"`
+	Category   model.Category `json:"category" binding:"required"`
+	Location   model.Location `json:"location" binding:"required"`
+}
+
+func (r *UpdateQuestionReq) Validate() error {
+	errsMap := make(ValidationErrs)
+
+	// validate title
+	if err := validate.Title(r.Title); err != nil {
+		errsMap["title"] = err
+	}
+
+	// validate body
+	if r.Body != nil {
+		if err := validate.Body(*r.Body); err != nil {
+			errsMap["body"] = err
+		}
+	}
+
+	// validate category
+	category, err := model.ParseCategory(string(r.Category))
+	if err != nil {
+		errsMap["category"] = err
+	}
+	r.Category = category
+
+	// validate location
+	if err := validate.Location(r.Location.Latitude, r.Location.Longitude); err != nil {
+		errsMap["location"] = err
+	}
+
+	if len(errsMap) > 0 {
+		return errsMap
+	}
+	return nil
+}
+
+type UpdateQuestionRes struct {
+	Question model.Question `json:"question"`
 }
 
 // CREATE POLL

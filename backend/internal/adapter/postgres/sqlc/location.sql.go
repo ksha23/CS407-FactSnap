@@ -7,6 +7,8 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const createLocation = `-- name: CreateLocation :one
@@ -21,6 +23,33 @@ RETURNING id, location, name, address
 
 func (q *Queries) CreateLocation(ctx context.Context, wkt string, name *string, address *string) (Location, error) {
 	row := q.db.QueryRow(ctx, createLocation, wkt, name, address)
+	var i Location
+	err := row.Scan(
+		&i.ID,
+		&i.Location,
+		&i.Name,
+		&i.Address,
+	)
+	return i, err
+}
+
+const editLocation = `-- name: EditLocation :one
+UPDATE locations
+SET
+    location = ST_GeomFromText($1::text, 4326),
+    name = $2,
+    address = $3
+WHERE locations.id = $4
+RETURNING id, location, name, address
+`
+
+func (q *Queries) EditLocation(ctx context.Context, wkt string, name *string, address *string, iD uuid.UUID) (Location, error) {
+	row := q.db.QueryRow(ctx, editLocation,
+		wkt,
+		name,
+		address,
+		iD,
+	)
 	var i Location
 	err := row.Scan(
 		&i.ID,

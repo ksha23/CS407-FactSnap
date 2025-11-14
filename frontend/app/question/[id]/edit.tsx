@@ -1,7 +1,7 @@
 import {useLocalSearchParams, useNavigation} from "expo-router";
 import {Spinner, Text, View, YStack} from "tamagui";
 import {useGetQuestionById} from "@/hooks/tanstack/question";
-import {useEffect} from "react";
+import {useEffect, useMemo} from "react";
 import {Alert, KeyboardAvoidingView, Platform, ScrollView} from "react-native";
 import {isAxiosError} from "axios";
 import {SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
@@ -56,7 +56,17 @@ export default function EditQuestionPage() {
     const question = questionQuery.data
 
     if (!question.is_owned) {
-        return <Text color={"red"}>You cannot edit this question because you are not the author.</Text>
+        return <Text color={"red"}>You cannot edit this question because you are not the author</Text>
+    }
+
+    const isExpired = useMemo(() => {
+        const expiry = new Date(question.expired_at)
+        const now = new Date()
+        return now.getTime() >= expiry.getTime()
+    }, [question.expired_at])
+
+    if (isExpired) {
+        return <Text color={"red"}>You cannot edit this question because it has expired</Text>
     }
 
     //  dynamically override the title of the current stack screen to the question title

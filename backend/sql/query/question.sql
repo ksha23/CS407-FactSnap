@@ -23,6 +23,27 @@ FROM
     JOIN users u ON nq.author_id = u.id
     JOIN locations l ON nq.location_id = l.id;
 
+-- name: EditQuestion :one
+WITH edited_question AS (
+    UPDATE questions
+    SET
+        title = sqlc.arg(title),
+        body = sqlc.arg(body),
+        category = sqlc.arg(category),
+        edited_at = current_timestamp
+    WHERE questions.id = sqlc.arg(id)
+    RETURNING *
+)
+SELECT
+    eq.*,
+    sqlc.embed(l),
+    sqlc.embed(u),
+    TRUE AS is_owned
+FROM
+    edited_question eq
+        JOIN users u ON eq.author_id = u.id
+        JOIN locations l ON eq.location_id = l.id;
+
 -- name: SetQuestionContentType :exec
 UPDATE questions
 SET content_type = $2

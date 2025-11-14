@@ -82,6 +82,20 @@ func (s *questionService) GetQuestionsInRadiusFeed(
 	return questions, nil
 }
 
+func (s *questionService) EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error) {
+	// check if user is authorized to edit this question
+	if err := s.authorizeUser(ctx, userID, params.QuestionID); err != nil {
+		return model.Question{}, fmt.Errorf("QuestionService::EditQuestion: %w", err)
+	}
+
+	editedQuestion, err := s.questionRepo.EditQuestion(ctx, userID, params)
+	if err != nil {
+		return model.Question{}, fmt.Errorf("QuestionService::EditQuestion: %w", err)
+	}
+
+	return editedQuestion, nil
+}
+
 //func (s *questionService) GetQuestions(ctx context.Context, userID string, params model.GetQuestionsParams, page model.PageParams) ([]model.Question, error) {
 //	//TODO implement me
 //	panic("implement me")
@@ -92,10 +106,6 @@ func (s *questionService) GetQuestionsInRadiusFeed(
 //	panic("implement me")
 //}
 //
-//func (s *questionService) EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
 //
 //
 //func (s *questionService) GetQuestionsByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Question, error) {

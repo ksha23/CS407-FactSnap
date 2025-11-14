@@ -24,6 +24,27 @@ func (row CreateQuestionRow) ToDomainModel() model.Question {
 	}
 }
 
+func (row EditQuestionRow) ToDomainModel() model.Question {
+	return model.Question{
+		ID:       row.ID,
+		Author:   toDomainUser(row.User),
+		Title:    row.Title,
+		Body:     row.Body,
+		Category: model.Category(row.Category),
+		Content: model.QuestionContent{
+			Type: model.ContentType(row.ContentType),
+			// NOTE: Content data will need to be populated elsewhere
+		},
+		Location:        toDomainLocation(row.Location),
+		ImageURLs:       row.ImageUrls,
+		IsOwned:         row.IsOwned,
+		ResponsesAmount: row.NumResponses,
+		CreatedAt:       row.CreatedAt,
+		EditedAt:        row.EditedAt,
+		ExpiredAt:       row.ExpiredAt,
+	}
+}
+
 func (row GetQuestionByIDRow) ToDomainModel() model.Question {
 	return model.Question{
 		ID:       row.Question.ID,
