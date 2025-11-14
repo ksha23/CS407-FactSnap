@@ -1,6 +1,6 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {SafeAreaView} from "react-native-safe-area-context";
-import {Spinner, Text, View, YStack} from "tamagui";
+import {Button, Spinner, Text, View, YStack} from "tamagui";
 import FeedMap, {MapLocation} from "@/components/map/feed-map";
 import {Coordinates} from "@/services/location-service";
 import {Alert, FlatList, RefreshControl} from "react-native";
@@ -11,6 +11,7 @@ import {Question} from "@/models/question";
 import {useRouter} from "expo-router";
 import {questionKeys} from "@/hooks/tanstack/query-keys";
 import QuestionCard from "@/components/card/question-card";
+import {ArrowUp} from "@tamagui/lucide-icons";
 
 export default function FeedPage() {
   const [locations, setLocations] = useState<MapLocation[]>([]);
@@ -26,6 +27,12 @@ export default function FeedPage() {
   // for refresh control
   const [refreshEnabled, setRefreshEnabled] = useState(true);
 
+  // for "scroll to top" functionality
+  const listRef = useRef<FlatList<string>>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  function scrollToTop() {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }
 
   const router = useRouter()
 
@@ -100,28 +107,17 @@ export default function FeedPage() {
     handleQuestionsUpdate(questions)
   }, [questionIds.length, query.data]);
 
-  function findDuplicateIds(ids: string[]): string[] {
-    // TODO: delete this method once done
-    const seen = new Set<string>();
-    const duplicates = new Set<string>();
-
-    for (const id of ids) {
-      if (seen.has(id)) duplicates.add(id);
-      else seen.add(id);
-    }
-
-    return Array.from(duplicates);
-  }
-
-  const dupes = findDuplicateIds(questionIds)
-
-  console.debug("DUPLICATE QUESTION IDS", dupes, ",LENGTH: ", dupes.length)
-
   return (
       <SafeAreaView edges={["left", "right"]}>
         <FlatList
+            ref={listRef}
+            onScroll={(e) => {
+              const offsetY = e.nativeEvent.contentOffset.y;
+              setShowScrollTop(offsetY > 400); // show after 400px scroll
+            }}
+            scrollEventThrottle={16}
             data={questionIds}
-            keyExtractor={(id, i) => id}
+            keyExtractor={(id) => id}
             renderItem={({ item }) => <QuestionCard questionId={item} showDetails={false} /> }
             contentContainerStyle={{gap: 5}} // gap between rows
             onEndReached={() => {
@@ -129,7 +125,7 @@ export default function FeedPage() {
                 query.fetchNextPage();
               }
             }}
-            onEndReachedThreshold={0.5}
+            onEndReachedThreshold={null}
             refreshControl={
               <RefreshControl
                   refreshing={query.isRefetching}
@@ -188,13 +184,29 @@ export default function FeedPage() {
               ) : null
             }
             ListFooterComponent={
-              isLoading() ? (
+              query.isFetchingNextPage || isLoading() ? (
                   <YStack py="$3" ai="center">
                     <Spinner size={"large"}/>
                   </YStack>
               ) : null
             }
         />
+        {/* floating scroll-to-top button */}
+        {showScrollTop && (
+            <View
+                position="absolute"
+                bottom="$4"
+                right="$4"
+            >
+              <Button
+                  circular
+                  size="$4"
+                  onPress={scrollToTop}
+              >
+                <ArrowUp size={20}/>
+              </Button>
+            </View>
+        )}
       </SafeAreaView>
   );
 }
