@@ -72,3 +72,19 @@ export function formatExpirationDate(timestamp: string): string {
     if (diffMin >= 1) return `${diffMin}m left`
     return `${diffSec}s left`
 }
+
+export function formatDisplayNumber(num: number): string {
+    if (num < 1000) {
+        // If less than 1000, return the number as it is.
+        return num.toString();
+    } else if (num < 1000000) {
+        // If the number is in thousands, format it with "k".
+        return (num / 1000).toFixed(2) + 'k';
+    } else if (num < 1000000000) {
+        // If the number is in millions, format it with "M".
+        return (num / 1000000).toFixed(2) + 'M';
+    } else {
+        // If the number is in billions or more, format it with "B".
+        return (num / 1000000000).toFixed(2) + 'B';
+    }
+}

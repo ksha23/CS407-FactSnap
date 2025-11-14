@@ -1,11 +1,11 @@
 import {useGetQuestionById} from "@/hooks/tanstack/question";
 import {Avatar, Card, XStack, YStack, Text, Image, Button, H2, H3, Label, View} from "tamagui";
-import {Calendar, Clock, MapPin} from "@tamagui/lucide-icons";
+import {Calendar, Clock, MapPin, MessageCircle} from "@tamagui/lucide-icons";
 import {ContentType, Question} from "@/models/question";
 import {Location} from "@/models/location"
 import QuestionMap from "@/components/map/question-map";
 import {Badge} from "@/components/card/badge";
-import {formatExpirationDate, multiFormatDateString} from "@/utils/formatter";
+import {formatDisplayNumber, formatExpirationDate, multiFormatDateString} from "@/utils/formatter";
 import {QuestionPollCard} from "@/components/card/question-poll";
 import {useRouter} from "expo-router";
 
@@ -101,6 +101,12 @@ export default function QuestionCard(props: Props) {
                         <Text fontWeight={600} fontStyle={"italic"}>This question contains a {question.content.type.toLowerCase()}</Text>
                     )
                 )}
+
+                {/* Section: Responses Amount */}
+                <XStack gap={"$1"}>
+                    <MessageCircle color="$gray10" size={20}/>
+                    <Text color="$gray10">{formatDisplayNumber(question.responses_amount)} responses</Text>
+                </XStack>
 
                 {/* Section: Creation + Edited Date */}
                 <XStack gap={"$1"}>
