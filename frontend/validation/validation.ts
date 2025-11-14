@@ -56,9 +56,25 @@ const location = z.object({
 
 const url = z.string().url({message: "Must be a URL"})
 
-const poll_option = z.string()
-    .min(1, {message: "Must be at least 1 character long"})
-    .max(100, {message: "Cannot exceed 100 characters"})
+const questionTitle = z.string()
+    .min(3, {message: "Must be at least 3 characters long"})
+    .max(120, {message: "Cannot exceed 120 characters"})
+
+const questionBody = z.string()
+    .min(3, {message: "Must be at least 3 characters long"})
+    .max(2200, {message: "Cannot exceed 2200 characters"})
+    .optional()
+    .nullable()
+
+const questionDuration = z.string().refine((duration) => {
+    if (!goDurationRegex.test(duration)) {
+        return false;
+    }
+    const hours = parseToHours(duration)
+    return hours !== null && hours >= 1 && hours <= 24
+}, {
+    message: "Duration must be between 1h and 24h"
+})
 
 export const SignUpFormSchema = z.object({
     email: z.string().email(),
@@ -109,27 +125,20 @@ export const CreateQuestionContentSchema = z.discriminatedUnion("content_type", 
 ])
 
 export const CreateQuestionFormSchema = z.object({
-    title: z.string()
-        .min(3, {message: "Must be at least 3 characters long"})
-        .max(120, {message: "Cannot exceed 120 characters"}),
-    body: z.string()
-        .min(3, {message: "Must be at least 3 characters long"})
-        .max(2200, {message: "Cannot exceed 2200 characters"})
-        .optional()
-        .nullable(),
+    title: questionTitle,
+    body: questionBody,
     category: z.nativeEnum(Category, {message: "Invalid category"}),
     location: location,
     image_urls: z.array(url).optional().nullable(),
-    duration: z.string().refine((duration) => {
-        if (!goDurationRegex.test(duration)) {
-            return false;
-        }
-        const hours = parseToHours(duration)
-        return hours !== null && hours >= 1 && hours <= 24
-    }, {
-        message: "Duration must be between 1h and 24h"
-    })
+    duration: questionDuration
 }).extend({
     content: CreateQuestionContentSchema
+})
+
+export const EditQuestionFormSchema = z.object({
+    title: questionTitle,
+    body: questionBody,
+    category: z.nativeEnum(Category, {message: "Invalid category"}),
+    location: location,
 })
 

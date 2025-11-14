@@ -13,6 +13,7 @@ import type { Coordinates } from "@/services/location-service";
 
 import { usePlaceAutocomplete } from "@/hooks/use-place-autocomplete";
 import { useReverseGeocodeName } from "@/hooks/use-reverse-geocode-name";
+import {Location} from "@/models/location";
 
 export interface LocationSelection {
   coords: Coordinates;
@@ -22,7 +23,7 @@ export interface LocationSelection {
 
 interface LocationPickerProps {
   onChange?: (sel: LocationSelection) => void;
-  initialLocation?: Coordinates;
+  initialLocation?: Location;
   height?: number;
 }
 
@@ -178,7 +179,9 @@ export default function LocationPicker({
 
         await startNewSelection({
           nextCoords: startCoords,
-          source: "current",
+          seedAddress: initialLocation?.address ?? undefined,
+          seedLabel: initialLocation?.name ?? undefined,
+          source: "manual",
         });
       } catch (error) {
         console.error("Failed to initialise location picker:", error);

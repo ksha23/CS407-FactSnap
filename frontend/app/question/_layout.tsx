@@ -9,6 +9,12 @@ export default function QuestionLayout() {
                     title: "Question Details",
                 }}
             />
+            <Stack.Screen
+                name="[id]/edit"
+                options={{
+                    title: "Edit Question",
+                }}
+            />
         </Stack>
     );
 }

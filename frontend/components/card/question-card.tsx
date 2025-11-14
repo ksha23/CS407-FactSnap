@@ -1,6 +1,6 @@
 import {useGetQuestionById} from "@/hooks/tanstack/question";
 import {Avatar, Card, XStack, YStack, Text, Image, Button, H2, H3, Label, View} from "tamagui";
-import {Calendar, Clock, MapPin, MessageCircle} from "@tamagui/lucide-icons";
+import {Calendar, Clock, MapPin, MessageCircle, SquarePen, Trash} from "@tamagui/lucide-icons";
 import {ContentType, Question} from "@/models/question";
 import {Location} from "@/models/location"
 import QuestionMap from "@/components/map/question-map";
@@ -33,6 +33,36 @@ export default function QuestionCard(props: Props) {
                 })
             }}
         >
+            {/* Owner actions */}
+            {question.is_owned && (
+                <XStack position="absolute" top="$3" right="$3" gap="$3">
+                    <Button
+                        size="$2"
+                        backgroundColor="$blue4"
+                        onPress={(e) => {
+                            e.stopPropagation()
+                            router.push({
+                                pathname: "/question/[id]/edit",
+                                params: { id: props.questionId },
+                            })
+                        }}
+                    >
+                        <SquarePen size={20} color="$blue11"/>
+                    </Button>
+
+                    <Button
+                        size="$2"
+                        backgroundColor="$red4"
+                        onPress={(e) => {
+                            e.stopPropagation()
+                            // TODO: implement confirmation modal + delete logic
+                        }}
+                    >
+                        <Trash size={20} color="$red11"/>
+                    </Button>
+                </XStack>
+            )}
+
             <YStack gap="$3">
                 {/* Section: Author info */}
                 <XStack alignItems="center" gap="$3">
