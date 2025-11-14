@@ -333,7 +333,7 @@ WHERE ST_DWithin(
               )::geography,
               $4::float8 * 1609.34
       )
-ORDER BY q.created_at DESC
+ORDER BY q.created_at DESC, q.id DESC
 LIMIT $6 OFFSET $5
 `
 
@@ -428,7 +428,7 @@ WHERE
               )::geography,
               $5::float8 * 1609.34
       )
-ORDER BY q.created_at DESC
+ORDER BY q.created_at DESC, q.id DESC
 LIMIT $7 OFFSET $6
 `
 

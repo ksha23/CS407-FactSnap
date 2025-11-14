@@ -63,7 +63,7 @@ WHERE ST_DWithin(
               )::geography,
               sqlc.arg(radius_miles)::float8 * 1609.34
       )
-ORDER BY q.created_at DESC
+ORDER BY q.created_at DESC, q.id DESC
 LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
 
 -- name: GetQuestionsInRadiusFeedByCategory :many
@@ -88,7 +88,7 @@ WHERE
               )::geography,
               sqlc.arg(radius_miles)::float8 * 1609.34
       )
-ORDER BY q.created_at DESC
+ORDER BY q.created_at DESC, q.id DESC
 LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
 
 

@@ -70,6 +70,7 @@ export default function FeedPage() {
     const newLocations: MapLocation[] = []
     questions.forEach(question => {
       newLocations.push({
+        id: question.location.id,
         questionId: question.id,
         coordinates: {latitude: question.location.latitude, longitude: question.location.longitude},
         title: question.location.name ?? "Unknown",
@@ -99,11 +100,28 @@ export default function FeedPage() {
     handleQuestionsUpdate(questions)
   }, [questionIds.length, query.data]);
 
+  function findDuplicateIds(ids: string[]): string[] {
+    // TODO: delete this method once done
+    const seen = new Set<string>();
+    const duplicates = new Set<string>();
+
+    for (const id of ids) {
+      if (seen.has(id)) duplicates.add(id);
+      else seen.add(id);
+    }
+
+    return Array.from(duplicates);
+  }
+
+  const dupes = findDuplicateIds(questionIds)
+
+  console.debug("DUPLICATE QUESTION IDS", dupes, ",LENGTH: ", dupes.length)
+
   return (
       <SafeAreaView edges={["left", "right"]}>
         <FlatList
             data={questionIds}
-            keyExtractor={id => id}
+            keyExtractor={(id, i) => id}
             renderItem={({ item }) => <QuestionCard questionId={item} showDetails={false} /> }
             contentContainerStyle={{gap: 5}} // gap between rows
             onEndReached={() => {

@@ -63,7 +63,7 @@ export default function ProfilePage() {
                 <View alignItems="center" gap="$3">
                   <Avatar circular size={100}>
                     <Avatar.Image srcSet={authUserQuery.data.avatar_url} />
-                    <Avatar.Fallback backgroundColor={"$blue8"} />
+                    <Avatar.Fallback backgroundColor={"$gray5"} />
                   </Avatar>
                   <YStack alignItems="center">
                     <Text fontSize="$6" fontWeight="bold">

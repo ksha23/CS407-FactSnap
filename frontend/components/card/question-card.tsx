@@ -37,8 +37,8 @@ export default function QuestionCard(props: Props) {
                 {/* Section: Author info */}
                 <XStack alignItems="center" gap="$3">
                     <Avatar circular>
-                        <Avatar.Image src={question.author.avatar_url ?? ""} />
-                        <Avatar.Fallback backgroundColor="$gray5" />
+                        <Avatar.Image srcSet={question.author.avatar_url} />
+                        <Avatar.Fallback backgroundColor={"$gray5"} />
                     </Avatar>
                     <YStack>
                         <Text>{question.author.display_name}</Text>
