@@ -1,4 +1,12 @@
-import {useInfiniteQuery, useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {
+    InfiniteData,
+    QueryClient,
+    QueryFilters,
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useQueryClient
+} from "@tanstack/react-query";
 import {
     ContentType,
     CreatePollReq,
@@ -24,6 +32,28 @@ import {PAGE_SIZE, PageFilterType} from "@/services/axios-client";
 export type InfiniteQuestions = {
     questionIds: string[],
     nextPageParam?: number,
+}
+
+
+/**
+ * Helper function to reset infinite question list(s) to the first page (by setting the cache)
+ * NOTE: it assumes the queries have been canceled prior
+ * @param queryClient react query client
+ * @param queryFilter the query filter to use for matching the lists
+ */
+export function resetInfiniteQuestionsList(queryClient: QueryClient, queryFilter: QueryFilters) {
+    queryClient.setQueriesData<InfiniteData<InfiniteQuestions>>(
+        queryFilter,
+        (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
+            if (!oldData) return undefined;
+
+            return produce(oldData, (draft) => {
+                // Reset to the first page
+                draft.pages = draft.pages?.slice(0, 1) || [];
+                draft.pageParams = draft.pageParams?.slice(0, 1) || [];
+            });
+        },
+    )
 }
 
 // QUERIES

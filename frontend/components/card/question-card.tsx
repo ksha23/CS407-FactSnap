@@ -70,17 +70,24 @@ export default function QuestionCard(props: Props) {
                 {/* TODO: Section: Images */}
 
                 {/* Section: Map + Location */}
-                <YStack>
-                    <View
-                        onPress={() => {if (!props.showDetails) return}}
-                    >
-                        <QuestionMap
-                            location={question.location}
-                            height={props.showDetails ? undefined : 200}
-                        />
-                    </View>
-                    <Text color="$gray10">Location: {question.location.name}</Text>
-                </YStack>
+                {props.showDetails ? (
+                    <YStack>
+                        <View
+                            onPress={() => {if (!props.showDetails) return}}
+                        >
+                            <QuestionMap
+                                location={question.location}
+                                height={props.showDetails ? undefined : 200}
+                            />
+                        </View>
+                        <Text color="$gray10">Location: {question.location.name}</Text>
+                    </YStack>
+
+                ) : (
+                    <YStack>
+                        <Text color="$gray10">📍 {question.location.name}</Text>
+                    </YStack>
+                )}
 
                 {/* Section: Content */}
                 {question.content.type !== ContentType.NONE && (

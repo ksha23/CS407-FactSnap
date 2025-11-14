@@ -1,15 +1,16 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {SafeAreaView} from "react-native-safe-area-context";
-import {ScrollView, Text, View, YStack} from "tamagui";
+import {Spinner, Text, View, YStack} from "tamagui";
 import FeedMap, {MapLocation} from "@/components/map/feed-map";
 import {Coordinates} from "@/services/location-service";
-import {RefreshControl} from "react-native";
-import {useGetQuestionsFeed} from "@/hooks/tanstack/question";
+import {Alert, FlatList, RefreshControl} from "react-native";
+import {resetInfiniteQuestionsList, useGetQuestionsFeed} from "@/hooks/tanstack/question";
 import {PageFilterType} from "@/services/axios-client";
-import QuestionsFeed from "@/components/feed/questions-feed";
 import {useQueryClient} from "@tanstack/react-query";
 import {Question} from "@/models/question";
 import {useRouter} from "expo-router";
+import {questionKeys} from "@/hooks/tanstack/query-keys";
+import QuestionCard from "@/components/card/question-card";
 
 export default function FeedPage() {
   const [locations, setLocations] = useState<MapLocation[]>([]);
@@ -17,7 +18,30 @@ export default function FeedPage() {
     center: Coordinates;
     radius: number;
   } | null>(null);
+
+  // TODO: page filtering for question category, etc
+  const [pageFilterType, setPageFilterType] = useState<PageFilterType>(PageFilterType.NONE)
+  const [pageFilter, setPageFilter] = useState<string>("")
+
+  // for refresh control
+  const [refreshEnabled, setRefreshEnabled] = useState(true);
+
+
   const router = useRouter()
+
+  const queryClient = useQueryClient()
+  const query = useGetQuestionsFeed(
+      currentRegion?.center ?? null,
+      currentRegion?.radius ?? 0,
+      pageFilterType,
+      pageFilter,
+  )
+
+  useEffect(() => {
+    if (query.error) {
+      Alert.alert("Could not fetch questions feed", query.error.message)
+    }
+  }, [query.error]);
 
 
   // Fetch locations when map region changes (we only update currentRegion here)
@@ -55,46 +79,104 @@ export default function FeedPage() {
     setLocations(newLocations)
   }
 
+  function handleFeedRefresh() {
+    resetInfiniteQuestionsList(queryClient, {queryKey: questionKeys.lists()})
+    query.refetch()
+  }
+
+  function isLoading() {
+    return query.isPending || (!query.isFetchingNextPage && query.isFetching)
+  }
+
+  const pages = query.data?.pages ?? [];
+  const questionIds = pages.flatMap((p) => p.questionIds);
+
+  // when feed changes, invoke handleQuestionsUpdate with new question list
+  useEffect(() => {
+    const questions = questionIds
+        .map((id) => queryClient.getQueryData(questionKeys.getQuestionById(id)))
+        .filter(Boolean) as Question[];
+    handleQuestionsUpdate(questions)
+  }, [questionIds.length, query.data]);
+
   return (
-      <SafeAreaView edges={["left", "right", "bottom"]}>
-        <ScrollView margin={0}>
-          <YStack>
-            {/* Page title */}
-            <View
-                flexDirection="row"
-                justifyContent="space-between"
-                alignItems="center"
-                padding="$4"
-                gap="$4"
-            >
+      <SafeAreaView edges={["left", "right"]}>
+        <FlatList
+            data={questionIds}
+            keyExtractor={id => id}
+            renderItem={({ item }) => <QuestionCard questionId={item} showDetails={false} /> }
+            contentContainerStyle={{gap: 5}} // gap between rows
+            onEndReached={() => {
+              if (!query.isFetchingNextPage && query.hasNextPage) {
+                query.fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl
+                  refreshing={query.isRefetching}
+                  enabled={refreshEnabled}
+                  onRefresh={handleFeedRefresh}
+              />
+            }
+            refreshing={query.isRefetching}
+            ListHeaderComponent={
               <YStack>
-                <Text fontSize="$8" fontWeight="bold">
-                  Feed
-                </Text>
-                <Text fontSize="$4" color="$gray11">
-                  Questions near you
-                </Text>
+                {/* Page title */}
+                <View
+                    flexDirection="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    padding="$4"
+                    gap="$4"
+                >
+                  <YStack>
+                    <Text fontSize="$8" fontWeight="bold">
+                      Feed
+                    </Text>
+                    <Text fontSize="$4" color="$gray11">
+                      Questions near you
+                    </Text>
+                  </YStack>
+                </View>
+
+                {/* Feed Map */}
+                <View
+                    // to disable refresh control when interacting with the map
+                    onTouchStart={() => setRefreshEnabled(false)}
+                    onTouchEnd={() => setRefreshEnabled(true)}
+                >
+                  <FeedMap
+                      locations={locations}
+                      onRegionChange={handleRegionChange}
+                      onMarkerPress={handleMarkerPress}
+                      showRadiusCircle={true}
+                      disableAutoFetch={false}
+                      height={300}
+                  />
+                </View>
               </YStack>
-            </View>
-
-            {/* Feed Map */}
-            <FeedMap
-                locations={locations}
-                onRegionChange={handleRegionChange}
-                onMarkerPress={handleMarkerPress}
-                showRadiusCircle={true}
-                disableAutoFetch={false}
-                height={300}
-            />
-          </YStack>
-
-          {/* Questions Feed */}
-          <QuestionsFeed
-              region={currentRegion}
-              onQuestionsChange={handleQuestionsUpdate}
-          />
-        </ScrollView>
-
+            }
+            ListHeaderComponentStyle={{paddingBottom: 5}}
+            ListEmptyComponent={
+              query.error ? (
+                  <YStack f={1} jc="center" ai="center" p="$4">
+                    <Text color={"red"}>Error fetching questions feed</Text>
+                  </YStack>
+              ) : !isLoading() ? (
+                  <YStack f={1} jc="center" ai="center" p="$4">
+                    <Text>No questions found</Text>
+                  </YStack>
+              ) : null
+            }
+            ListFooterComponent={
+              isLoading() ? (
+                  <YStack py="$3" ai="center">
+                    <Spinner size={"large"}/>
+                  </YStack>
+              ) : null
+            }
+        />
       </SafeAreaView>
   );
 }
