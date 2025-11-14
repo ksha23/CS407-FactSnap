@@ -18,7 +18,7 @@ import {
 } from "@/models/question";
 import {
     createPoll,
-    createQuestion,
+    createQuestion, deleteQuestion,
     getQuestionById,
     getQuestionsInRadiusFeed, updateQuestion,
     votePoll
@@ -146,6 +146,36 @@ export function useUpdateQuestion() {
             if (oldQuestion) {
                 queryClient.setQueryData(questionKeys.getQuestionById(variables.question_id), data)
             }
+        }
+    })
+}
+
+export function useDeleteQuestion() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (questionId: string) => deleteQuestion(questionId),
+        onError: (error) => {
+            Alert.alert("Failed to delete question. Please try again.", error.message)
+        },
+        onSuccess: (data, variables, onMutateResult, context) => {
+            // Cancel any outgoing refetches so that they don't overwrite our update
+            queryClient.cancelQueries({queryKey: questionKeys.getQuestionById(variables)})
+            queryClient.cancelQueries({ queryKey: questionKeys.lists() });
+
+            // remove the question from all question lists cache
+            queryClient.setQueriesData({ queryKey: questionKeys.lists() }, (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
+                if (!oldData) return oldData;
+
+                return produce(oldData, (draft) => {
+                    draft.pages.forEach((page) => {
+                        page.questionIds = page.questionIds.filter(questionId => questionId !== variables)
+                    });
+                });
+            });
+
+            // // delete the cache for question details
+            queryClient.setQueryData(questionKeys.getQuestionById(variables), null)
         }
     })
 }

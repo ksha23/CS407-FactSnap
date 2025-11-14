@@ -22,27 +22,16 @@ func NewQuestionRepo(db *pgxpool.Pool) *questionRepo {
 }
 
 func (r *questionRepo) CreateQuestion(ctx context.Context, userID string, params model.CreateQuestionParams) (uuid.UUID, error) {
-	var row sqlc.CreateQuestionRow
+	var questionRow sqlc.CreateQuestionRow
 	err := execTx(ctx, r.db, func(query *sqlc.Queries) error {
 		// in a single transaction:
-		// - insert location first
-		location, err := query.CreateLocation(ctx,
-			toWKT(params.Location.Latitude, params.Location.Longitude),
-			params.Location.Name,
-			params.Location.Address,
-		)
-		if err != nil {
-			return fmt.Errorf("CreateLocation: %w", wrapError(err))
-		}
-
-		// - then insert question
-		row, err = query.CreateQuestion(ctx, sqlc.CreateQuestionParams{
+		// - insert question
+		row, err := query.CreateQuestion(ctx, sqlc.CreateQuestionParams{
 			AuthorID:    userID,
 			ContentType: string(model.ContentTypeNone),
 			Title:       params.Title,
 			Body:        params.Body,
 			Category:    string(params.Category),
-			LocationID:  location.ID,
 			ImageUrls:   params.ImageURLs,
 			ExpiredAt:   params.ExpiresAt,
 		})
@@ -50,6 +39,18 @@ func (r *questionRepo) CreateQuestion(ctx context.Context, userID string, params
 			return fmt.Errorf("CreateQuestion: %w", wrapError(err))
 		}
 
+		// - insert location
+		_, err = query.CreateLocation(ctx,
+			toWKT(params.Location.Latitude, params.Location.Longitude),
+			params.Location.Name,
+			params.Location.Address,
+			row.ID,
+		)
+		if err != nil {
+			return fmt.Errorf("CreateLocation: %w", wrapError(err))
+		}
+
+		questionRow = row
 		return nil
 	})
 	if err != nil {
@@ -58,7 +59,7 @@ func (r *questionRepo) CreateQuestion(ctx context.Context, userID string, params
 
 	// NOTE: The newly-created question will not have its content populated yet.
 	// We are assuming the user will add the content after, if they intend to
-	return row.ID, nil
+	return questionRow.ID, nil
 }
 
 func (r *questionRepo) CreatePoll(ctx context.Context, userID string, params model.CreatePollParams) (uuid.UUID, error) {
@@ -187,6 +188,14 @@ func (r *questionRepo) EditQuestion(ctx context.Context, userID string, params m
 	}
 
 	return question, nil
+}
+
+func (r *questionRepo) DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) error {
+	err := r.query.DeleteQuestion(ctx, questionID)
+	if err != nil {
+		return fmt.Errorf("QuestionRepo::DeleteQuestion: %w", err)
+	}
+	return nil
 }
 
 func (r *questionRepo) GetQuestionsInRadiusFeed(

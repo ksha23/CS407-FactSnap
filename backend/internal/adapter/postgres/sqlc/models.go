@@ -12,10 +12,11 @@ import (
 )
 
 type Location struct {
-	ID       uuid.UUID
-	Location postgis.PointS
-	Name     *string
-	Address  *string
+	ID         uuid.UUID
+	QuestionID uuid.UUID
+	Location   postgis.PointS
+	Name       *string
+	Address    *string
 }
 
 type Poll struct {
@@ -44,7 +45,6 @@ type Question struct {
 	ContentType  string
 	Title        string
 	Body         *string
-	LocationID   uuid.UUID
 	ImageUrls    []string
 	Category     string
 	NumResponses int

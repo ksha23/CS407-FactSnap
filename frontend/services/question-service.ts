@@ -34,6 +34,11 @@ export async function updateQuestion(req: UpdateQuestionReq) {
     return (await apiClient.put<UpdateQuestionRes>('/questions', req)).data.question
 }
 
+export async function deleteQuestion(questionId: string) {
+    await apiClient.delete(`/questions/${questionId}`)
+    return
+}
+
 export async function createPoll(req: CreatePollReq) {
     return (await apiClient.post<CreatePollRes>(`/questions/poll`, req)).data.poll_id
 }

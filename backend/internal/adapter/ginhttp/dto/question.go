@@ -49,11 +49,6 @@ func (r *CreateQuestionReq) Validate() error {
 	if err := validate.Location(r.Location.Latitude, r.Location.Longitude); err != nil {
 		errsMap["location"] = err
 	}
-	// we also need to ensure the location id is not empty
-	if obj.IsZero(r.Location.ID) {
-		errsMap["location"] = fmt.Errorf("location id cannot be empty")
-	}
-
 	// validate image urls
 	if len(r.ImageURLs) > 0 {
 		for _, url := range r.ImageURLs {
@@ -126,6 +121,10 @@ func (r *UpdateQuestionReq) Validate() error {
 	// validate location
 	if err := validate.Location(r.Location.Latitude, r.Location.Longitude); err != nil {
 		errsMap["location"] = err
+	}
+	// we also need to ensure the location id is not empty
+	if obj.IsZero(r.Location.ID) {
+		errsMap["location"] = fmt.Errorf("location id cannot be empty")
 	}
 
 	if len(errsMap) > 0 {

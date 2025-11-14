@@ -1,4 +1,4 @@
-import {useGetQuestionById} from "@/hooks/tanstack/question";
+import {useDeleteQuestion, useGetQuestionById} from "@/hooks/tanstack/question";
 import {Avatar, Card, XStack, YStack, Text, Image, Button, H2, H3, Label, View} from "tamagui";
 import {Calendar, Clock, MapPin, MessageCircle, SquarePen, Trash} from "@tamagui/lucide-icons";
 import {ContentType, Question} from "@/models/question";
@@ -8,6 +8,8 @@ import {Badge} from "@/components/card/badge";
 import {formatDisplayNumber, formatExpirationDate, multiFormatDateString} from "@/utils/formatter";
 import {QuestionPollCard} from "@/components/card/question-poll";
 import {useRouter} from "expo-router";
+import {useMemo} from "react";
+import {Alert} from "react-native";
 
 type Props = {
     questionId: string;
@@ -16,9 +18,39 @@ type Props = {
 
 export default function QuestionCard(props: Props) {
     const questionQuery = useGetQuestionById(props.questionId)
-    const question = questionQuery.data!!
+    const deleteQuestionMutation = useDeleteQuestion()
+
+    const question = questionQuery.data
     const router = useRouter()
 
+    const isExpired = useMemo(() => {
+        if (question) {
+            const expiry = new Date(question.expired_at)
+            const now = new Date()
+            return now.getTime() >= expiry.getTime()
+        } else {
+            return false
+        }
+    }, [question])
+
+    function handleDelete() {
+        // NOTE: this function is called after confirmation
+
+        deleteQuestionMutation.mutate(question!!.id)
+        if (props.showDetails) {
+            if (router.canGoBack()) {
+                router.back()
+            } else {
+                router.navigate({
+                    pathname: "/(tabs)",
+                })
+            }
+        }
+    }
+
+    if (!question) {
+        return null
+    }
 
     return (
         <Card
@@ -41,6 +73,13 @@ export default function QuestionCard(props: Props) {
                         backgroundColor="$blue4"
                         onPress={(e) => {
                             e.stopPropagation()
+
+                            // cant edit expired questions
+                            if (isExpired) {
+                                Alert.alert("You cannot edit this question", "This question has expired")
+                                return
+                            }
+
                             router.push({
                                 pathname: "/question/[id]/edit",
                                 params: { id: props.questionId },
@@ -55,7 +94,21 @@ export default function QuestionCard(props: Props) {
                         backgroundColor="$red4"
                         onPress={(e) => {
                             e.stopPropagation()
-                            // TODO: implement confirmation modal + delete logic
+                            Alert.alert(
+                                "Confirm Action",
+                                "Are you sure you want to delete this question?",
+                                [
+                                    {
+                                        text: "Cancel",
+                                        onPress: () => {},
+                                        style: "cancel" // Optional: for iOS, makes the button appear as a cancel button
+                                    },
+                                    {
+                                        text: "OK",
+                                        onPress: handleDelete
+                                    }
+                                ]
+                            );
                         }}
                     >
                         <Trash size={20} color="$red11"/>

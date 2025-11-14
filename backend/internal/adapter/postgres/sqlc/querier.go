@@ -11,7 +11,7 @@ import (
 )
 
 type Querier interface {
-	CreateLocation(ctx context.Context, wkt string, name *string, address *string) (Location, error)
+	CreateLocation(ctx context.Context, wkt string, name *string, address *string, questionID uuid.UUID) (Location, error)
 	CreatePoll(ctx context.Context, questionID uuid.UUID) (Poll, error)
 	CreatePollOptions(ctx context.Context, arg []CreatePollOptionsParams) (int64, error)
 	CreatePollVote(ctx context.Context, pollID uuid.UUID, optionID uuid.UUID, userID string) error
@@ -19,6 +19,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DecrementResponseAmount(ctx context.Context, iD uuid.UUID, numResponses int) error
 	DeletePollVote(ctx context.Context, userID string, pollID uuid.UUID) error
+	DeleteQuestion(ctx context.Context, id uuid.UUID) error
 	EditLocation(ctx context.Context, wkt string, name *string, address *string, iD uuid.UUID) (Location, error)
 	EditQuestion(ctx context.Context, title string, body *string, category string, iD uuid.UUID) (EditQuestionRow, error)
 	GetPollByQuestionID(ctx context.Context, questionID uuid.UUID) (GetPollByQuestionIDRow, error)

@@ -11,28 +11,29 @@ CREATE TABLE "users" (
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp
 );
 
-CREATE TABLE "locations" (
-    "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    "location" geometry(Point, 4326) NOT NULL, -- This stores GPS coordinate as PostGIS geometry point using the WGS-84 coordinate system
-    "name" text NULL,
-    "address" text NULL
-);
-
 CREATE TABLE "questions" (
     "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     "author_id" text NOT NULL,
     "content_type" text NOT NULL,
     "title" text NOT NULL,
     "body" text NULL,
-    "location_id" uuid NOT NULL,
     "image_urls" text[] NULL,
     "category" text NOT NULL,
     "num_responses" integer NOT NULL DEFAULT 0,
     "created_at" timestamptz NOT NULL DEFAULT current_timestamp,
     "edited_at" timestamptz NOT NULL DEFAULT current_timestamp,
     "expired_at" timestamptz NOT NULL,
-    FOREIGN KEY (author_id) REFERENCES "users" (id) ON DELETE CASCADE,
-    FOREIGN KEY (location_id) REFERENCES "locations" (id)
+    FOREIGN KEY (author_id) REFERENCES "users" (id) ON DELETE CASCADE
+);
+
+CREATE TABLE "locations" (
+    "id" uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    "question_id" uuid NOT NULL,
+    "location" geometry(Point, 4326) NOT NULL, -- This stores GPS coordinate as PostGIS geometry point using the WGS-84 coordinate system
+    "name" text NULL,
+    "address" text NULL,
+    UNIQUE(question_id), -- Each question should only have one location
+    FOREIGN KEY (question_id) REFERENCES "questions" (id) ON DELETE CASCADE
 );
 
 CREATE TABLE "responses" (

@@ -19,12 +19,12 @@ func NewQuestionHandler(questionService port.QuestionService) *QuestionHandler {
 }
 
 func (h *QuestionHandler) RegisterRoutes(r *gin.RouterGroup) {
-	// TODO: add API routes for questions
 	questionRoutes := r.Group("/questions")
 	questionRoutes.POST("", h.CreateQuestion)
 	questionRoutes.GET("/:question_id", h.GetQuestionByID)
 	questionRoutes.POST("/feed", h.GetQuestionsInRadiusFeed)
 	questionRoutes.PUT("", h.UpdateQuestion)
+	questionRoutes.DELETE("/:question_id", h.DeleteQuestion)
 
 	pollRoutes := questionRoutes.Group("/poll")
 	pollRoutes.POST("", h.CreatePoll)
@@ -135,6 +135,23 @@ func (h *QuestionHandler) UpdateQuestion(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.UpdateQuestionRes{Question: updatedQuestion})
+}
+
+func (h *QuestionHandler) DeleteQuestion(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	questionID, err := uuid.Parse(c.Param("question_id"))
+	if err != nil {
+		c.Error(BadRequest(c, "could not parse question id", fmt.Errorf("QuestionHandler::DeleteQuestion: %w", err)))
+		return
+	}
+
+	if err := h.QuestionService.DeleteQuestion(c.Request.Context(), userID, questionID); err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "QuestionHandler::DeleteQuestion", err))
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (h *QuestionHandler) GetQuestionsInRadiusFeed(c *gin.Context) {

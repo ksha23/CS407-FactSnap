@@ -12,20 +12,27 @@ import (
 )
 
 const createLocation = `-- name: CreateLocation :one
-INSERT INTO locations (location, name, address)
+INSERT INTO locations (location, name, address, question_id)
 VALUES (
            ST_GeomFromText($1::text, 4326),
            $2,
-           $3
+           $3,
+        $4
        )
-RETURNING id, location, name, address
+RETURNING id, question_id, location, name, address
 `
 
-func (q *Queries) CreateLocation(ctx context.Context, wkt string, name *string, address *string) (Location, error) {
-	row := q.db.QueryRow(ctx, createLocation, wkt, name, address)
+func (q *Queries) CreateLocation(ctx context.Context, wkt string, name *string, address *string, questionID uuid.UUID) (Location, error) {
+	row := q.db.QueryRow(ctx, createLocation,
+		wkt,
+		name,
+		address,
+		questionID,
+	)
 	var i Location
 	err := row.Scan(
 		&i.ID,
+		&i.QuestionID,
 		&i.Location,
 		&i.Name,
 		&i.Address,
@@ -40,7 +47,7 @@ SET
     name = $2,
     address = $3
 WHERE locations.id = $4
-RETURNING id, location, name, address
+RETURNING id, question_id, location, name, address
 `
 
 func (q *Queries) EditLocation(ctx context.Context, wkt string, name *string, address *string, iD uuid.UUID) (Location, error) {
@@ -53,6 +60,7 @@ func (q *Queries) EditLocation(ctx context.Context, wkt string, name *string, ad
 	var i Location
 	err := row.Scan(
 		&i.ID,
+		&i.QuestionID,
 		&i.Location,
 		&i.Name,
 		&i.Address,

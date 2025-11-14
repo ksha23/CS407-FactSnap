@@ -6,22 +6,19 @@ WITH new_question AS (
         title,
         body,
         category,
-        location_id,
         image_urls,
         expired_at
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *
 )
 SELECT
     nq.*,
-    sqlc.embed(l),
     sqlc.embed(u),
     TRUE AS is_owned
 FROM
     new_question nq
-    JOIN users u ON nq.author_id = u.id
-    JOIN locations l ON nq.location_id = l.id;
+    JOIN users u ON nq.author_id = u.id;
 
 -- name: EditQuestion :one
 WITH edited_question AS (
@@ -42,7 +39,11 @@ SELECT
 FROM
     edited_question eq
         JOIN users u ON eq.author_id = u.id
-        JOIN locations l ON eq.location_id = l.id;
+        JOIN locations l ON eq.id = l.question_id;
+
+-- name: DeleteQuestion :exec
+DELETE FROM questions
+WHERE questions.id = sqlc.arg(id);
 
 -- name: SetQuestionContentType :exec
 UPDATE questions
@@ -58,8 +59,7 @@ SELECT
 FROM
     questions q
     JOIN users u ON q.author_id = u.id
-    JOIN locations l ON q.location_id = l.id
-
+    JOIN locations l ON q.id = l.question_id
 WHERE
     q.id = $1
     LIMIT 1;
@@ -72,7 +72,7 @@ SELECT
     q.author_id = sqlc.arg(user_id) AS is_owned
 FROM questions q
          JOIN users u ON q.author_id = u.id
-         JOIN locations l ON q.location_id = l.id
+         JOIN locations l ON q.id = l.question_id
 WHERE ST_DWithin(
               l.location::geography,
               ST_SetSRID(
@@ -95,7 +95,7 @@ SELECT
     q.author_id = sqlc.arg(user_id) AS is_owned
 FROM questions q
          JOIN users u ON q.author_id = u.id
-         JOIN locations l ON q.location_id = l.id
+         JOIN locations l ON q.id = l.question_id
 WHERE
     q.category = sqlc.arg(category)
     AND ST_DWithin(

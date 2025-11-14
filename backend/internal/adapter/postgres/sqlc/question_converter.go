@@ -4,26 +4,6 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 )
 
-func (row CreateQuestionRow) ToDomainModel() model.Question {
-	return model.Question{
-		ID: row.ID,
-		Content: model.QuestionContent{
-			Type: model.ContentTypeNone,
-		},
-		Category:        model.Category(row.Category),
-		Author:          toDomainUser(row.User),
-		Title:           row.Title,
-		Body:            row.Body,
-		Location:        toDomainLocation(row.Location),
-		ImageURLs:       row.ImageUrls,
-		IsOwned:         row.IsOwned,
-		ResponsesAmount: row.NumResponses,
-		CreatedAt:       row.CreatedAt,
-		EditedAt:        row.EditedAt,
-		ExpiredAt:       row.ExpiredAt,
-	}
-}
-
 func (row EditQuestionRow) ToDomainModel() model.Question {
 	return model.Question{
 		ID:       row.ID,

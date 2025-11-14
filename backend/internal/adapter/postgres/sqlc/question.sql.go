@@ -49,22 +49,19 @@ WITH new_question AS (
         title,
         body,
         category,
-        location_id,
         image_urls,
         expired_at
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id, author_id, content_type, title, body, location_id, image_urls, category, num_responses, created_at, edited_at, expired_at
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id, author_id, content_type, title, body, image_urls, category, num_responses, created_at, edited_at, expired_at
 )
 SELECT
-    nq.id, nq.author_id, nq.content_type, nq.title, nq.body, nq.location_id, nq.image_urls, nq.category, nq.num_responses, nq.created_at, nq.edited_at, nq.expired_at,
-    l.id, l.location, l.name, l.address,
+    nq.id, nq.author_id, nq.content_type, nq.title, nq.body, nq.image_urls, nq.category, nq.num_responses, nq.created_at, nq.edited_at, nq.expired_at,
     u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
     TRUE AS is_owned
 FROM
     new_question nq
     JOIN users u ON nq.author_id = u.id
-    JOIN locations l ON nq.location_id = l.id
 `
 
 type CreateQuestionParams struct {
@@ -73,7 +70,6 @@ type CreateQuestionParams struct {
 	Title       string
 	Body        *string
 	Category    string
-	LocationID  uuid.UUID
 	ImageUrls   []string
 	ExpiredAt   time.Time
 }
@@ -84,14 +80,12 @@ type CreateQuestionRow struct {
 	ContentType  string
 	Title        string
 	Body         *string
-	LocationID   uuid.UUID
 	ImageUrls    []string
 	Category     string
 	NumResponses int
 	CreatedAt    time.Time
 	EditedAt     time.Time
 	ExpiredAt    time.Time
-	Location     Location
 	User         User
 	IsOwned      bool
 }
@@ -103,7 +97,6 @@ func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) 
 		arg.Title,
 		arg.Body,
 		arg.Category,
-		arg.LocationID,
 		arg.ImageUrls,
 		arg.ExpiredAt,
 	)
@@ -114,17 +107,12 @@ func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) 
 		&i.ContentType,
 		&i.Title,
 		&i.Body,
-		&i.LocationID,
 		&i.ImageUrls,
 		&i.Category,
 		&i.NumResponses,
 		&i.CreatedAt,
 		&i.EditedAt,
 		&i.ExpiredAt,
-		&i.Location.ID,
-		&i.Location.Location,
-		&i.Location.Name,
-		&i.Location.Address,
 		&i.User.ID,
 		&i.User.Username,
 		&i.User.Email,
@@ -164,6 +152,16 @@ func (q *Queries) DeletePollVote(ctx context.Context, userID string, pollID uuid
 	return err
 }
 
+const deleteQuestion = `-- name: DeleteQuestion :exec
+DELETE FROM questions
+WHERE questions.id = $1
+`
+
+func (q *Queries) DeleteQuestion(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteQuestion, id)
+	return err
+}
+
 const editQuestion = `-- name: EditQuestion :one
 WITH edited_question AS (
     UPDATE questions
@@ -173,17 +171,17 @@ WITH edited_question AS (
         category = $3,
         edited_at = current_timestamp
     WHERE questions.id = $4
-    RETURNING id, author_id, content_type, title, body, location_id, image_urls, category, num_responses, created_at, edited_at, expired_at
+    RETURNING id, author_id, content_type, title, body, image_urls, category, num_responses, created_at, edited_at, expired_at
 )
 SELECT
-    eq.id, eq.author_id, eq.content_type, eq.title, eq.body, eq.location_id, eq.image_urls, eq.category, eq.num_responses, eq.created_at, eq.edited_at, eq.expired_at,
-    l.id, l.location, l.name, l.address,
+    eq.id, eq.author_id, eq.content_type, eq.title, eq.body, eq.image_urls, eq.category, eq.num_responses, eq.created_at, eq.edited_at, eq.expired_at,
+    l.id, l.question_id, l.location, l.name, l.address,
     u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
     TRUE AS is_owned
 FROM
     edited_question eq
         JOIN users u ON eq.author_id = u.id
-        JOIN locations l ON eq.location_id = l.id
+        JOIN locations l ON eq.id = l.question_id
 `
 
 type EditQuestionRow struct {
@@ -192,7 +190,6 @@ type EditQuestionRow struct {
 	ContentType  string
 	Title        string
 	Body         *string
-	LocationID   uuid.UUID
 	ImageUrls    []string
 	Category     string
 	NumResponses int
@@ -218,7 +215,6 @@ func (q *Queries) EditQuestion(ctx context.Context, title string, body *string, 
 		&i.ContentType,
 		&i.Title,
 		&i.Body,
-		&i.LocationID,
 		&i.ImageUrls,
 		&i.Category,
 		&i.NumResponses,
@@ -226,6 +222,7 @@ func (q *Queries) EditQuestion(ctx context.Context, title string, body *string, 
 		&i.EditedAt,
 		&i.ExpiredAt,
 		&i.Location.ID,
+		&i.Location.QuestionID,
 		&i.Location.Location,
 		&i.Location.Name,
 		&i.Location.Address,
@@ -337,15 +334,14 @@ func (q *Queries) GetPollVotes(ctx context.Context, pollID uuid.UUID, userID str
 
 const getQuestionByID = `-- name: GetQuestionByID :one
 SELECT
-    q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
+    q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
     u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
-    l.id, l.location, l.name, l.address,
+    l.id, l.question_id, l.location, l.name, l.address,
     q.author_id = $2 AS is_owned
 FROM
     questions q
     JOIN users u ON q.author_id = u.id
-    JOIN locations l ON q.location_id = l.id
-
+    JOIN locations l ON q.id = l.question_id
 WHERE
     q.id = $1
     LIMIT 1
@@ -367,7 +363,6 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 		&i.Question.ContentType,
 		&i.Question.Title,
 		&i.Question.Body,
-		&i.Question.LocationID,
 		&i.Question.ImageUrls,
 		&i.Question.Category,
 		&i.Question.NumResponses,
@@ -383,6 +378,7 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 		&i.User.AvatarUrl,
 		&i.User.CreatedAt,
 		&i.Location.ID,
+		&i.Location.QuestionID,
 		&i.Location.Location,
 		&i.Location.Name,
 		&i.Location.Address,
@@ -393,13 +389,13 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 
 const getQuestionsInRadiusFeed = `-- name: GetQuestionsInRadiusFeed :many
 SELECT
-    q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
-    l.id, l.location, l.name, l.address,
+    q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
+    l.id, l.question_id, l.location, l.name, l.address,
     u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
     q.author_id = $1 AS is_owned
 FROM questions q
          JOIN users u ON q.author_id = u.id
-         JOIN locations l ON q.location_id = l.id
+         JOIN locations l ON q.id = l.question_id
 WHERE ST_DWithin(
               l.location::geography,
               ST_SetSRID(
@@ -453,7 +449,6 @@ func (q *Queries) GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestions
 			&i.Question.ContentType,
 			&i.Question.Title,
 			&i.Question.Body,
-			&i.Question.LocationID,
 			&i.Question.ImageUrls,
 			&i.Question.Category,
 			&i.Question.NumResponses,
@@ -461,6 +456,7 @@ func (q *Queries) GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestions
 			&i.Question.EditedAt,
 			&i.Question.ExpiredAt,
 			&i.Location.ID,
+			&i.Location.QuestionID,
 			&i.Location.Location,
 			&i.Location.Name,
 			&i.Location.Address,
@@ -486,13 +482,13 @@ func (q *Queries) GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestions
 
 const getQuestionsInRadiusFeedByCategory = `-- name: GetQuestionsInRadiusFeedByCategory :many
 SELECT
-    q.id, q.author_id, q.content_type, q.title, q.body, q.location_id, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
-    l.id, l.location, l.name, l.address,
+    q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
+    l.id, l.question_id, l.location, l.name, l.address,
     u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
     q.author_id = $1 AS is_owned
 FROM questions q
          JOIN users u ON q.author_id = u.id
-         JOIN locations l ON q.location_id = l.id
+         JOIN locations l ON q.id = l.question_id
 WHERE
     q.category = $2
     AND ST_DWithin(
@@ -550,7 +546,6 @@ func (q *Queries) GetQuestionsInRadiusFeedByCategory(ctx context.Context, arg Ge
 			&i.Question.ContentType,
 			&i.Question.Title,
 			&i.Question.Body,
-			&i.Question.LocationID,
 			&i.Question.ImageUrls,
 			&i.Question.Category,
 			&i.Question.NumResponses,
@@ -558,6 +553,7 @@ func (q *Queries) GetQuestionsInRadiusFeedByCategory(ctx context.Context, arg Ge
 			&i.Question.EditedAt,
 			&i.Question.ExpiredAt,
 			&i.Location.ID,
+			&i.Location.QuestionID,
 			&i.Location.Location,
 			&i.Location.Name,
 			&i.Location.Address,

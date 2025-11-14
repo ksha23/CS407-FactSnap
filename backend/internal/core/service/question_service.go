@@ -28,7 +28,7 @@ func (s *questionService) CreateQuestion(ctx context.Context, userID string, par
 
 func (s *questionService) CreatePoll(ctx context.Context, userID string, params model.CreatePollParams) (uuid.UUID, error) {
 	// check if user is authorized to create a poll for this question
-	if err := s.authorizeUser(ctx, userID, params.QuestionID); err != nil {
+	if err := s.authorizeUser(ctx, userID, params.QuestionID, false); err != nil {
 		return uuid.UUID{}, fmt.Errorf("QuestionService::CreatePoll: %w", err)
 	}
 
@@ -84,7 +84,7 @@ func (s *questionService) GetQuestionsInRadiusFeed(
 
 func (s *questionService) EditQuestion(ctx context.Context, userID string, params model.EditQuestionParams) (model.Question, error) {
 	// check if user is authorized to edit this question
-	if err := s.authorizeUser(ctx, userID, params.QuestionID); err != nil {
+	if err := s.authorizeUser(ctx, userID, params.QuestionID, false); err != nil {
 		return model.Question{}, fmt.Errorf("QuestionService::EditQuestion: %w", err)
 	}
 
@@ -94,6 +94,19 @@ func (s *questionService) EditQuestion(ctx context.Context, userID string, param
 	}
 
 	return editedQuestion, nil
+}
+
+func (s *questionService) DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) error {
+	// check if user is authorized to delete this question
+	if err := s.authorizeUser(ctx, userID, questionID, true); err != nil {
+		return fmt.Errorf("QuestionService::DeleteQuestion: %w", err)
+	}
+
+	if err := s.questionRepo.DeleteQuestion(ctx, userID, questionID); err != nil {
+		return fmt.Errorf("QuestionService::DeleteQuestion: %w", err)
+	}
+
+	return nil
 }
 
 //func (s *questionService) GetQuestions(ctx context.Context, userID string, params model.GetQuestionsParams, page model.PageParams) ([]model.Question, error) {
@@ -114,9 +127,9 @@ func (s *questionService) EditQuestion(ctx context.Context, userID string, param
 //}
 
 // authorizeUser checks if the user is authorized to modify the question.
-// It checks if the user owns the question AND the question hasn't expired yet.
+// It checks if the user owns the question, and, if bypassExpiration is set to false, the question hasn't expired yet.
 // If user is not authorized, it returns an error. Otherwise it returns no error.
-func (s *questionService) authorizeUser(ctx context.Context, userID string, questionID uuid.UUID) error {
+func (s *questionService) authorizeUser(ctx context.Context, userID string, questionID uuid.UUID, bypassExpiration bool) error {
 	// fetch the question
 	question, err := s.GetQuestionByID(ctx, userID, questionID)
 	if err != nil {
@@ -130,9 +143,11 @@ func (s *questionService) authorizeUser(ctx context.Context, userID string, ques
 	}
 
 	// also, we need to ensure that the question hasn't expired yet
-	if time.Now().After(question.ExpiredAt) {
-		err := fmt.Errorf("question id %s has expired", questionID)
-		return fmt.Errorf("authorizeUser: %w", errs.UnauthorizedError("This question has expired", err))
+	if !bypassExpiration {
+		if time.Now().After(question.ExpiredAt) {
+			err := fmt.Errorf("question id %s has expired", questionID)
+			return fmt.Errorf("authorizeUser: %w", errs.UnauthorizedError("This question has expired", err))
+		}
 	}
 
 	return nil

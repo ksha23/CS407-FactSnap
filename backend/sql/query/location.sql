@@ -1,9 +1,10 @@
 -- name: CreateLocation :one
-INSERT INTO locations (location, name, address)
+INSERT INTO locations (location, name, address, question_id)
 VALUES (
            ST_GeomFromText(sqlc.arg(wkt)::text, 4326),
            sqlc.arg(name),
-           sqlc.arg(address)
+           sqlc.arg(address),
+        sqlc.arg(question_id)
        )
 RETURNING *;
 
