@@ -71,9 +71,9 @@ const questionDuration = z.string().refine((duration) => {
         return false;
     }
     const hours = parseToHours(duration)
-    return hours !== null && hours >= 1 && hours <= 24
+    return hours !== null && hours >= 0.25 && hours <= 1
 }, {
-    message: "Duration must be between 1h and 24h"
+    message: "Duration must be between 15m and 60m"
 })
 
 export const SignUpFormSchema = z.object({
@@ -141,4 +141,3 @@ export const EditQuestionFormSchema = z.object({
     category: z.nativeEnum(Category, {message: "Invalid category"}),
     location: location,
 })
-
