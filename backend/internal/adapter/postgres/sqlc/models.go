@@ -5,129 +5,59 @@
 package sqlc
 
 import (
-	"database/sql/driver"
-	"fmt"
 	"time"
 
+	"github.com/cridenour/go-postgis"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
-
-type CategoryType string
-
-const (
-	CategoryTypeRestaurant     CategoryType = "restaurant"
-	CategoryTypeStore          CategoryType = "store"
-	CategoryTypeTransportation CategoryType = "transportation"
-	CategoryTypeEvent          CategoryType = "event"
-)
-
-func (e *CategoryType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = CategoryType(s)
-	case string:
-		*e = CategoryType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for CategoryType: %T", src)
-	}
-	return nil
-}
-
-type NullCategoryType struct {
-	CategoryType CategoryType
-	Valid        bool // Valid is true if CategoryType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullCategoryType) Scan(value interface{}) error {
-	if value == nil {
-		ns.CategoryType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.CategoryType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullCategoryType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.CategoryType), nil
-}
-
-type QuestionType string
-
-const (
-	QuestionTypeWaitTime     QuestionType = "wait_time"
-	QuestionTypeAvailability QuestionType = "availability"
-	QuestionTypeRule         QuestionType = "rule"
-	QuestionTypeWeather      QuestionType = "weather"
-	QuestionTypeStatus       QuestionType = "status"
-)
-
-func (e *QuestionType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = QuestionType(s)
-	case string:
-		*e = QuestionType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for QuestionType: %T", src)
-	}
-	return nil
-}
-
-type NullQuestionType struct {
-	QuestionType QuestionType
-	Valid        bool // Valid is true if QuestionType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullQuestionType) Scan(value interface{}) error {
-	if value == nil {
-		ns.QuestionType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.QuestionType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullQuestionType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.QuestionType), nil
-}
 
 type Location struct {
-	ID       uuid.UUID
-	Location pgtype.Point
-	Name     string
+	ID         uuid.UUID
+	QuestionID uuid.UUID
+	Location   postgis.PointS
+	Name       *string
+	Address    *string
+}
+
+type Poll struct {
+	ID         uuid.UUID
+	QuestionID uuid.UUID
+	CreatedAt  time.Time
+}
+
+type PollOption struct {
+	ID     uuid.UUID
+	PollID uuid.UUID
+	Label  string
+	Index  int
+}
+
+type PollVote struct {
+	PollID    uuid.UUID
+	OptionID  uuid.UUID
+	UserID    string
+	CreatedAt time.Time
 }
 
 type Question struct {
-	ID         uuid.UUID
-	AuthorID   string
-	Type       QuestionType
-	Title      string
-	Body       *string
-	LocationID uuid.UUID
-	ImageUrls  []string
-	Category   CategoryType
-	Summary    *string
-	CreatedAt  time.Time
-	EditedAt   time.Time
+	ID           uuid.UUID
+	AuthorID     string
+	ContentType  string
+	Title        string
+	Body         *string
+	ImageUrls    []string
+	Category     string
+	NumResponses int
+	CreatedAt    time.Time
+	EditedAt     time.Time
+	ExpiredAt    time.Time
 }
 
 type Response struct {
 	ID         uuid.UUID
 	AuthorID   string
 	QuestionID uuid.UUID
-	Body       *string
-	Data       []byte
+	Body       string
 	ImageUrls  []string
 	CreatedAt  time.Time
 	EditedAt   time.Time

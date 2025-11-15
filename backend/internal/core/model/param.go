@@ -1,6 +1,9 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type CreateUserParams struct {
 	ID          string
@@ -12,46 +15,50 @@ type CreateUserParams struct {
 }
 
 type CreateQuestionParams struct {
-	QuestionType QuestionType
-	Category     Category
-	Title        string
-	Body         *string
-	Location     Location
-	ImageURLs    []string
+	Title     string
+	Body      *string
+	Category  Category
+	Location  Location
+	ImageURLs []string
+	ExpiresAt time.Time
 }
 
-type GetQuestionsParams struct {
-	Latitude  string
-	Longitude string
-	Radius    int
+type CreatePollParams struct {
+	QuestionID   uuid.UUID
+	OptionLabels []string
+}
+
+type GetQuestionsInRadiusFeedParams struct {
+	Lat         float64
+	Lon         float64
+	RadiusMiles float64
 }
 
 type EditQuestionParams struct {
 	QuestionID uuid.UUID
 	Title      string
 	Body       *string
-	Location   Location
-	Type       QuestionType
 	Category   Category
-	ImageURLs  []string
+	Location   Location
 }
 
-type CreateResponseParams struct {
-	QuestionID uuid.UUID
-	Body       *string
-	ImageURLs  []string
-	Data       any
-}
-
-type EditResponseParams struct {
-	ResponseID uuid.UUID
-	Body       *string
-	Data       any
-	ImageURLs  []string
-}
-
-type EditUserParams struct {
-	UserID    string
-	Username  string
-	AvatarURL *string
-}
+//
+//type CreateResponseParams struct {
+//	QuestionID uuid.UUID
+//	Body       *string
+//	ImageURLs  []string
+//	Data       any
+//}
+//
+//type EditResponseParams struct {
+//	ResponseID uuid.UUID
+//	Body       *string
+//	Data       any
+//	ImageURLs  []string
+//}
+//
+//type EditUserParams struct {
+//	UserID    string
+//	Username  string
+//	AvatarURL *string
+//}

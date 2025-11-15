@@ -60,9 +60,10 @@ export default function RootLayout() {
                     <ClerkProvider tokenCache={tokenCache}>
                         <QueryClientProvider client={queryClient}>
                             {isFontsLoaded ? (
-                                <Stack screenOptions={{headerShown: false}}>
+                                <Stack screenOptions={{headerShown: false, headerBackVisible: true}}>
                                     <Stack.Screen name="(auth)" />
                                     <Stack.Screen name="(tabs)"/>
+                                    <Stack.Screen name="question"/>
                                 </Stack>
                             ) : null}
                         </QueryClientProvider>

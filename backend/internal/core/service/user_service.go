@@ -1,8 +1,6 @@
 package service
 
 import (
-	"context"
-	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
 )
 
@@ -14,7 +12,7 @@ func NewUserService(userRepo port.UserRepository) *userService {
 	return &userService{userRepo: userRepo}
 }
 
-func (s *userService) EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error) {
-	//TODO implement me
-	panic("implement me")
-}
+//func (s *userService) EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error) {
+//	//TODO implement me
+//	panic("implement me")
+//}

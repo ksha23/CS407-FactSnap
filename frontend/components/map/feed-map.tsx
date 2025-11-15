@@ -19,6 +19,7 @@ const INITIAL_RADIUS_MILES = 10;
 
 export interface MapLocation {
   id: string;
+  questionId: string;
   coordinates: Coordinates;
   title: string;
   description?: string;
@@ -270,11 +271,12 @@ export default function FeedMap({
           onRegionChangeComplete={handleRegionChangeComplete}
           showsUserLocation
           showsMyLocationButton={false}
+          moveOnMarkerPress={false}
         >
           {/* Render location markers */}
-          {locations.map((location) => (
+          {locations.map((location, i) => (
             <Marker
-              key={location.id}
+              key={location.questionId + location.id + i}
               coordinate={location.coordinates}
               title={location.title}
               description={location.description}
