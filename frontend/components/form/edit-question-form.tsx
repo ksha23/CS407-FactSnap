@@ -3,7 +3,8 @@ import {
     Button,
     Card,
     Input,
-    Label, Paragraph,
+    Label,
+    Paragraph,
     Select,
     Sheet,
     SizableText,
@@ -11,87 +12,85 @@ import {
     Text,
     TextArea,
     View,
-    YStack
+    YStack,
 } from "tamagui";
-import {useGetQuestionById, useUpdateQuestion} from "@/hooks/tanstack/question";
-import {useRouter} from "expo-router";
-import {Controller, useForm} from "react-hook-form";
-import {Category, ContentType, UpdateQuestionReq} from "@/models/question";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {EditQuestionFormSchema} from "@/validation/validation";
-import {Check, ChevronDown} from "@tamagui/lucide-icons";
+import { useGetQuestionById, useUpdateQuestion } from "@/hooks/tanstack/question";
+import { useRouter } from "expo-router";
+import { Controller, useForm } from "react-hook-form";
+import { Category, ContentType, UpdateQuestionReq } from "@/models/question";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { EditQuestionFormSchema } from "@/validation/validation";
+import { Check, ChevronDown } from "@tamagui/lucide-icons";
 import LocationPicker from "@/components/map/location-picker";
-import {Location} from "@/models/location";
-import {useState} from "react";
+import { Location } from "@/models/location";
+import { useState } from "react";
 
 type Props = {
     questionId: string;
-}
+};
 
 export default function EditQuestionForm(props: Props) {
-    const questionQuery = useGetQuestionById(props.questionId)
-    const question = questionQuery.data
-    const [locPickerKey, setLocPickerKey] = useState(0)
+    const questionQuery = useGetQuestionById(props.questionId);
+    const question = questionQuery.data;
+    const [locPickerKey, setLocPickerKey] = useState(0);
 
-    const updateQuestionMutation = useUpdateQuestion()
+    const updateQuestionMutation = useUpdateQuestion();
 
+    const router = useRouter();
 
-    const router = useRouter()
-
-    const {control, handleSubmit: submit, formState: {errors, isSubmitting}, reset} = useForm({
+    const {
+        control,
+        handleSubmit: submit,
+        formState: { errors, isSubmitting },
+        reset,
+    } = useForm({
         defaultValues: {
             title: question!!.title,
             body: question!!.body,
             category: question!!.category,
             location: question!!.location,
         },
-        resolver: zodResolver(EditQuestionFormSchema)
-    })
+        resolver: zodResolver(EditQuestionFormSchema),
+    });
 
     async function handleSubmit(values: any) {
-        values.location.id = question!!.location.id
-        console.debug("EDIT_QUESTION_FORM", values)
+        values.location.id = question!!.location.id;
+        console.debug("EDIT_QUESTION_FORM", values);
 
-       // make api request to backend to update the question
+        // make api request to backend to update the question
         try {
             const req: UpdateQuestionReq = {
                 question_id: props.questionId,
                 title: values.title,
                 body: values.body,
                 category: values.category,
-                location: values.location
-            }
+                location: values.location,
+            };
             await updateQuestionMutation.mutateAsync(req);
         } catch {
             // error notification will be shown
-            return
+            return;
         }
 
         // if successful, pop stack
-        router.back()
+        router.back();
     }
 
     if (!question) {
-        return <Text color={"red"}>Error loading question</Text>
+        return <Text color={"red"}>Error loading question</Text>;
     }
 
     return (
         <View>
             <Card bordered={true}>
-                <YStack
-                    padding={20}
-                    paddingTop={0}
-                    rowGap={10}
-                >
+                <YStack padding={20} paddingTop={0} rowGap={10}>
                     {/* Question Title Input */}
                     <YStack>
-                        <Label>
-                            Title
-                        </Label>
+                        <Label>Title</Label>
                         <Controller
                             name={"title"}
                             control={control}
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <Input
                                     placeholder={"What's your question?"}
                                     disabled={isSubmitting}
@@ -120,7 +119,7 @@ export default function EditQuestionForm(props: Props) {
                         <Controller
                             name={"category"}
                             control={control}
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <Select
                                     value={field.value}
                                     onValueChange={field.onChange}
@@ -132,7 +131,12 @@ export default function EditQuestionForm(props: Props) {
                                     </Select.Trigger>
 
                                     <Adapt platform="touch">
-                                        <Sheet native modal dismissOnSnapToBottom animation="medium">
+                                        <Sheet
+                                            native
+                                            modal
+                                            dismissOnSnapToBottom
+                                            animation="medium"
+                                        >
                                             <Sheet.Frame>
                                                 <Sheet.ScrollView>
                                                     <Adapt.Contents />
@@ -148,12 +152,18 @@ export default function EditQuestionForm(props: Props) {
                                     </Adapt>
 
                                     <Select.Content zIndex={200000}>
-                                        <Select.ScrollUpButton/>
+                                        <Select.ScrollUpButton />
                                         <Select.Viewport minWidth={200}>
                                             <Select.Group>
                                                 {Object.values(Category).map((c, idx) => (
-                                                    <Select.Item index={idx} key={c} value={c}>
-                                                        <Select.ItemText>{c.toUpperCase()}</Select.ItemText>
+                                                    <Select.Item
+                                                        index={idx}
+                                                        key={c}
+                                                        value={c}
+                                                    >
+                                                        <Select.ItemText>
+                                                            {c.toUpperCase()}
+                                                        </Select.ItemText>
                                                         <Select.ItemIndicator marginLeft="auto">
                                                             <Check size={16} />
                                                         </Select.ItemIndicator>
@@ -161,7 +171,7 @@ export default function EditQuestionForm(props: Props) {
                                                 ))}
                                             </Select.Group>
                                         </Select.Viewport>
-                                        <Select.ScrollDownButton/>
+                                        <Select.ScrollDownButton />
                                     </Select.Content>
                                 </Select>
                             )}
@@ -173,27 +183,25 @@ export default function EditQuestionForm(props: Props) {
 
                     {/* Question Body Input */}
                     <YStack>
-                        <Label>
-                            Details (optional)
-                        </Label>
+                        <Label>Details (optional)</Label>
                         <Controller
                             name={"body"}
                             control={control}
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <TextArea
                                     placeholder={"Add additional details"}
                                     minHeight={100}
                                     disabled={isSubmitting}
                                     ref={field.ref}
                                     value={field.value || ""}
-                                    onChangeText={(text) => field.onChange(text !== "" ? text : null)}
+                                    onChangeText={(text) =>
+                                        field.onChange(text !== "" ? text : null)
+                                    }
                                     onBlur={field.onBlur}
                                 />
                             )}
                         />
-                        {errors.body && (
-                            <Text color={"red"}>{errors.body.message}</Text>
-                        )}
+                        {errors.body && <Text color={"red"}>{errors.body.message}</Text>}
                     </YStack>
 
                     {/* Location Picker Input */}
@@ -202,15 +210,16 @@ export default function EditQuestionForm(props: Props) {
                             <YStack>
                                 <Text>Location</Text>
                                 <SizableText size="$2" color="$gray10">
-                                    Where is this about? You can tap on the map, search for a place,
-                                    enter lat/lng, or use your current location.
+                                    Where is this about? You can tap on the map, search
+                                    for a place, enter lat/lng, or use your current
+                                    location.
                                 </SizableText>
                             </YStack>
                         </Label>
                         <Controller
                             name={"location"}
                             control={control}
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <LocationPicker
                                     key={locPickerKey}
                                     // @ts-ignore dont need location id
@@ -223,8 +232,8 @@ export default function EditQuestionForm(props: Props) {
                                             longitude: loc.coords.longitude,
                                             name: loc.label,
                                             address: loc.address,
-                                        }
-                                        field.onChange(newLoc)
+                                        };
+                                        field.onChange(newLoc);
                                     }}
                                 />
                             )}
@@ -238,14 +247,14 @@ export default function EditQuestionForm(props: Props) {
                     <YStack paddingTop={20} rowGap={10}>
                         {isSubmitting ? (
                             <Button disabled={true} opacity={0.7}>
-                                <Spinner size="large"/>
+                                <Spinner size="large" />
                             </Button>
                         ) : (
                             <Button
                                 onPress={() => {
                                     // set new key so that we can reset location picker map to initial state
-                                    setLocPickerKey((prev) => prev+1)
-                                    reset()
+                                    setLocPickerKey((prev) => prev + 1);
+                                    reset();
                                 }}
                                 backgroundColor={"$red8"}
                             >
@@ -254,7 +263,7 @@ export default function EditQuestionForm(props: Props) {
                         )}
                         {isSubmitting ? (
                             <Button disabled={true} opacity={0.7}>
-                                <Spinner size="large"/>
+                                <Spinner size="large" />
                             </Button>
                         ) : (
                             <Button onPress={submit(handleSubmit)}>
@@ -262,9 +271,8 @@ export default function EditQuestionForm(props: Props) {
                             </Button>
                         )}
                     </YStack>
-
                 </YStack>
             </Card>
         </View>
-    )
+    );
 }

@@ -1,27 +1,27 @@
-import React, { useRef } from "react"
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps"
-import { View, Text, Button } from "tamagui"
-import { StyleSheet, Platform } from "react-native"
-import { Location } from "@/models/location"
+import React, { useRef } from "react";
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import { View, Text, Button } from "tamagui";
+import { StyleSheet, Platform } from "react-native";
+import { Location } from "@/models/location";
 
 type Props = {
-    location: Location
-    height?: number
-}
+    location: Location;
+    height?: number;
+};
 
 export default function QuestionMap({ location, height = 250 }: Props) {
-    const mapRef = useRef<MapView>(null)
+    const mapRef = useRef<MapView>(null);
 
     const region: Region = {
         latitude: location.latitude,
         longitude: location.longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
-    }
+    };
 
     const handleReset = () => {
-        mapRef.current?.animateToRegion(region, 500)
-    }
+        mapRef.current?.animateToRegion(region, 500);
+    };
 
     return (
         <View borderRadius="$4" overflow="hidden" height={height} position="relative">
@@ -75,7 +75,7 @@ export default function QuestionMap({ location, height = 250 }: Props) {
                 </View>
             )}
         </View>
-    )
+    );
 }
 
 const styles = StyleSheet.create({
@@ -83,4 +83,4 @@ const styles = StyleSheet.create({
         width: "100%",
         height: "100%",
     },
-})
+});
