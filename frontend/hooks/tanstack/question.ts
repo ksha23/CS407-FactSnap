@@ -30,7 +30,7 @@ import {Coordinates} from "@/services/location-service";
 import {PAGE_SIZE, PageFilterType} from "@/services/axios-client";
 
 export type InfiniteQuestions = {
-    questionIds: string[],
+    questions: Question[],
     nextPageParam?: number,
 }
 
@@ -89,18 +89,20 @@ export function useGetQuestionsFeed(
             }
             console.debug("useGetQuestionsFeed: sending GetQuestionsInRadiusFeedReq request:", req)
             const questions = await getQuestionsInRadiusFeed(req)
-            questions.forEach(question => {
+            questions.forEach((question) => {
                 queryClient.setQueryData(questionKeys.getQuestionById(question.id), question)
             })
             return {
-                questionIds: questions.map(question => question.id),
+                questions: questions,
                 nextPageParam: questions.length === PAGE_SIZE ? pageParam + PAGE_SIZE : undefined,
             }
         },
         // staleTime: 0,
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPageParam,
-        gcTime: 1000, // remove inactive feeds from the cache after 1 sec
+        // keep cached feeds around longer to avoid frequent refetches / churn
+        // (short gcTime previously caused quick eviction and refetch loops)
+        gcTime: 1000 * 60 * 5, // 5 minutes
     })
 }
 
@@ -145,6 +147,20 @@ export function useUpdateQuestion() {
             const oldQuestion = queryClient.getQueryData(questionKeys.getQuestionById(variables.question_id)) as Question
             if (oldQuestion) {
                 queryClient.setQueryData(questionKeys.getQuestionById(variables.question_id), data)
+                // Also update any cached pages so the lists remain consistent
+                queryClient.setQueriesData({ queryKey: questionKeys.lists() }, (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
+                    if (!oldData) return oldData;
+
+                    return produce(oldData, (draft) => {
+                        draft.pages.forEach((page) => {
+                            if (!page.questions) return;
+                            const idx = page.questions.findIndex((q) => q.id === variables.question_id);
+                            if (idx !== -1) {
+                                page.questions[idx] = data;
+                            }
+                        });
+                    });
+                });
             }
         }
     })
@@ -169,7 +185,9 @@ export function useDeleteQuestion() {
 
                 return produce(oldData, (draft) => {
                     draft.pages.forEach((page) => {
-                        page.questionIds = page.questionIds.filter(questionId => questionId !== variables)
+                        if (page.questions) {
+                            page.questions = page.questions.filter((q) => q.id !== variables)
+                        }
                     });
                 });
             });
@@ -228,6 +246,20 @@ export function useVotePoll() {
                 })
 
                 queryClient.setQueryData(questionKeys.getQuestionById(req.question_id), newQuestion)
+                // also update pages that contain this question for optimistic UI
+                queryClient.setQueriesData({ queryKey: questionKeys.lists() }, (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
+                    if (!oldData) return oldData;
+
+                    return produce(oldData, (draft) => {
+                        draft.pages.forEach((page) => {
+                            if (!page.questions) return;
+                            const idx = page.questions.findIndex((q) => q.id === req.question_id);
+                            if (idx !== -1) {
+                                page.questions[idx] = newQuestion;
+                            }
+                        });
+                    });
+                });
             }
 
             return {previousQuestion}
@@ -236,6 +268,20 @@ export function useVotePoll() {
             // if mutation failed, then undo the optimistic updates
             if (context?.previousQuestion) {
                 queryClient.setQueryData(questionKeys.getQuestionById(variables.question_id), context.previousQuestion)
+                // revert pages as well
+                queryClient.setQueriesData({ queryKey: questionKeys.lists() }, (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
+                    if (!oldData) return oldData;
+
+                    return produce(oldData, (draft) => {
+                        draft.pages.forEach((page) => {
+                            if (!page.questions) return;
+                            const idx = page.questions.findIndex((q) => q.id === variables.question_id);
+                            if (idx !== -1) {
+                                page.questions[idx] = context.previousQuestion;
+                            }
+                        });
+                    });
+                });
             }
 
             Alert.alert("Error voting on poll. Please try again.", error.message)
