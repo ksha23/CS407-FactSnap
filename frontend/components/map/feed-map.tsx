@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Alert, StyleSheet, Platform } from "react-native";
 import MapView, { Marker, Region, PROVIDER_GOOGLE, Circle } from "react-native-maps";
 import { View, Text, Button, Input, YStack, XStack, Spinner } from "tamagui";
@@ -53,12 +53,11 @@ interface FeedMapProps {
      * Useful when backend is not available
      */
     disableAutoFetch?: boolean;
+
     /**
-     * Optional key to force remounting of the underlying MapView when the
-     * set of markers changes. Pass a stable join of question IDs from the
-     * parent to force an immediate map update when items change.
+     * Unique key built from all location ids to force map remount when ids change
      */
-    mapKey?: string;
+    mapKey: string;
 }
 
 /**
@@ -72,26 +71,10 @@ export default function FeedMap({
     locations,
     onMarkerPress,
     height = 500,
-    showRadiusCircle = true,
+    showRadiusCircle = false,
     disableAutoFetch = false,
     mapKey,
 }: FeedMapProps) {
-    // Unique key for the current marker set; forcing the fragment below to remount
-    // when the ID set changes ensures MapView drops any cached marker children without
-    // needing to remount the entire map.
-    const markerSetKey = useMemo(() => {
-        const ids = locations.map((loc) => loc.questionId).sort();
-        return ids.join(",");
-    }, [locations]);
-
-    // debug: log when locations prop changes
-    useEffect(() => {
-        try {
-            // console.debug("FeedMap: received locations prop", locations.length, "ids:", locations.map(l => l.questionId).join(","));
-        } catch (e) {
-            // ignore
-        }
-    }, [locations]);
     const [region, setRegion] = useState<Region | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -118,11 +101,6 @@ export default function FeedMap({
 
         setRegion(initialRegion);
         setIsLoading(false);
-        console.debug(
-            "FeedMap: initializeMap calling onRegionChange",
-            coords,
-            INITIAL_RADIUS_MILES,
-        );
         onRegionChange(coords, INITIAL_RADIUS_MILES);
     }, [onRegionChange]);
 
@@ -167,7 +145,6 @@ export default function FeedMap({
                     longitude: newRegion.longitude,
                 };
 
-                console.debug("FeedMap: debounced onRegionChange", center, radius);
                 onRegionChange(center, radius);
             }, REGION_CHANGE_DEBOUNCE_MS);
         },
@@ -253,7 +230,6 @@ export default function FeedMap({
                     flex={1}
                     placeholder="Search location..."
                     value={searchQuery}
-                    height="$5"
                     onChangeText={setSearchQuery}
                     onSubmitEditing={handleSearch}
                 />
@@ -295,29 +271,15 @@ export default function FeedMap({
                     moveOnMarkerPress={false}
                 >
                     {/* Render location markers */}
-                    {/* Force the marker layer to remount whenever the ID set changes to avoid stale children */}
-                    <React.Fragment key={markerSetKey}>
-                        {locations.map((location) => (
-                            <Marker
-                                key={location.questionId}
-                                identifier={location.questionId}
-                                coordinate={{
-                                    latitude: Number(location.coordinates.latitude),
-                                    longitude: Number(location.coordinates.longitude),
-                                }}
-                                title={location.title}
-                                description={location.description}
-                                onPress={() => {
-                                    console.debug(
-                                        "FeedMap: marker pressed",
-                                        location.questionId,
-                                        location.id,
-                                    );
-                                    onMarkerPress?.(location);
-                                }}
-                            />
-                        ))}
-                    </React.Fragment>
+                    {locations.map((location, i) => (
+                        <Marker
+                            key={location.questionId + location.id + i}
+                            coordinate={location.coordinates}
+                            title={location.title}
+                            description={location.description}
+                            onPress={() => onMarkerPress?.(location)}
+                        />
+                    ))}
 
                     {/* Optional radius circle */}
                     {showRadiusCircle && region && (

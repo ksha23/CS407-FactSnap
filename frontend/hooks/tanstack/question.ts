@@ -33,7 +33,7 @@ import { Coordinates } from "@/services/location-service";
 import { PAGE_SIZE, PageFilterType } from "@/services/axios-client";
 
 export type InfiniteQuestions = {
-    questions: Question[];
+    questionIds: string[];
     nextPageParam?: number;
 };
 
@@ -110,7 +110,7 @@ export function useGetQuestionsFeed(
                 );
             });
             return {
-                questions: questions,
+                questionIds: questions.map((question) => question.id),
                 nextPageParam:
                     questions.length === PAGE_SIZE ? pageParam + PAGE_SIZE : undefined,
             };
@@ -118,9 +118,7 @@ export function useGetQuestionsFeed(
         // staleTime: 0,
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPageParam,
-        // keep cached feeds around longer to avoid frequent refetches / churn
-        // (short gcTime previously caused quick eviction and refetch loops)
-        gcTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000, // remove inactive feeds from the cache after 1 sec
     });
 }
 
@@ -172,25 +170,6 @@ export function useUpdateQuestion() {
                     questionKeys.getQuestionById(variables.question_id),
                     data,
                 );
-                // Also update any cached pages so the lists remain consistent
-                queryClient.setQueriesData(
-                    { queryKey: questionKeys.lists() },
-                    (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
-                        if (!oldData) return oldData;
-
-                        return produce(oldData, (draft) => {
-                            draft.pages.forEach((page) => {
-                                if (!page.questions) return;
-                                const idx = page.questions.findIndex(
-                                    (q) => q.id === variables.question_id,
-                                );
-                                if (idx !== -1) {
-                                    page.questions[idx] = data;
-                                }
-                            });
-                        });
-                    },
-                );
             }
         },
     });
@@ -219,11 +198,9 @@ export function useDeleteQuestion() {
 
                     return produce(oldData, (draft) => {
                         draft.pages.forEach((page) => {
-                            if (page.questions) {
-                                page.questions = page.questions.filter(
-                                    (q) => q.id !== variables,
-                                );
-                            }
+                            page.questionIds = page.questionIds.filter(
+                                (questionId) => questionId !== variables,
+                            );
                         });
                     });
                 },
@@ -295,25 +272,6 @@ export function useVotePoll() {
                     questionKeys.getQuestionById(req.question_id),
                     newQuestion,
                 );
-                // also update pages that contain this question for optimistic UI
-                queryClient.setQueriesData(
-                    { queryKey: questionKeys.lists() },
-                    (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
-                        if (!oldData) return oldData;
-
-                        return produce(oldData, (draft) => {
-                            draft.pages.forEach((page) => {
-                                if (!page.questions) return;
-                                const idx = page.questions.findIndex(
-                                    (q) => q.id === req.question_id,
-                                );
-                                if (idx !== -1) {
-                                    page.questions[idx] = newQuestion;
-                                }
-                            });
-                        });
-                    },
-                );
             }
 
             return { previousQuestion };
@@ -324,25 +282,6 @@ export function useVotePoll() {
                 queryClient.setQueryData(
                     questionKeys.getQuestionById(variables.question_id),
                     context.previousQuestion,
-                );
-                // revert pages as well
-                queryClient.setQueriesData(
-                    { queryKey: questionKeys.lists() },
-                    (oldData: InfiniteData<InfiniteQuestions> | undefined) => {
-                        if (!oldData) return oldData;
-
-                        return produce(oldData, (draft) => {
-                            draft.pages.forEach((page) => {
-                                if (!page.questions) return;
-                                const idx = page.questions.findIndex(
-                                    (q) => q.id === variables.question_id,
-                                );
-                                if (idx !== -1) {
-                                    page.questions[idx] = context.previousQuestion;
-                                }
-                            });
-                        });
-                    },
                 );
             }
 

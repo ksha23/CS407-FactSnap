@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Spinner, Text, View, YStack } from "tamagui";
 import FeedMap, { MapLocation } from "@/components/map/feed-map";
@@ -16,16 +16,26 @@ import { questionKeys } from "@/hooks/tanstack/query-keys";
 import QuestionCard from "@/components/card/question-card";
 import { ArrowUp } from "@tamagui/lucide-icons";
 
-export default function FeedPage() {
-    // Feature flag: when true we only remount MapView when the set of question IDs
-    // changes (items added/removed). Set to false to revert to original behavior
-    // where mapKey was `questionIds.join(",")` on every update.
+function buildLocationsSignature(locations: MapLocation[]) {
+    return locations
+        .map((location) => location.questionId)
+        .sort()
+        .join("|");
+}
 
-    // derive locations from questions (no separate state) to keep map and list in sync
+export default function FeedPage() {
+    const [locations, setLocations] = useState<MapLocation[]>([]);
     const [currentRegion, setCurrentRegion] = useState<{
         center: Coordinates;
         radius: number;
     } | null>(null);
+
+    const mapKey = useMemo(() => {
+        return locations
+            .map((location) => location.id)
+            .sort()
+            .join("|");
+    }, [locations]);
 
     // TODO: page filtering for question category, etc
     const [pageFilterType, setPageFilterType] = useState<PageFilterType>(
@@ -60,45 +70,46 @@ export default function FeedPage() {
     }, [query.error]);
 
     // Fetch locations when map region changes (we only update currentRegion here)
-    // Only update state when the region meaningfully changes to prevent feedback loops
-    const lastSentRegionRef = useRef<{ center: Coordinates; radius: number } | null>(
-        null,
-    );
-    const handleRegionChange = useCallback((center: Coordinates, radiusMiles: number) => {
-        const last = lastSentRegionRef.current;
-        const nearlyEqual = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+    const handleRegionChange = (center: Coordinates, radiusMiles: number) => {
+        // Store current region for manual refresh and for the query hook
+        console.log("Region changed: center =", center, "radiusMiles =", radiusMiles);
+        setCurrentRegion({ center, radius: radiusMiles });
+    };
 
-        // If we have a last region and nothing changed significantly, skip update
-        if (last) {
-            const sameCenter =
-                nearlyEqual(last.center.latitude, center.latitude) &&
-                nearlyEqual(last.center.longitude, center.longitude);
-            const sameRadius = nearlyEqual(last.radius, radiusMiles);
-            if (sameCenter && sameRadius) {
-                return;
-            }
+    // Handle marker press
+    const handleMarkerPress = (location: MapLocation) => {
+        console.log("Marker pressed:", location);
+        router.push({
+            pathname: "/question/[id]",
+            params: { id: location.questionId },
+        });
+    };
+
+    function handleQuestionsUpdate(questions: Question[]) {
+        const newLocations: MapLocation[] = [];
+        questions.forEach((question) => {
+            newLocations.push({
+                id: question.location.id,
+                questionId: question.id,
+                coordinates: {
+                    latitude: question.location.latitude,
+                    longitude: question.location.longitude,
+                },
+                title: question.location.name ?? "Unknown",
+                description: question.location.address ?? "Unknown",
+            });
+        });
+
+        // only update map markers if there is a change (prevents unnecessary re-renders of the map)
+        const currentSignature = buildLocationsSignature(locations);
+        const nextSignature = buildLocationsSignature(newLocations);
+        if (currentSignature === nextSignature) {
+            // no change
+            return;
         }
 
-        console.log("Region changed: center =", center, "radiusMiles =", radiusMiles);
-        const newRegion = { center, radius: radiusMiles };
-        lastSentRegionRef.current = newRegion;
-        setCurrentRegion(newRegion);
-    }, []);
-
-    // Handle marker press (memoized to avoid re-renders)
-    const handleMarkerPress = useCallback(
-        (location: MapLocation) => {
-            console.log("Marker pressed:", location);
-            router.push({
-                pathname: "/question/[id]",
-                params: { id: location.questionId },
-            });
-        },
-        [router],
-    );
-
-    // keep a ref to the last non-empty questions so transient empty fetches don't clear the UI
-    const lastKnownQuestionsRef = useRef<Question[] | null>(null);
+        setLocations(newLocations);
+    }
 
     function handleFeedRefresh() {
         resetInfiniteQuestionsList(queryClient, { queryKey: questionKeys.lists() });
@@ -110,119 +121,20 @@ export default function FeedPage() {
     }
 
     const pages = query.data?.pages ?? [];
-    const questions = pages.flatMap((p) => p.questions ?? []);
-    const questionIdsKey = questions.map((q) => q.id).join(",");
+    const questionIds = pages.flatMap((p) => p.questionIds);
+    const questionIdsSignature = questionIds.join("|");
 
-    // update last-known non-empty questions
+    // when feed changes, invoke handleQuestionsUpdate with new question list
     useEffect(() => {
-        if (questions.length > 0) {
-            lastKnownQuestionsRef.current = questions;
-        }
-    }, [questionIdsKey, questions.length]);
-
-    // effective questions: prefer current pages, but fall back to last-known during transient fetches
-    // Only display the last-known questions while a new fetch is in-flight; once the
-    // request settles (including empty responses) the UI should reflect the new result.
-    const shouldUseLastKnown =
-        questions.length === 0 &&
-        !!lastKnownQuestionsRef.current &&
-        (query.isFetching || query.isPending);
-
-    const effectiveQuestions = useMemo(() => {
-        if (questions.length > 0) return questions;
-        if (shouldUseLastKnown && lastKnownQuestionsRef.current)
-            return lastKnownQuestionsRef.current;
-        return [] as Question[];
-    }, [questionIdsKey, shouldUseLastKnown]);
-
-    const questionIds = effectiveQuestions.map((q) => q.id);
-    const effectiveQuestionIdsKey = questionIds.join(",");
-    const locations = useMemo(() => {
-        return effectiveQuestions.map(
-            (question) =>
-                ({
-                    id: question.location.id,
-                    questionId: question.id,
-                    coordinates: {
-                        latitude: question.location.latitude,
-                        longitude: question.location.longitude,
-                    },
-                    title: question.location.name ?? "Unknown",
-                    description: question.location.address ?? "Unknown",
-                }) as MapLocation,
-        );
-    }, [effectiveQuestionIdsKey]);
-
-    // Feature flag: when true we only remount MapView when the set of question IDs
-    // changes (items added/removed). Set to false to revert to original behavior.
-    const USE_SET_ONLY_REMOUNT = true;
-
-    // ref to hold previous mapKey value as string
-    const prevMapKeyRef = useRef<string | null>(null);
-    const [mapKey, setMapKey] = useState<string>(questionIds.join(","));
-
-    // Only update `mapKey` when the set of IDs changes (adds/removes), not on reorder
-    useEffect(() => {
-        if (!USE_SET_ONLY_REMOUNT) {
-            setMapKey(questionIds.join(","));
-            prevMapKeyRef.current = questionIds.join(",");
+        if (!query.data) {
             return;
         }
 
-        const sorted = questionIds.slice().sort();
-        const prev = (prevMapKeyRef.current || "").split(",").filter(Boolean);
-        console.debug("MapKeyEffect: prev=", prev.join(","), "sorted=", sorted.join(","));
-
-        const prevSet = new Set(prev);
-
-        let changed = false;
-        if (prev.length !== sorted.length) changed = true;
-        else {
-            for (const id of sorted) {
-                if (!prevSet.has(id)) {
-                    changed = true;
-                    break;
-                }
-            }
-        }
-
-        if (changed) {
-            const newKey = sorted.join(",");
-            prevMapKeyRef.current = newKey;
-            console.debug("MapKeyEffect: setMapKey ->", newKey);
-            setMapKey(newKey);
-        }
-    }, [questionIds]);
-
-    useEffect(() => {
-        console.debug("mapKey current value:", mapKey);
-    }, [mapKey]);
-
-    // Debug logging to trace sync between list and map
-    useEffect(() => {
-        try {
-            console.debug("FeedPage: pages", pages.length, "questions", questions.length);
-            console.debug(
-                "FeedPage: effectiveQuestions",
-                effectiveQuestions.length,
-                "ids:",
-                questionIds.join(","),
-            );
-            console.debug(
-                "FeedPage: locations",
-                locations.length,
-                "coords:",
-                locations
-                    .map(
-                        (l) =>
-                            `${l.coordinates.latitude.toFixed(4)},${l.coordinates.longitude.toFixed(4)}`,
-                    )
-                    .join(" | "),
-            );
-        } catch (e) {
-            // ignore logging errors
-        }
-    }, [questionIdsKey]);
+        const questions = questionIds
+            .map((id) => queryClient.getQueryData(questionKeys.getQuestionById(id)))
+            .filter(Boolean) as Question[];
+        handleQuestionsUpdate(questions);
+    }, [questionIdsSignature, query.data]);
 
     return (
         <SafeAreaView edges={["left", "right"]}>
@@ -254,22 +166,21 @@ export default function FeedPage() {
                 }
                 refreshing={query.isRefetching}
                 ListHeaderComponent={
-                    <YStack>
+                    <YStack paddingTop="$2">
                         {/* Feed Map */}
                         <View
                             // to disable refresh control when interacting with the map
                             onTouchStart={() => setRefreshEnabled(false)}
                             onTouchEnd={() => setRefreshEnabled(true)}
-                            paddingTop="$4"
                         >
                             <FeedMap
+                                mapKey={mapKey}
                                 locations={locations}
                                 onRegionChange={handleRegionChange}
                                 onMarkerPress={handleMarkerPress}
                                 showRadiusCircle={true}
                                 disableAutoFetch={false}
                                 height={300}
-                                mapKey={mapKey}
                             />
                         </View>
                     </YStack>
