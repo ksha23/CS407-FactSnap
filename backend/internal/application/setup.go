@@ -69,7 +69,8 @@ func (app *App) initDependencies() error {
 	app.AuthService = service.NewAuthService(app.ClerkClient, app.UserRepo)
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
-	app.ResponseService = service.NewResponseService(app.ResponseService)
+	// JERRY FIX: pass the ResponseRepo (not app.ResponseService)
+	app.ResponseService = service.NewResponseService(app.ResponseRepo)
 
 	return nil
 }
@@ -77,7 +78,7 @@ func (app *App) initDependencies() error {
 func (app *App) initGinServer() error {
 	const (
 		maxRequestSize         = 2 * 1024 * 1024 // 2 MB
-		requestTimeoutDuration = 10 * time.Second
+		requestTimeoutDuration = 20 * time.Second
 	)
 
 	baseUrl := fmt.Sprintf("/%s", app.Config.Server.BaseURL)

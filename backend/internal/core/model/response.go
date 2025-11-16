@@ -5,6 +5,20 @@ import (
 	"time"
 )
 
+// Jerry create for create&edit responses
+type CreateResponseParams struct {
+	QuestionID uuid.UUID
+	Body       string
+	ImageURLs  []string
+}
+
+type EditResponseParams struct {
+	ResponseID uuid.UUID
+	Body       string
+	ImageURLs  []string
+}
+
+// Response model
 type Response struct {
 	ID         uuid.UUID `json:"ID"`
 	QuestionID uuid.UUID `json:"question_id"`
