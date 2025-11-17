@@ -14,7 +14,7 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/service"
 	"github.com/ksha23/CS407-FactSnap/internal/logger"
-	"github.com/ksha23/CS407-FactSnap/internal/uploadthing"
+	"github.com/ksha23/CS407-FactSnap/internal/storage/s3media"
 	"github.com/lmittmann/tint"
 )
 
@@ -61,9 +61,9 @@ func (app *App) initPostgres() error {
 func (app *App) initDependencies() error {
 	// register clients
 	app.ClerkClient = clerk.NewClient(app.Config.Clerk.SecretKey)
-	uploadthingClient, err := uploadthing.NewClient(app.Config.Uploadthing)
+	s3Client, err := s3media.NewClient(app.Config.S3)
 	if err != nil {
-		return fmt.Errorf("error initializing UploadThing client: %w", err)
+		return fmt.Errorf("error initializing S3 media client: %w", err)
 	}
 
 	// register repos
@@ -76,14 +76,14 @@ func (app *App) initDependencies() error {
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
 	app.ResponseService = service.NewResponseService(app.ResponseService)
-	app.MediaService = service.NewMediaService(uploadthingClient)
+	app.MediaService = service.NewMediaService(s3Client)
 
 	return nil
 }
 
 func (app *App) initGinServer() error {
 	const (
-		maxRequestSize         = 2 * 1024 * 1024 // 2 MB
+		maxRequestSize         = 25 * 1024 * 1024 // 25 MB
 		requestTimeoutDuration = 10 * time.Second
 	)
 
