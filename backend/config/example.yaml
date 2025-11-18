@@ -24,3 +24,4 @@ s3:
   sessionToken: "${S3_SESSION_TOKEN}"
   usePathStyle: false  # Set to true for LocalStack/MinIO, can be overridden by S3_USE_PATH_STYLE env var
   presignDuration: "${S3_PRESIGN_DURATION}"
+  cdnBaseUrl: "${S3_CDN_BASE_URL}"
