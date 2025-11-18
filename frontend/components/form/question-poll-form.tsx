@@ -1,17 +1,20 @@
-import {Button, Input, Label, Text, XStack, YStack} from "tamagui";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {CreatePollFormSchema, CreateQuestionContentSchema} from "@/validation/validation";
-import {z} from "zod";
-import {ContentType} from "@/models/question";
-import {useState} from "react";
-import {Minus, Plus} from "@tamagui/lucide-icons";
+import { Button, Input, Label, Text, XStack, YStack } from "tamagui";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+    CreatePollFormSchema,
+    CreateQuestionContentSchema,
+} from "@/validation/validation";
+import { z } from "zod";
+import { ContentType } from "@/models/question";
+import { useState } from "react";
+import { Minus, Plus } from "@tamagui/lucide-icons";
 
 type Content = z.infer<typeof CreatePollFormSchema>;
 
 type Props = {
     onChange: (newContent: Content) => void;
-}
+};
 
 export default function QuestionPollForm(props: Props) {
     const [options, setOptions] = useState<string[]>([""]);
@@ -23,16 +26,15 @@ export default function QuestionPollForm(props: Props) {
     const removeOption = (index: number) => {
         const next = options.filter((_, i) => i !== index);
         setOptions(next);
-        props.onChange({content_type: ContentType.POLL, option_labels: next})
+        props.onChange({ content_type: ContentType.POLL, option_labels: next });
     };
 
     const updateOption = (index: number, value: string) => {
         const next = [...options];
         next[index] = value;
         setOptions(next);
-        props.onChange({content_type: ContentType.POLL, option_labels: next})
+        props.onChange({ content_type: ContentType.POLL, option_labels: next });
     };
-
 
     return (
         <YStack>

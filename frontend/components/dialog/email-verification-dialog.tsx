@@ -1,19 +1,16 @@
-import {Button, Dialog, Input, Paragraph, YStack} from "tamagui";
-import {useState} from "react";
+import { Button, Dialog, Input, Paragraph, YStack } from "tamagui";
+import { useState } from "react";
 
 type Props = {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (code: string) => void;
-}
+};
 
 export default function EmailVerificationDialog(props: Props) {
-    const [code, setCode] = useState("")
+    const [code, setCode] = useState("");
     return (
-        <Dialog
-            modal
-            open={props.isOpen}
-        >
+        <Dialog modal open={props.isOpen}>
             <Dialog.Portal>
                 <Dialog.Overlay
                     key="overlay"
@@ -32,9 +29,9 @@ export default function EmailVerificationDialog(props: Props) {
                         elevate
                         borderRadius="$6"
                         key="content"
-                        animateOnly={['transform', 'opacity']}
+                        animateOnly={["transform", "opacity"]}
                         animation={[
-                            'quicker',
+                            "quicker",
                             {
                                 opacity: {
                                     overshootClamping: true,
@@ -65,5 +62,5 @@ export default function EmailVerificationDialog(props: Props) {
                 </Dialog.FocusScope>
             </Dialog.Portal>
         </Dialog>
-    )
+    );
 }
