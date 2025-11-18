@@ -65,8 +65,8 @@ func (r *CreateQuestionReq) Validate() error {
 	if err != nil {
 		errsMap["duration"] = fmt.Errorf("duration is in bad format")
 	} else {
-		if duration.Hours() < 1 || duration.Hours() > 24 {
-			errsMap["duration"] = fmt.Errorf("duration must be between 1-24 hours (inclusive)")
+		if duration.Hours() < 0.25 || duration.Hours() > 1{
+			errsMap["duration"] = fmt.Errorf("duration must be between 15 minutes and 1 hour")
 		} else {
 			expiresAt := time.Now().Add(duration)
 			if err := validate.ExpiresAt(expiresAt); err != nil {

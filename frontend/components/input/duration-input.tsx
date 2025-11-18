@@ -1,85 +1,84 @@
-import {useMemo, useState} from "react"
-import {YStack, XStack, Input, Select, Label, Adapt, Sheet} from "tamagui"
-import {Category} from "@/models/question";
-import {Check, ChevronDown} from "@tamagui/lucide-icons";
+import { useEffect, useMemo, useState } from "react";
+import { Slider, Text, YStack } from "tamagui";
 
 type Props = {
-    duration: string
-    onChange: (newDuration: string) => void
-    onBlur: () => void
-}
+    duration: string;
+    onChange: (newDuration: string) => void;
+    onBlur: () => void;
+};
 
 export default function DurationInput(props: Props) {
-    // Split duration into numeric + unit parts
-    const { amount, unit } = useMemo(() => {
-        const match = props.duration.match(/^(\d+(?:\.\d+)?)([a-zµ]+)?$/)
-        return {
-            amount: match?.[1] ?? "",
-            unit: match?.[2] ?? "",
+    const MIN_DURATION = 15;
+    const MAX_DURATION = 60;
+    const STEP = 5;
+
+    const minutes = useMemo(() => {
+        const match = props.duration.match(/^(\d+(?:\.\d+)?)([a-zµ]+)?$/);
+        if (!match) {
+            return MAX_DURATION;
         }
-    }, [props.duration])
+        const value = parseFloat(match[1]);
+        const unit = match[2] ?? "m";
+        let mins: number;
+        switch (unit) {
+            case "h":
+                mins = value * 60;
+                break;
+            case "m":
+                mins = value;
+                break;
+            case "s":
+                mins = value / 60;
+                break;
+            default:
+                mins = MAX_DURATION;
+        }
+        return Math.max(MIN_DURATION, Math.min(MAX_DURATION, Math.round(mins)));
+    }, [props.duration]);
 
-    const handleAmountChange = (newAmount: string) => {
-        if (newAmount === "") props.onChange("")
-        else props.onChange(`${newAmount}${unit}`)
-    }
+    const [currentValue, setCurrentValue] = useState(minutes);
 
-    const handleUnitChange = (newUnit: string) => {
-        if (amount === "") props.onChange("")
-        else props.onChange(`${amount}${newUnit}`)
-    }
-
+    useEffect(() => {
+        setCurrentValue(minutes);
+    }, [minutes]);
 
     return (
-        <XStack
-            alignItems="center" gap="$2"
-        >
-            <Input
-                keyboardType="numeric"
-                placeholder="Enter number"
-                value={amount}
-                onChangeText={handleAmountChange}
-            />
-            <Select
-                value={unit}
-                onValueChange={handleUnitChange}
-                onOpenChange={(open) => !open}
-                disablePreventBodyScroll
+        <YStack gap="$2" alignItems="center">
+            <Slider
+                size="$10"
+                width="90%"
+                min={MIN_DURATION}
+                max={MAX_DURATION}
+                step={STEP}
+                value={[currentValue]}
+                onValueChange={(value) => {
+                    const selected = value[0];
+                    const clamped = Math.max(
+                        MIN_DURATION,
+                        Math.min(MAX_DURATION, selected),
+                    );
+                    setCurrentValue(selected);
+                    props.onChange(`${clamped}m`);
+                    props.onBlur();
+                }}
+                aria-label="Question duration in minutes"
+                marginTop={2}
+                marginBottom={10}
             >
-                <Select.Trigger flex={1} iconAfter={ChevronDown}>
-                    <Select.Value placeholder="Select unit" />
-                </Select.Trigger>
-
-                <Adapt platform="touch">
-                    <Sheet native modal dismissOnSnapToBottom animation="medium">
-                        <Sheet.Frame>
-                            <Sheet.ScrollView>
-                                <Adapt.Contents />
-                            </Sheet.ScrollView>
-                        </Sheet.Frame>
-                        <Sheet.Overlay
-                            backgroundColor="$shadowColor"
-                            animation="lazy"
-                            enterStyle={{ opacity: 0 }}
-                            exitStyle={{ opacity: 0 }}
-                        />
-                    </Sheet>
-                </Adapt>
-
-                <Select.Content zIndex={200000}>
-                    <Select.ScrollUpButton/>
-                    <Select.Viewport minWidth={200}>
-                        <Select.Group>
-                            {["m", "h"].map((u, idx) => (
-                                <Select.Item index={idx} key={u} value={u}>
-                                    <Select.ItemText>{u === "m" ? "minute" : "hour"}</Select.ItemText>
-                                </Select.Item>
-                            ))}
-                        </Select.Group>
-                    </Select.Viewport>
-                    <Select.ScrollDownButton/>
-                </Select.Content>
-            </Select>
-        </XStack>
-    )
+                <Slider.Track flex={1} backgroundColor="$color7">
+                    <Slider.TrackActive backgroundColor="$color10" />
+                </Slider.Track>
+                <Slider.Thumb
+                    index={0}
+                    circular
+                    size="$1"
+                    borderWidth={2}
+                    borderColor="$color12"
+                    backgroundColor="$color9"
+                    pressStyle={{ scale: 1.05 }}
+                />
+            </Slider>
+            <Text fontWeight="400">{currentValue} minutes</Text>
+        </YStack>
+    );
 }
