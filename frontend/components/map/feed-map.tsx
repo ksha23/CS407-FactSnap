@@ -224,7 +224,7 @@ export default function FeedMap({
 
     return (
         <YStack gap="$3" flex={1}>
-            {/* Search controls */}
+            {/*/!* Search controls *!/*/}
             <XStack gap="$2" paddingHorizontal="$3">
                 <Input
                     flex={1}
@@ -233,25 +233,41 @@ export default function FeedMap({
                     onChangeText={setSearchQuery}
                     onSubmitEditing={handleSearch}
                 />
-                {/* <Button
-          onPress={handleSearch}
-          disabled={isSearching}
-          theme="blue"
-        >
-          {isSearching ? "Searching..." : "Search"}
-        </Button> */}
                 <Button onPress={handleResetToCurrentLocation} theme="gray">
                     📍
                 </Button>
             </XStack>
 
-            {/* Info bar
-      <View paddingHorizontal="$3">
-        <Text fontSize="$2" color="$gray11">
-          Showing {locations.length} location(s) within ~
-          {radiusMiles.toFixed(1)} miles
-        </Text>
-      </View> */}
+            {/* Search controls */}
+            {/*<XStack gap="$2" paddingHorizontal="$3">*/}
+            {/*    <Input*/}
+            {/*        flex={1}*/}
+            {/*        placeholder="Search location..."*/}
+            {/*        value={searchQuery}*/}
+            {/*        onChangeText={setSearchQuery}*/}
+            {/*        onSubmitEditing={handleSearch}*/}
+            {/*    />*/}
+            {/*    <Button*/}
+            {/*        onPress={handleSearch}*/}
+            {/*        disabled={isSearching}*/}
+            {/*        theme="blue"*/}
+            {/*    >*/}
+            {/*        {isSearching ? "Searching..." : "Search"}*/}
+            {/*    </Button>*/}
+            {/*    <Button onPress={handleResetToCurrentLocation} theme="gray">*/}
+            {/*        📍*/}
+            {/*    </Button>*/}
+            {/*</XStack>*/}
+
+            {/* Info bar */}
+            <View paddingHorizontal="$3">
+                <Text fontSize="$2" color="$gray11">
+                    Showing {locations.length} location(s) within ~
+                    {radiusMiles.toFixed(1)} miles
+                </Text>
+            </View>
+
+
 
             {/* Map */}
             <View flex={1} height={height} borderRadius="$4" overflow="hidden">

@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Spinner, Text, View, YStack } from "tamagui";
 import FeedMap, { MapLocation } from "@/components/map/feed-map";
 import { Coordinates } from "@/services/location-service";
-import { Alert, FlatList, RefreshControl } from "react-native";
+import {Alert, FlatList, Platform, RefreshControl} from "react-native";
 import {
     resetInfiniteQuestionsList,
     useGetQuestionsFeed,
@@ -122,7 +122,6 @@ export default function FeedPage() {
 
     const pages = query.data?.pages ?? [];
     const questionIds = pages.flatMap((p) => p.questionIds);
-    const questionIdsSignature = questionIds.join("|");
 
     // when feed changes, invoke handleQuestionsUpdate with new question list
     useEffect(() => {
@@ -134,7 +133,7 @@ export default function FeedPage() {
             .map((id) => queryClient.getQueryData(questionKeys.getQuestionById(id)))
             .filter(Boolean) as Question[];
         handleQuestionsUpdate(questions);
-    }, [questionIdsSignature, query.data]);
+    }, [questionIds, query.data]);
 
     return (
         <SafeAreaView edges={["left", "right"]}>
@@ -174,7 +173,7 @@ export default function FeedPage() {
                             onTouchEnd={() => setRefreshEnabled(true)}
                         >
                             <FeedMap
-                                mapKey={mapKey}
+                                mapKey={Platform.OS === "ios" ? mapKey : ""}
                                 locations={locations}
                                 onRegionChange={handleRegionChange}
                                 onMarkerPress={handleMarkerPress}
