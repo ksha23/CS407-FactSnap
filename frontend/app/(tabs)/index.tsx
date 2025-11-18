@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Spinner, Text, View, YStack } from "tamagui";
 import FeedMap, { MapLocation } from "@/components/map/feed-map";
 import { Coordinates } from "@/services/location-service";
-import {Alert, FlatList, Platform, RefreshControl} from "react-native";
+import { Alert, FlatList, Platform, RefreshControl } from "react-native";
 import {
     resetInfiniteQuestionsList,
     useGetQuestionsFeed,

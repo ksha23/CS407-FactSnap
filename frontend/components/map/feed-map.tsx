@@ -267,8 +267,6 @@ export default function FeedMap({
                 </Text>
             </View>
 
-
-
             {/* Map */}
             <View flex={1} height={height} borderRadius="$4" overflow="hidden">
                 <MapView
