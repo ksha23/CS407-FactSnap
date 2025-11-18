@@ -60,19 +60,6 @@ func NewClient(cfg config.S3) (*Client, error) {
 		))
 	}
 
-	if cfg.Endpoint != "" {
-		endpoint := cfg.Endpoint
-		loadOpts = append(loadOpts, awsconfig.WithEndpointResolverWithOptions(
-			aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-				return aws.Endpoint{
-					URL:           endpoint,
-					PartitionID:   "aws",
-					SigningRegion: cfg.Region,
-				}, nil
-			}),
-		))
-	}
-
 	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(), loadOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("loading aws configuration failed: %w", err)
@@ -80,6 +67,11 @@ func NewClient(cfg config.S3) (*Client, error) {
 
 	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.UsePathStyle = cfg.UsePathStyle
+
+		if cfg.Endpoint != "" {
+			o.BaseEndpoint = aws.String(cfg.Endpoint)
+			o.Region = cfg.Region
+		}
 	})
 
 	return &Client{
@@ -111,12 +103,23 @@ func (c *Client) Upload(ctx context.Context, params model.UploadMediaParams) (mo
 		return model.MediaAsset{}, fmt.Errorf("s3 client: uploading media failed: %w", err)
 	}
 
-	url, err := c.presignGetURL(ctx, objectKey)
-	if err != nil {
-		return model.MediaAsset{}, fmt.Errorf("s3 client: generating media url failed: %w", err)
-	}
+	// Use CDN URL if configured, otherwise use presigned URL
+	var url string
+	var expiresAt time.Time
 
-	expiresAt := time.Now().Add(c.presignDuration)
+	if c.cdnBaseURL != "" {
+		// Generate permanent URL using CDN
+		url = c.buildPermanentURL(objectKey)
+		expiresAt = time.Time{} // No expiration for permanent URLs
+	} else {
+		// Use presigned URL (fallback)
+		var err error
+		url, err = c.presignGetURL(ctx, objectKey)
+		if err != nil {
+			return model.MediaAsset{}, fmt.Errorf("s3 client: generating media url failed: %w", err)
+		}
+		expiresAt = time.Now().Add(c.presignDuration)
+	}
 
 	return model.MediaAsset{
 		Key:          objectKey,
@@ -141,12 +144,23 @@ func (c *Client) Get(ctx context.Context, key string) (model.MediaAsset, error) 
 		return model.MediaAsset{}, c.handleS3Error(err, "media asset not found", "fetching media metadata failed")
 	}
 
-	url, err := c.presignGetURL(ctx, objectKey)
-	if err != nil {
-		return model.MediaAsset{}, fmt.Errorf("s3 client: generating media url failed: %w", err)
-	}
+	// Use CDN URL if configured, otherwise use presigned URL
+	var url string
+	var expiresAt time.Time
 
-	expiresAt := time.Now().Add(c.presignDuration)
+	if c.cdnBaseURL != "" {
+		// Generate permanent URL using CDN
+		url = c.buildPermanentURL(objectKey)
+		expiresAt = time.Time{} // No expiration for permanent URLs
+	} else {
+		// Use presigned URL (fallback)
+		var err error
+		url, err = c.presignGetURL(ctx, objectKey)
+		if err != nil {
+			return model.MediaAsset{}, fmt.Errorf("s3 client: generating media url failed: %w", err)
+		}
+		expiresAt = time.Now().Add(c.presignDuration)
+	}
 
 	fileName := headOutput.Metadata[metadataFileNameKey]
 	if fileName == "" {
@@ -202,6 +216,16 @@ func (c *Client) presignGetURL(ctx context.Context, key string) (string, error) 
 	}
 
 	return presigned.URL, nil
+}
+
+// buildPermanentURL generates a permanent URL using CDN base URL
+func (c *Client) buildPermanentURL(key string) string {
+	baseURL := strings.TrimRight(c.cdnBaseURL, "/")
+	// Ensure protocol is present
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+	return fmt.Sprintf("%s/%s", baseURL, key)
 }
 
 func (c *Client) buildObjectKey(params model.UploadMediaParams) string {
