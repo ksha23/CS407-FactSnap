@@ -63,13 +63,13 @@ func (s *responseService) EditResponse(ctx context.Context, userID string, param
 	return resp, nil
 }
 
-func (s *responseService) DeleteResponse(ctx context.Context, userID string, responseID uuid.UUID) error {
+func (s *responseService) DeleteResponse(ctx context.Context, userID string, questionID uuid.UUID, responseID uuid.UUID) error {
 	// check if user is authorized to delete this question
 	if err := s.authorizeUser(ctx, userID, responseID, true); err != nil {
 		return fmt.Errorf("ResponseService::DeleteResponse: %w", err)
 	}
 
-	err := s.responseRepo.DeleteResponse(ctx, userID, responseID)
+	err := s.responseRepo.DeleteResponse(ctx, userID, questionID, responseID)
 	if err != nil {
 		return fmt.Errorf("ResponseService::DeleteResponse: %w", err)
 

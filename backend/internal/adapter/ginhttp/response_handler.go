@@ -112,14 +112,19 @@ func (h *ResponseHandler) EditResponse(c *gin.Context) {
 func (h *ResponseHandler) DeleteResponse(c *gin.Context) {
 	userID := getAuthUserID(c)
 
-	ridStr := c.Param("response_id")
-	rid, err := uuid.Parse(ridStr)
+	qid, err := uuid.Parse(c.Param("question_id"))
+	if err != nil {
+		c.Error(BadRequest(c, "could not parse question_id id", fmt.Errorf("%s: %w", "ResponseHandler::DeleteResponse", err)))
+		return
+	}
+
+	rid, err := uuid.Parse(c.Param("response_id"))
 	if err != nil {
 		c.Error(BadRequest(c, "could not parse response id", fmt.Errorf("%s: %w", "ResponseHandler::DeleteResponse", err)))
 		return
 	}
 
-	err = h.ResponseService.DeleteResponse(c.Request.Context(), userID, rid)
+	err = h.ResponseService.DeleteResponse(c.Request.Context(), userID, qid, rid)
 	if err != nil {
 		HandleErr(c, fmt.Errorf("%s: %w", "ResponseHandler::DeleteResponse", err))
 		return

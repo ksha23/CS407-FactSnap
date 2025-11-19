@@ -66,7 +66,7 @@ func (r *responseRepo) EditResponse(ctx context.Context, userID string, params m
 	return row.ToDomainModel(), nil
 }
 
-func (r *responseRepo) DeleteResponse(ctx context.Context, userID string, responseID uuid.UUID) error {
+func (r *responseRepo) DeleteResponse(ctx context.Context, userID string, questionID uuid.UUID, responseID uuid.UUID) error {
 	err := execTx(ctx, r.db, func(query *sqlc.Queries) error {
 		// delete response
 		err := query.DeleteResponse(ctx, responseID)
@@ -75,7 +75,7 @@ func (r *responseRepo) DeleteResponse(ctx context.Context, userID string, respon
 		}
 
 		// decrement response amount by one for question
-		err = query.DecrementResponseAmount(ctx, responseID, 1)
+		err = query.DecrementResponseAmount(ctx, questionID, 1)
 		if err != nil {
 			return fmt.Errorf("DecrementResponseAmount: %w", wrapError(err))
 		}
