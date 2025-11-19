@@ -109,17 +109,6 @@ func (s *questionService) DeleteQuestion(ctx context.Context, userID string, que
 	return nil
 }
 
-//func (s *questionService) GetQuestions(ctx context.Context, userID string, params model.GetQuestionsParams, page model.PageParams) ([]model.Question, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (s *questionService) DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//
 //
 //func (s *questionService) GetQuestionsByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Question, error) {
 //	//TODO implement me
