@@ -69,8 +69,7 @@ func (app *App) initDependencies() error {
 	app.AuthService = service.NewAuthService(app.ClerkClient, app.UserRepo)
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
-	// JERRY FIX: pass the ResponseRepo (not app.ResponseService)
-	app.ResponseService = service.NewResponseService(app.ResponseRepo)
+	app.ResponseService = service.NewResponseService(app.QuestionService, app.ResponseRepo)
 
 	return nil
 }
