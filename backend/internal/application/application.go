@@ -35,6 +35,9 @@ type App struct {
 	QuestionRepo port.QuestionRepo
 	ResponseRepo port.ResponseRepo
 
+	// clients
+	MediaClient port.MediaClient
+
 	// third-party integrations
 	ClerkClient clerk.Client
 

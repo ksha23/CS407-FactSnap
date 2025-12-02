@@ -12,7 +12,7 @@ type MediaService interface {
 	DeleteMedia(ctx context.Context, key string) error
 }
 
-type MediaProvider interface {
+type MediaClient interface {
 	Upload(ctx context.Context, params model.UploadMediaParams) (model.MediaAsset, error)
 	Get(ctx context.Context, key string) (model.MediaAsset, error)
 	Delete(ctx context.Context, key string) error

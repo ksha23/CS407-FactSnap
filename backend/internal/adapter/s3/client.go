@@ -1,4 +1,4 @@
-package s3media
+package s3
 
 import (
 	"bytes"

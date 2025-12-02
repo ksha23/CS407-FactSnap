@@ -13,11 +13,11 @@ import (
 const defaultMaxUploadBytes = 25 << 20 // 25 MB
 
 type mediaService struct {
-	provider port.MediaProvider
+	provider port.MediaClient
 	maxBytes int
 }
 
-func NewMediaService(provider port.MediaProvider) port.MediaService {
+func NewMediaService(provider port.MediaClient) port.MediaService {
 	return &mediaService{
 		provider: provider,
 		maxBytes: defaultMaxUploadBytes,
@@ -26,12 +26,12 @@ func NewMediaService(provider port.MediaProvider) port.MediaService {
 
 func (s *mediaService) UploadMedia(ctx context.Context, params model.UploadMediaParams) (model.MediaAsset, error) {
 	if err := s.validateUploadParams(params); err != nil {
-		return model.MediaAsset{}, err
+		return model.MediaAsset{}, fmt.Errorf("MediaService::UploadMedia: %w", err)
 	}
 
 	asset, err := s.provider.Upload(ctx, params)
 	if err != nil {
-		return model.MediaAsset{}, err
+		return model.MediaAsset{}, fmt.Errorf("MediaService::UploadMedia: %w", err)
 	}
 
 	return asset, nil
@@ -46,7 +46,12 @@ func (s *mediaService) GetMediaURL(ctx context.Context, key string) (model.Media
 		}
 	}
 
-	return s.provider.Get(ctx, key)
+	asset, err := s.provider.Get(ctx, key)
+	if err != nil {
+		return model.MediaAsset{}, fmt.Errorf("MediaService::GetMediaURL: %w", err)
+	}
+
+	return asset, nil
 }
 
 func (s *mediaService) DeleteMedia(ctx context.Context, key string) error {
@@ -58,7 +63,12 @@ func (s *mediaService) DeleteMedia(ctx context.Context, key string) error {
 		}
 	}
 
-	return s.provider.Delete(ctx, key)
+	err := s.provider.Delete(ctx, key)
+	if err != nil {
+		return fmt.Errorf("MediaService::DeleteMedia: %w", err)
+	}
+
+	return nil
 }
 
 func (s *mediaService) validateUploadParams(params model.UploadMediaParams) error {

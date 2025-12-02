@@ -6,11 +6,11 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/middleware"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres"
+	"github.com/ksha23/CS407-FactSnap/internal/adapter/s3"
 	"github.com/ksha23/CS407-FactSnap/internal/clerk"
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/service"
 	"github.com/ksha23/CS407-FactSnap/internal/logger"
-	"github.com/ksha23/CS407-FactSnap/internal/storage/s3media"
 	"github.com/lmittmann/tint"
 	"log/slog"
 	"os"
@@ -60,10 +60,11 @@ func (app *App) initPostgres() error {
 func (app *App) initDependencies() error {
 	// register clients
 	app.ClerkClient = clerk.NewClient(app.Config.Clerk.SecretKey)
-	s3Client, err := s3media.NewClient(app.Config.S3)
+	s3Client, err := s3.NewClient(app.Config.S3)
 	if err != nil {
 		return fmt.Errorf("error initializing S3 media client: %w", err)
 	}
+	app.MediaClient = s3Client
 
 	// register repos
 	app.UserRepo = postgres.NewUserRepo(app.PostgresDB)
@@ -75,7 +76,7 @@ func (app *App) initDependencies() error {
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
 	app.ResponseService = service.NewResponseService(app.QuestionService, app.ResponseRepo)
-	app.MediaService = service.NewMediaService(s3Client)
+	app.MediaService = service.NewMediaService(app.MediaClient)
 
 	return nil
 }
