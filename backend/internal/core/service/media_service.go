@@ -10,7 +10,7 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/errs"
 )
 
-const defaultMaxUploadBytes = 25 << 20 // 25 MB
+const defaultMaxUploadBytes = 2 << 20 // 2 MB
 
 type mediaService struct {
 	provider port.MediaClient

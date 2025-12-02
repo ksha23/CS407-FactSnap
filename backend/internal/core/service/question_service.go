@@ -106,6 +106,8 @@ func (s *questionService) DeleteQuestion(ctx context.Context, userID string, que
 		return fmt.Errorf("QuestionService::DeleteQuestion: %w", err)
 	}
 
+	// TODO: delete question images
+
 	return nil
 }
 

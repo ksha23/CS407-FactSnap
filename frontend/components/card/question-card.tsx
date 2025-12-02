@@ -17,6 +17,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import { ActivityIndicator } from "react-native";
 import { TextInput } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
+import { ImageCarousel } from "@/components/carousel/image-carousel";
 
 type Props = {
     questionId: string;
@@ -132,7 +133,7 @@ export default function QuestionCard(props: Props) {
 
     // call once on mount / when questionId changes
     useEffect(() => {
-      if (!props.questionId) return;
+      if (!props.questionId || !props.showDetails) return;
       fetchResponses();
     }, [props.questionId]);
 
@@ -546,6 +547,16 @@ export default function QuestionCard(props: Props) {
                     {/* Description/body: ONLY in details mode */}
                     {isDetails && question.body && <Text>{question.body}</Text>}
                 </YStack>
+
+                {/* Images */}
+                {question.image_urls && question.image_urls.length > 0 && (
+                    <YStack marginTop="$3">
+                        <ImageCarousel
+                            height={300}
+                            imageUrls={question.image_urls}
+                        />
+                    </YStack>
+                )}
 
                 {/* Map + Location */}
                 {isDetails ? (

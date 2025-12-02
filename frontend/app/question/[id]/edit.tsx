@@ -9,7 +9,6 @@ import AskQuestionForm from "@/components/form/ask-question-form";
 import EditQuestionForm from "@/components/form/edit-question-form";
 
 export default function EditQuestionPage() {
-    // TODO: finish impl
     const { id } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
 

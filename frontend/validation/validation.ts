@@ -133,7 +133,11 @@ export const CreateQuestionFormSchema = z
         body: questionBody,
         category: z.nativeEnum(Category, { message: "Invalid category" }),
         location: location,
-        image_urls: z.array(url).optional().nullable(),
+        image_urls: z.array(url)
+            .max(5, "You can upload up to 5 images")
+            .optional()
+            .nullable()
+        ,
         duration: questionDuration,
     })
     .extend({

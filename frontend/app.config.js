@@ -96,6 +96,14 @@ export default ({ config }) => ({
             ],
 
             [
+                "expo-image-picker",
+                {
+                    "photosPermission": "Allow FactSnap to access your photos so you can share them in your questions.",
+                    "cameraPermission": "Allow FactSnap to access your camera.",
+                }
+            ],
+
+            [
                 "expo-splash-screen",
                 {
                     image: "./assets/images/splash-icon.png",
