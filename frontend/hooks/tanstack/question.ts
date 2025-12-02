@@ -142,7 +142,7 @@ export function useCreateQuestion() {
             Alert.alert("Failed to create question. Please try again.", error.message);
         },
         onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({ queryKey: questionKeys.all });
+            queryClient.invalidateQueries({queryKey: questionKeys.lists()})
         },
     });
 }
