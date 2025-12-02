@@ -17,11 +17,11 @@ clerk:
   secretKey:
 
 s3:
-  bucket: "${S3_BUCKET}"
-  region: "${S3_REGION}"
-  accessKeyId: "${S3_ACCESS_KEY_ID}"
-  secretAccessKey: "${S3_SECRET_ACCESS_KEY}"
-  sessionToken: "${S3_SESSION_TOKEN}"
+  bucket:
+  region:
+  accessKeyId:
+  secretAccessKey:
+  sessionToken:
   usePathStyle: false  # Set to true for LocalStack/MinIO, can be overridden by S3_USE_PATH_STYLE env var
-  presignDuration: "${S3_PRESIGN_DURATION}"
-  cdnBaseUrl: "${S3_CDN_BASE_URL}"
+  presignDuration:
+  cdnBaseUrl:
