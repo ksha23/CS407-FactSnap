@@ -57,3 +57,5 @@ sql:
             go_type:
               type: time.Time
               pointer: true
+          - db_type: "geometry"
+            go_type: "github.com/cridenour/go-postgis.PointS"

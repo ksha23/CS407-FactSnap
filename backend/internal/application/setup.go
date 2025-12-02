@@ -2,10 +2,6 @@ package application
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/middleware"
@@ -16,6 +12,9 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/logger"
 	"github.com/ksha23/CS407-FactSnap/internal/storage/s3media"
 	"github.com/lmittmann/tint"
+	"log/slog"
+	"os"
+	"time"
 )
 
 func (app *App) initLogger() error {
@@ -75,7 +74,7 @@ func (app *App) initDependencies() error {
 	app.AuthService = service.NewAuthService(app.ClerkClient, app.UserRepo)
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
-	app.ResponseService = service.NewResponseService(app.ResponseService)
+	app.ResponseService = service.NewResponseService(app.QuestionService, app.ResponseRepo)
 	app.MediaService = service.NewMediaService(s3Client)
 
 	return nil
@@ -84,7 +83,7 @@ func (app *App) initDependencies() error {
 func (app *App) initGinServer() error {
 	const (
 		maxRequestSize         = 25 * 1024 * 1024 // 25 MB
-		requestTimeoutDuration = 10 * time.Second
+		requestTimeoutDuration = 20 * time.Second
 	)
 
 	baseUrl := fmt.Sprintf("/%s", app.Config.Server.BaseURL)

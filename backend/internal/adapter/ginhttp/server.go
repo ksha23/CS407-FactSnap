@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
 	"time"
@@ -33,13 +31,6 @@ func NewServer(baseURL string, port string, isLocal bool, router *gin.Engine) (*
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
-
-	// register custom field validations
-	v, ok := binding.Validator.Engine().(*validator.Validate)
-	if !ok {
-		return nil, errors.New("could not get validator engine")
-	}
-	registerValidations(v)
 
 	// init underlying http server
 	server.httpServer = &http.Server{

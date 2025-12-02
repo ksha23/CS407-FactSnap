@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/dto"
 	"github.com/ksha23/CS407-FactSnap/internal/errs"
 	"net/http"
 )
@@ -112,13 +113,24 @@ func BadRequest(c *gin.Context, msg string, internalErr error) ApiError {
 // BadRequestJSON creates a new API error response representing a bad request (HTTP 400).
 // This is intended for invalid request payload.
 func BadRequestJSON(c *gin.Context, err error, internalErr error) ApiError {
-	// check if validator error
+	// check if goplayground validator error
 	var ve validator.ValidationErrors
 	if errors.As(err, &ve) {
 		return ApiError{
 			StatusCode: http.StatusBadRequest,
 			RequestID:  getRequestID(c),
 			Message:    ve.Error(),
+			Internal:   internalErr,
+		}
+	}
+
+	// check if dto validator error
+	var dtove dto.ValidationErrs
+	if errors.As(err, &dtove) {
+		return ApiError{
+			StatusCode: http.StatusBadRequest,
+			RequestID:  getRequestID(c),
+			Message:    dtove.Error(),
 			Internal:   internalErr,
 		}
 	}

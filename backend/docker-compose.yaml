@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:15.1
+    container_name: postgres
+    build:
+      context: .
+      dockerfile: Dockerfile-postgres
     restart: on-failure
     environment:
       - POSTGRES_USER=${DB_USER}
