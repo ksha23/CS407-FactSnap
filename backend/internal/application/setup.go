@@ -74,9 +74,9 @@ func (app *App) initDependencies() error {
 	// register services
 	app.AuthService = service.NewAuthService(app.ClerkClient, app.UserRepo)
 	app.UserService = service.NewUserService(app.UserRepo)
-	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
-	app.ResponseService = service.NewResponseService(app.QuestionService, app.ResponseRepo)
 	app.MediaService = service.NewMediaService(app.MediaClient)
+	app.QuestionService = service.NewQuestionService(app.QuestionRepo, app.MediaService)
+	app.ResponseService = service.NewResponseService(app.QuestionService, app.ResponseRepo)
 
 	return nil
 }
