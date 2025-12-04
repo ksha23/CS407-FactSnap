@@ -37,5 +37,6 @@ export const responseKeys = {
 
     // detail
     details: () => [...responseKeys.all, "detail"] as const,
-    getResponseById: (id: string) => [...responseKeys.details(), id] as const,
+    responseByQuestionId: (questionId: string) => [...responseKeys.details(), questionId] as const,
+    getResponseById: (responseId: string, questionId: string) => [...responseKeys.responseByQuestionId(questionId), responseId] as const,
 }

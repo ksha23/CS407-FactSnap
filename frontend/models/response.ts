@@ -27,6 +27,7 @@ export type CreateResponseRes = {
 // EDIT RESPONSE
 export type EditResponseReq = {
     response_id: string;
+    question_id: string; // THIS IS ONLY USED BY TANSTACK
     body: string;
 }
 

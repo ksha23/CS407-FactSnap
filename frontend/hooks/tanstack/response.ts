@@ -55,7 +55,7 @@ export function useGetResponsesByQuestionId(questionId: string, isEnabled: boole
         queryFn: async ({pageParam}): Promise<InfiniteResponses> => {
             const responses = await getResponsesByQuestionId(questionId, pageParam)
             responses.forEach((response) => {
-                queryClient.setQueryData(responseKeys.getResponseById(response.id), response)
+                queryClient.setQueryData(responseKeys.getResponseById(response.id, response.question_id), response)
             })
             return {
                 responseIds: responses.map((response) => response.id),
@@ -68,9 +68,9 @@ export function useGetResponsesByQuestionId(questionId: string, isEnabled: boole
     })
 }
 
-export function useGetResponseById(id: string, forceFetch = false) {
+export function useGetResponseById(id: string, questionId: string, forceFetch = false) {
     return useQuery({
-        queryKey: responseKeys.getResponseById(id),
+        queryKey: responseKeys.getResponseById(id, questionId),
         queryFn: () => getResponseById(id),
         enabled: !!id,
         staleTime: forceFetch ? 0 : Infinity,
@@ -121,13 +121,13 @@ export function useUpdateResponse() {
         onSuccess: (data, variables, onMutateResult, context) => {
             // Cancel any outgoing refetches so that they don't overwrite our updates
             queryClient.cancelQueries({
-                queryKey: responseKeys.getResponseById(variables.response_id)
+                queryKey: responseKeys.getResponseById(variables.response_id, variables.question_id)
             });
 
             // update response details cache
-            const oldResponse = queryClient.getQueryData(responseKeys.getResponseById(variables.response_id)) as Response;
+            const oldResponse = queryClient.getQueryData(responseKeys.getResponseById(variables.response_id, variables.question_id)) as Response;
             if (oldResponse) {
-                queryClient.setQueryData(responseKeys.getResponseById(variables.response_id), data)
+                queryClient.setQueryData(responseKeys.getResponseById(variables.response_id, variables.question_id), data)
             }
         }
     })
@@ -143,7 +143,7 @@ export function useDeleteResponse() {
         },
         onSuccess: (data, variables, onMutateResult, context) => {
             // Cancel any outgoing refetches so that they don't overwrite our update
-            queryClient.cancelQueries({queryKey: responseKeys.getResponseById(variables.responseId)})
+            queryClient.cancelQueries({queryKey: responseKeys.getResponseById(variables.responseId, variables.questionId)})
             queryClient.cancelQueries({queryKey: responseKeys.getResponsesByQuestionId(variables.questionId)})
             queryClient.cancelQueries({queryKey: questionKeys.getQuestionById(variables.questionId)})
 
@@ -162,7 +162,7 @@ export function useDeleteResponse() {
             )
 
             // delete the cache for response details
-            queryClient.setQueryData(responseKeys.getResponseById(variables.responseId), null)
+            queryClient.setQueryData(responseKeys.getResponseById(variables.responseId, variables.questionId), null)
 
             // decrement responses amount for the question detail cache
             const prevQuestion = queryClient.getQueryData(questionKeys.getQuestionById(variables.questionId)) as Question;
