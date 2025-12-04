@@ -1,4 +1,3 @@
-// components/form/ImageUploadField.tsx
 import * as ImagePicker from "expo-image-picker";
 import { MediaTypeOptions } from "expo-image-picker";
 import { Button, Image, Paragraph, XStack, YStack } from "tamagui";

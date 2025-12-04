@@ -47,9 +47,7 @@ func (r *responseRepo) CreateResponse(ctx context.Context, userID string, params
 }
 
 func (r *responseRepo) GetResponsesByQuestionID(ctx context.Context, userID string, questionID uuid.UUID, page model.PageParams) ([]model.Response, error) {
-	// TODO: eventually switch to pagination
-
-	responses, err := r.query.GetAllResponsesByQuestionID(ctx, userID, questionID)
+	responses, err := r.query.GetResponsesByQuestionID(ctx, userID, questionID, int32(page.Offset), int32(page.Limit))
 	if err != nil {
 		return nil, fmt.Errorf("ResponseRepo::GetResponsesByQuestionID: %w", wrapError(err))
 	}

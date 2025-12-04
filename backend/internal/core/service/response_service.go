@@ -7,20 +7,24 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
 	"github.com/ksha23/CS407-FactSnap/internal/errs"
+	"log/slog"
 	"time"
 )
 
 type responseService struct {
 	questionService port.QuestionService
+	mediaService    port.MediaService
 	responseRepo    port.ResponseRepo
 }
 
 func NewResponseService(
 	questionService port.QuestionService,
+	mediaService port.MediaService,
 	responseRepo port.ResponseRepo,
 ) *responseService {
 	return &responseService{
 		questionService: questionService,
+		mediaService:    mediaService,
 		responseRepo:    responseRepo,
 	}
 }
@@ -49,9 +53,17 @@ func (s *responseService) GetResponsesByQuestionID(ctx context.Context, userID s
 	return responses, nil
 }
 
+func (s *responseService) GetResponseByID(ctx context.Context, userID string, responseID uuid.UUID) (model.Response, error) {
+	response, err := s.responseRepo.GetResponseByID(ctx, userID, responseID)
+	if err != nil {
+		return model.Response{}, fmt.Errorf("ResponseService::GetResponseByID: %w", err)
+	}
+	return response, err
+}
+
 func (s *responseService) EditResponse(ctx context.Context, userID string, params model.EditResponseParams) (model.Response, error) {
 	// check if user is authorized to edit this response
-	if err := s.authorizeUser(ctx, userID, params.ResponseID, false); err != nil {
+	if _, err := s.authorizeUser(ctx, userID, params.ResponseID, false); err != nil {
 		return model.Response{}, fmt.Errorf("ResponseService::EditResponse: %w", err)
 	}
 
@@ -63,17 +75,30 @@ func (s *responseService) EditResponse(ctx context.Context, userID string, param
 	return resp, nil
 }
 
-func (s *responseService) DeleteResponse(ctx context.Context, userID string, questionID uuid.UUID, responseID uuid.UUID) error {
-	// check if user is authorized to delete this question
-	if err := s.authorizeUser(ctx, userID, responseID, true); err != nil {
+func (s *responseService) DeleteResponse(ctx context.Context, userID string, responseID uuid.UUID) error {
+	// check if user is authorized to delete this response
+	response, err := s.authorizeUser(ctx, userID, responseID, true)
+	if err != nil {
 		return fmt.Errorf("ResponseService::DeleteResponse: %w", err)
 	}
 
-	err := s.responseRepo.DeleteResponse(ctx, userID, questionID, responseID)
+	err = s.responseRepo.DeleteResponse(ctx, userID, response.QuestionID, responseID)
 	if err != nil {
 		return fmt.Errorf("ResponseService::DeleteResponse: %w", err)
 
 	}
+
+	// delete response images in the background (async)
+	if len(response.ImageURLs) > 0 {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+			defer cancel()
+			if err := s.mediaService.DeleteMedia(ctx, response.ImageURLs); err != nil {
+				slog.ErrorContext(ctx, "ResponseService::DeleteResponse: error while deleting images", "error", err, "image_urls", response.ImageURLs)
+			}
+		}()
+	}
+
 	return nil
 }
 
@@ -82,29 +107,28 @@ func (s *responseService) DeleteResponse(ctx context.Context, userID string, que
 //	panic("implement me")
 //}
 
-func (s *responseService) authorizeUser(ctx context.Context, userID string, responseID uuid.UUID, bypassExpiration bool) error {
+func (s *responseService) authorizeUser(ctx context.Context, userID string, responseID uuid.UUID, bypassExpiration bool) (model.Response, error) {
 	// fetch the response
 	response, err := s.responseRepo.GetResponseByID(ctx, userID, responseID)
 	if err != nil {
-		return fmt.Errorf("authorizeUser: %w", err)
+		return model.Response{}, fmt.Errorf("authorizeUser: %w", err)
 	}
 
 	// ensure that the user owns the response
 	if !response.IsOwned {
 		err := fmt.Errorf("user id %s does not own response id %s", userID, responseID)
-		return fmt.Errorf("authorizeUser: %w", errs.UnauthorizedError("You must own this response", err))
+		return model.Response{}, fmt.Errorf("authorizeUser: %w", errs.UnauthorizedError("You must own this response", err))
 	}
 
 	// also, we need to ensure that the question hasn't expired yet
 	if !bypassExpiration {
 		err = s.isQuestionExpired(ctx, userID, response.QuestionID)
 		if err != nil {
-			return fmt.Errorf("authorizeUser: %w", err)
+			return model.Response{}, fmt.Errorf("authorizeUser: %w", err)
 		}
 	}
 
-	return nil
-
+	return response, nil
 }
 
 // isQuestionExpired checks if the question is expired or not. An error is returned if question is expired or

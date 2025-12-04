@@ -32,7 +32,7 @@ FROM
 -- name: DeleteResponse :exec
 DELETE FROM responses WHERE id = $1;
 
--- name: GetAllResponsesByQuestionID :many
+-- name: GetResponsesByQuestionID :many
 SELECT
     sqlc.embed(r),
     sqlc.embed(u),
@@ -40,7 +40,8 @@ SELECT
 FROM responses r
     JOIN users u ON u.id = r.author_id
 WHERE r.question_id = sqlc.arg(id)
-ORDER BY r.created_at DESC;
+ORDER BY r.created_at DESC
+LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
 
 -- name: GetResponseByID :one
 SELECT

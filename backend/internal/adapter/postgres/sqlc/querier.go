@@ -25,7 +25,6 @@ type Querier interface {
 	EditLocation(ctx context.Context, wkt string, name *string, address *string, iD uuid.UUID) (Location, error)
 	EditQuestion(ctx context.Context, title string, body *string, category string, iD uuid.UUID) (EditQuestionRow, error)
 	EditResponse(ctx context.Context, body string, iD uuid.UUID) (EditResponseRow, error)
-	GetAllResponsesByQuestionID(ctx context.Context, userID string, iD uuid.UUID) ([]GetAllResponsesByQuestionIDRow, error)
 	GetPollByQuestionID(ctx context.Context, questionID uuid.UUID) (GetPollByQuestionIDRow, error)
 	GetPollOptions(ctx context.Context, id uuid.UUID) ([]GetPollOptionsRow, error)
 	GetPollVotes(ctx context.Context, pollID uuid.UUID, userID string) ([]GetPollVotesRow, error)
@@ -33,6 +32,7 @@ type Querier interface {
 	GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestionsInRadiusFeedParams) ([]GetQuestionsInRadiusFeedRow, error)
 	GetQuestionsInRadiusFeedByCategory(ctx context.Context, arg GetQuestionsInRadiusFeedByCategoryParams) ([]GetQuestionsInRadiusFeedByCategoryRow, error)
 	GetResponseByID(ctx context.Context, userID string, iD uuid.UUID) (GetResponseByIDRow, error)
+	GetResponsesByQuestionID(ctx context.Context, userID string, iD uuid.UUID, offsetNum int32, limitNum int32) ([]GetResponsesByQuestionIDRow, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
 	IncrementResponseAmount(ctx context.Context, id uuid.UUID) error
 	IsPollExpired(ctx context.Context, id uuid.UUID) (bool, error)

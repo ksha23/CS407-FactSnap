@@ -57,6 +57,11 @@ const questionBody = z
     .optional()
     .nullable();
 
+const responseBody = z
+    .string()
+    .min(3, { message: "Must be at least 3 characters long" })
+    .max(2200, { message: "Cannot exceed 2200 characters" })
+
 const questionDuration = z.string().refine(
     (duration) => {
         if (!goDurationRegex.test(duration)) {
@@ -150,3 +155,16 @@ export const EditQuestionFormSchema = z.object({
     category: z.nativeEnum(Category, { message: "Invalid category" }),
     location: location,
 });
+
+export const CreateResponseFormSchema = z.object({
+    body: responseBody,
+    image_urls: z.array(url)
+        .max(5, "You can upload up to 5 images")
+        .optional()
+        .nullable()
+    ,
+})
+
+export const EditResponseFormSchema = z.object({
+    body: responseBody,
+})

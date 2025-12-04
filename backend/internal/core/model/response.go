@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// Jerry create for create&edit responses
 type CreateResponseParams struct {
 	QuestionID uuid.UUID
 	Body       string
@@ -19,7 +18,7 @@ type EditResponseParams struct {
 
 // Response model
 type Response struct {
-	ID         uuid.UUID `json:"ID"`
+	ID         uuid.UUID `json:"id"`
 	QuestionID uuid.UUID `json:"question_id"`
 	Author     User      `json:"author"`
 	Body       string    `json:"body"`

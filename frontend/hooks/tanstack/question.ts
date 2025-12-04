@@ -206,7 +206,7 @@ export function useDeleteQuestion() {
                 },
             );
 
-            // // delete the cache for question details
+            // delete the cache for question details
             queryClient.setQueryData(questionKeys.getQuestionById(variables), null);
         },
     });

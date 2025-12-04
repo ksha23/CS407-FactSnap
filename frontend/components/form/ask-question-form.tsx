@@ -300,7 +300,7 @@ export default function AskQuestionForm() {
                         ))}
                 </Field>
 
-                {/* Location Picker – preserved logic */}
+                {/* Location Picker */}
                 <Field>
                     <LabelText>Location</LabelText>
                     <Controller
@@ -328,6 +328,7 @@ export default function AskQuestionForm() {
                     {errors.location && <ErrorText>{errors.location.message}</ErrorText>}
                 </Field>
 
+                {/* Images */}
                 <Field>
                     <LabelText>Images (optional)</LabelText>
                     <Controller
