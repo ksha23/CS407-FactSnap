@@ -26,6 +26,9 @@ export const questionKeys = {
     // detail
     details: () => [...questionKeys.all, "detail"] as const,
     getQuestionById: (id: string) => [...questionKeys.details(), id] as const,
+
+    // summary
+    summaryByQuestionId: (id: string) => [...questionKeys.getQuestionById(id), "summary"]
 };
 
 export const responseKeys = {

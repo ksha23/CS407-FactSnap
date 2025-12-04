@@ -44,3 +44,8 @@ export type GetResponsesByQuestionIdRes = {
 export type GetResponseByIdRes = {
     response: Response;
 }
+
+// GET QUESTION SUMMARY
+export type GetQuestionSummaryRes = {
+    summary: string;
+}

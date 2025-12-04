@@ -3,7 +3,7 @@ import {
     CreateResponseReq,
     CreateResponseRes,
     EditResponseReq,
-    EditResponseRes, GetResponseByIdRes,
+    EditResponseRes, GetQuestionSummaryRes, GetResponseByIdRes,
     GetResponsesByQuestionIdRes,
 } from "@/models/response";
 
@@ -15,6 +15,10 @@ export async function getResponsesByQuestionId(questionId: string, pageParam: nu
 
 export async function getResponseById(responseId: string) {
     return (await apiClient.get<GetResponseByIdRes>(`/responses/${responseId}`)).data.response
+}
+
+export async function getQuestionSummary(questionId: string) {
+    return (await apiClient.get<GetQuestionSummaryRes>(`/responses/questions/${questionId}/summary`)).data.summary
 }
 
 // MUTATIONS

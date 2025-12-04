@@ -14,6 +14,7 @@ type ResponseService interface {
 	DeleteResponse(ctx context.Context, userID string, responseID uuid.UUID) error
 	//GetResponsesByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Response, error)
 	GetResponseByID(ctx context.Context, userID string, responseID uuid.UUID) (model.Response, error)
+	SummarizeResponsesByQuestionID(ctx context.Context, userID string, questionID uuid.UUID) (string, error)
 }
 
 type ResponseRepo interface {

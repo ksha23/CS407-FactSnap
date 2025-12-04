@@ -25,7 +25,10 @@ func (h *ResponseHandler) RegisterRoutes(r *gin.RouterGroup) {
 	responseRoutes.POST("", h.CreateResponse)
 	responseRoutes.PUT("", h.EditResponse)
 	responseRoutes.DELETE("/:response_id", h.DeleteResponse)
-	responseRoutes.GET("/questions/:question_id", h.GetResponsesByQuestionID) // query params: limit, offset
+
+	questionRoutes := responseRoutes.Group("/questions/:question_id")
+	questionRoutes.GET("", h.GetResponsesByQuestionID) // query params: limit, offset
+	questionRoutes.GET("/summary", h.GetQuestionSummary)
 }
 
 func (h *ResponseHandler) CreateResponse(c *gin.Context) {
@@ -140,4 +143,22 @@ func (h *ResponseHandler) GetResponsesByQuestionID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.GetResponsesByQuestionIDRes{Responses: resps})
+}
+
+func (h *ResponseHandler) GetQuestionSummary(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	qid, err := uuid.Parse(c.Param("question_id"))
+	if err != nil {
+		c.Error(BadRequest(c, "could not parse question id", fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err)))
+		return
+	}
+
+	summary, err := h.ResponseService.SummarizeResponsesByQuestionID(c.Request.Context(), userID, qid)
+	if err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "ResponseHandler::SummarizeResponsesByQuestionID", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.GetQuestionSummaryRes{Summary: summary})
 }

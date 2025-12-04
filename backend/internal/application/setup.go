@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/middleware"
+	"github.com/ksha23/CS407-FactSnap/internal/adapter/openai"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/s3"
 	"github.com/ksha23/CS407-FactSnap/internal/clerk"
@@ -65,6 +66,7 @@ func (app *App) initDependencies() error {
 		return fmt.Errorf("error initializing S3 media client: %w", err)
 	}
 	app.MediaClient = s3Client
+	app.AIClient = openai.NewClient(app.Config.OpenAI)
 
 	// register repos
 	app.UserRepo = postgres.NewUserRepo(app.PostgresDB)
@@ -76,7 +78,7 @@ func (app *App) initDependencies() error {
 	app.UserService = service.NewUserService(app.UserRepo)
 	app.MediaService = service.NewMediaService(app.MediaClient)
 	app.QuestionService = service.NewQuestionService(app.QuestionRepo, app.MediaService)
-	app.ResponseService = service.NewResponseService(app.QuestionService, app.MediaService, app.ResponseRepo)
+	app.ResponseService = service.NewResponseService(app.QuestionService, app.MediaService, app.ResponseRepo, app.AIClient)
 
 	return nil
 }

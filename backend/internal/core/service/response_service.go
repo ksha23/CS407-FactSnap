@@ -1,31 +1,52 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
 	"github.com/ksha23/CS407-FactSnap/internal/errs"
+	"html/template"
 	"log/slog"
 	"time"
 )
+
+const summaryPrompt = `
+Summarize all the responses in the following using the third person and three points.
+
+Responses:
+{{.Responses}}
+
+Constraints:
+- Provide exactly three concise bullet points.
+- Use third-person phrasing (e.g., "Users report..." or "Respondents mention...").
+- Each bullet point should be one short sentence (no sub-clauses).
+- Keep language neutral and factual.
+- Do not include extra commentary or prefatory text.
+`
+
+var summaryTemplate = template.Must(template.New("summary").Parse(summaryPrompt))
 
 type responseService struct {
 	questionService port.QuestionService
 	mediaService    port.MediaService
 	responseRepo    port.ResponseRepo
+	aiClient        port.AIClient
 }
 
 func NewResponseService(
 	questionService port.QuestionService,
 	mediaService port.MediaService,
 	responseRepo port.ResponseRepo,
+	aiClient port.AIClient,
 ) *responseService {
 	return &responseService{
 		questionService: questionService,
 		mediaService:    mediaService,
 		responseRepo:    responseRepo,
+		aiClient:        aiClient,
 	}
 }
 
@@ -100,6 +121,53 @@ func (s *responseService) DeleteResponse(ctx context.Context, userID string, res
 	}
 
 	return nil
+}
+
+func (s *responseService) SummarizeResponsesByQuestionID(ctx context.Context, userID string, questionID uuid.UUID) (string, error) {
+	// fetch responses to summarize (for now we do first 20)
+	responses, err := s.responseRepo.GetResponsesByQuestionID(ctx, userID, questionID, model.PageParams{
+		Limit:  20,
+		Offset: 0,
+	})
+	if err != nil {
+		return "", fmt.Errorf("ResponseService::SummarizeResponsesByQuestionID: %w", err)
+	}
+
+	// build prompt
+	prompt, err := s.buildSummaryPrompt(responses)
+	if err != nil {
+		return "", fmt.Errorf("ResponseService::SummarizeResponsesByQuestionID: %w", err)
+	}
+
+	// send to ai client
+	// TODO: maybe can cache the output for a brief period of time...?
+	output, err := s.aiClient.Prompt(ctx, prompt)
+	if err != nil {
+		return "", fmt.Errorf("ResponseService::SummarizeResponsesByQuestionID: prompt error: %w", err)
+	}
+
+	return output, nil
+}
+
+func (s *responseService) buildSummaryPrompt(responses []model.Response) (string, error) {
+	// gather the responses' body delimited by new-line
+	responseBodies := bytes.NewBufferString("")
+	for _, response := range responses {
+		responseBodies.WriteString(response.Body)
+		responseBodies.WriteString("\n")
+	}
+
+	var buf bytes.Buffer
+	err := summaryTemplate.Execute(&buf, struct {
+		Responses string
+	}{
+		Responses: responseBodies.String(),
+	})
+	if err != nil {
+		return "", fmt.Errorf("buildSummaryPrompt: could not execute template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 //func (s *responseService) GetResponsesByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Response, error) {

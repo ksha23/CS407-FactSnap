@@ -78,3 +78,9 @@ type EditResponseRes struct {
 type GetResponsesByQuestionIDRes struct {
 	Responses []model.Response `json:"responses"`
 }
+
+// QUESTION SUMMARY
+
+type GetQuestionSummaryRes struct {
+	Summary string `json:"summary"`
+}

@@ -10,7 +10,7 @@ import { produce } from "immer";
 import { questionKeys, responseKeys } from "@/hooks/tanstack/query-keys";
 import {
     createResponse,
-    deleteResponse,
+    deleteResponse, getQuestionSummary,
     getResponseById,
     getResponsesByQuestionId,
     updateResponse,
@@ -74,6 +74,16 @@ export function useGetResponseById(id: string, questionId: string, forceFetch = 
         queryFn: () => getResponseById(id),
         enabled: !!id,
         staleTime: forceFetch ? 0 : Infinity,
+    })
+}
+
+export function useGetQuestionSummary(questionId: string) {
+    return useQuery({
+        queryKey: questionKeys.summaryByQuestionId(questionId),
+        queryFn: () => getQuestionSummary(questionId),
+        enabled: false, // disable automatic refetching
+        staleTime: 1800000, // 30 mins
+        retry: false, // never retry on failures
     })
 }
 
