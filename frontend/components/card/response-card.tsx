@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function ResponseCard(props: Props) {
-    const responseQuery = useGetResponseById(props.responseId);
+    const responseQuery = useGetResponseById(props.responseId, props.questionId);
     const deleteResponseMutation = useDeleteResponse()
     const [editModalOpen, setEditModalOpen] = useState(false)
 
@@ -33,8 +33,9 @@ export default function ResponseCard(props: Props) {
         <>
             <EditResponseFormModal
                 open={editModalOpen}
-                onOpenChange={setEditModalOpen}
+                onClose={() => setEditModalOpen(false)}
                 responseId={response.id}
+                questionId={response.question_id}
                 initialResponseBody={response.body}
             />
             <Card
