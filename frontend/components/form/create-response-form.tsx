@@ -23,7 +23,7 @@ type Props = {
     question_id: string;
 };
 
-export default function ResponseForm({ question_id }: Props) {
+export default function CreateResponseForm({ question_id }: Props) {
     const [open, setOpen] = useState(false);
     const createResponseMutation = useCreateResponse()
 

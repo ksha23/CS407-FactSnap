@@ -6,16 +6,16 @@ import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, RefreshControl,
 import { isAxiosError } from "axios";
 import QuestionCard from "@/components/card/question-card";
 import { SafeAreaView } from "react-native-safe-area-context";
-import ResponsesFeed from "@/components/feed/responses-feed";
 import ResponseCard from "@/components/card/response-card";
 import { questionKeys, responseKeys } from "@/hooks/tanstack/query-keys";
-import ResponseForm from "@/components/form/response-form";
+import CreateResponseForm from "@/components/form/create-response-form";
 import { ArrowUp, Sparkles } from "@tamagui/lucide-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetResponsesByQuestionId, useUpdateResponse } from "@/hooks/tanstack/response";
 import {Response} from "@/models/response"
 import EmailVerificationDialog from "@/components/dialog/email-verification-dialog";
 import EditResponseFormModal from "@/components/form/edit-response-form";
+import SummarizeResponsesButton from "@/components/button/summarize-responses-btn";
 
 export default function QuestionDetailsPage() {
     const { id } = useLocalSearchParams();
@@ -136,19 +136,12 @@ export default function QuestionDetailsPage() {
                     }
                     refreshing={isRefetching()}
                     ListHeaderComponent={
-                        // Question Card + Response Form + Summarize Response Button
+                        // Question Card + Create Response Form + Summarize Response Button/Text
                         <YStack>
                             <QuestionCard questionId={question.id} showDetails={true} />
                             <YStack gap={"$2"} mt={"$2"}>
-                                <ResponseForm question_id={question.id} />
-                                <Button>
-                                    <Button.Icon>
-                                        <Sparkles size={20} />
-                                    </Button.Icon>
-                                    <Button.Text>
-                                        <Paragraph>Summarize Responses</Paragraph>
-                                    </Button.Text>
-                                </Button>
+                                <CreateResponseForm question_id={question.id} />
+                                <SummarizeResponsesButton/>
                             </YStack>
                         </YStack>
                     }
