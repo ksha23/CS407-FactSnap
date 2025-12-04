@@ -8,12 +8,18 @@ import {
 } from "@tanstack/react-query";
 import { produce } from "immer";
 import { questionKeys, responseKeys } from "@/hooks/tanstack/query-keys";
-import { createResponse, deleteResponse, getResponseById, getResponsesByQuestionId } from "@/services/response-service";
+import {
+    createResponse,
+    deleteResponse,
+    getResponseById,
+    getResponsesByQuestionId,
+    updateResponse,
+} from "@/services/response-service";
 import { PAGE_SIZE } from "@/services/axios-client";
 import { CreateQuestionReq, Question } from "@/models/question";
 import { createQuestion } from "@/services/question-service";
 import { Alert } from "react-native";
-import { CreateResponseReq } from "@/models/response";
+import { CreateResponseReq, EditResponseReq, Response } from "@/models/response";
 
 export type InfiniteResponses = {
     responseIds: string[];
@@ -102,6 +108,29 @@ export function useCreateResponse() {
             }
         },
     });
+}
+
+export function useUpdateResponse() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (req: EditResponseReq) => updateResponse(req),
+        onError: (error) => {
+            Alert.alert("Failed to edit response. Please try again.", error.message);
+        },
+        onSuccess: (data, variables, onMutateResult, context) => {
+            // Cancel any outgoing refetches so that they don't overwrite our updates
+            queryClient.cancelQueries({
+                queryKey: responseKeys.getResponseById(variables.response_id)
+            });
+
+            // update response details cache
+            const oldResponse = queryClient.getQueryData(responseKeys.getResponseById(variables.response_id)) as Response;
+            if (oldResponse) {
+                queryClient.setQueryData(responseKeys.getResponseById(variables.response_id), data)
+            }
+        }
+    })
 }
 
 export function useDeleteResponse() {
