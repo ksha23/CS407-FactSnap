@@ -182,7 +182,7 @@ SELECT
 FROM responses r
     JOIN users u ON u.id = r.author_id
 WHERE r.question_id = $2
-ORDER BY r.created_at DESC
+ORDER BY r.created_at DESC, r.id DESC
 LIMIT $4 OFFSET $3
 `
 
