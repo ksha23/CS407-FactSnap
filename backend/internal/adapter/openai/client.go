@@ -27,7 +27,7 @@ func (c *Client) Prompt(ctx context.Context, prompt string) (string, error) {
 
 	params := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{OfString: openai.String(prompt)},
-		Model: openai.ChatModelGPT5_1,
+		Model: openai.ChatModelGPT5Mini,
 	}
 
 	resp, err := c.Responses.New(ctx, params)

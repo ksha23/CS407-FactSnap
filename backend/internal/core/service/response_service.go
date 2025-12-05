@@ -133,6 +133,10 @@ func (s *responseService) SummarizeResponsesByQuestionID(ctx context.Context, us
 		return "", fmt.Errorf("ResponseService::SummarizeResponsesByQuestionID: %w", err)
 	}
 
+	if len(responses) == 0 {
+		return "", fmt.Errorf("ResponseService::SummarizeResponsesByQuestionID: no responses to summarize")
+	}
+
 	// build prompt
 	prompt, err := s.buildSummaryPrompt(responses)
 	if err != nil {

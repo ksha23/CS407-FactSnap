@@ -141,7 +141,7 @@ export default function QuestionDetailsPage() {
                             <QuestionCard questionId={question.id} showDetails={true} />
                             <YStack gap={"$2"} mt={"$2"}>
                                 <CreateResponseForm question_id={question.id} />
-                                <SummarizeResponsesButton questionId={question.id}/>
+                                <SummarizeResponsesButton questionId={question.id} disable={question.responses_amount === 0}/>
                             </YStack>
                         </YStack>
                     }
