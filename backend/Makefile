@@ -38,4 +38,7 @@ docker-up:
 docker-down:
 	docker-compose down
 
+docker-stop:
+	docker-compose stop
+
 docker-restart: docker-down docker-up

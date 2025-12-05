@@ -12,6 +12,8 @@ type Config struct {
 	Server   Server   `mapstructure:"server"`
 	Postgres Postgres `mapstructure:"postgres"`
 	Clerk    Clerk    `mapstructure:"clerk"`
+	S3       S3       `mapstructure:"s3"`
+	OpenAI   OpenAI   `mapstructure:"openai"`
 }
 
 type Server struct {
@@ -30,6 +32,22 @@ type Postgres struct {
 
 type Clerk struct {
 	SecretKey string `mapstructure:"secretKey"`
+}
+
+type S3 struct {
+	Bucket          string `mapstructure:"bucket"`
+	Region          string `mapstructure:"region"`
+	Endpoint        string `mapstructure:"endpoint"`
+	AccessKeyID     string `mapstructure:"accessKeyId"`
+	SecretAccessKey string `mapstructure:"secretAccessKey"`
+	SessionToken    string `mapstructure:"sessionToken"`
+	UsePathStyle    bool   `mapstructure:"usePathStyle"`
+	CDNBaseURL      string `mapstructure:"cdnBaseUrl"`
+	PresignDuration string `mapstructure:"presignDuration"`
+}
+
+type OpenAI struct {
+	APIKey string `mapstructure:"apiKey"`
 }
 
 func Load(path string) (*Config, error) {

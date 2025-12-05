@@ -5,7 +5,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/middleware"
+	"github.com/ksha23/CS407-FactSnap/internal/adapter/openai"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres"
+	"github.com/ksha23/CS407-FactSnap/internal/adapter/s3"
 	"github.com/ksha23/CS407-FactSnap/internal/clerk"
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/service"
@@ -59,6 +61,12 @@ func (app *App) initPostgres() error {
 func (app *App) initDependencies() error {
 	// register clients
 	app.ClerkClient = clerk.NewClient(app.Config.Clerk.SecretKey)
+	s3Client, err := s3.NewClient(app.Config.S3)
+	if err != nil {
+		return fmt.Errorf("error initializing S3 media client: %w", err)
+	}
+	app.MediaClient = s3Client
+	app.AIClient = openai.NewClient(app.Config.OpenAI)
 
 	// register repos
 	app.UserRepo = postgres.NewUserRepo(app.PostgresDB)
@@ -68,15 +76,16 @@ func (app *App) initDependencies() error {
 	// register services
 	app.AuthService = service.NewAuthService(app.ClerkClient, app.UserRepo)
 	app.UserService = service.NewUserService(app.UserRepo)
-	app.QuestionService = service.NewQuestionService(app.QuestionRepo)
-	app.ResponseService = service.NewResponseService(app.QuestionService, app.ResponseRepo)
+	app.MediaService = service.NewMediaService(app.MediaClient)
+	app.QuestionService = service.NewQuestionService(app.QuestionRepo, app.MediaService)
+	app.ResponseService = service.NewResponseService(app.QuestionService, app.MediaService, app.ResponseRepo, app.AIClient)
 
 	return nil
 }
 
 func (app *App) initGinServer() error {
 	const (
-		maxRequestSize         = 2 * 1024 * 1024 // 2 MB
+		maxRequestSize         = 25 * 1024 * 1024 // 25 MB
 		requestTimeoutDuration = 20 * time.Second
 	)
 
@@ -95,6 +104,7 @@ func (app *App) initGinServer() error {
 	userHandler := ginhttp.NewUserHandler(app.UserService)
 	questionHandler := ginhttp.NewQuestionHandler(app.QuestionService)
 	responseHandler := ginhttp.NewResponseHandler(app.ResponseService)
+	mediaHandler := ginhttp.NewMediaHandler(app.MediaService)
 
 	// register router
 	router := gin.New()
@@ -122,6 +132,7 @@ func (app *App) initGinServer() error {
 	userHandler.RegisterRoutes(baseRouter)
 	questionHandler.RegisterRoutes(baseRouter)
 	responseHandler.RegisterRoutes(baseRouter)
+	mediaHandler.RegisterRoutes(baseRouter)
 
 	// init gin server
 	server, err := ginhttp.NewServer(baseUrl, port, config.IsLocal(app.Config.Env), router)

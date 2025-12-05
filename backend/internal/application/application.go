@@ -28,11 +28,16 @@ type App struct {
 	UserService     port.UserService
 	QuestionService port.QuestionService
 	ResponseService port.ResponseService
+	MediaService    port.MediaService
 
 	// repos
 	UserRepo     port.UserRepository
 	QuestionRepo port.QuestionRepo
 	ResponseRepo port.ResponseRepo
+
+	// clients
+	MediaClient port.MediaClient
+	AIClient    port.AIClient
 
 	// third-party integrations
 	ClerkClient clerk.Client

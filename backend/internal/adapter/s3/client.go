@@ -1,0 +1,277 @@
+package s3
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"path"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/google/uuid"
+
+	"github.com/ksha23/CS407-FactSnap/internal/config"
+	"github.com/ksha23/CS407-FactSnap/internal/core/model"
+	"github.com/ksha23/CS407-FactSnap/internal/errs"
+)
+
+const (
+	providerName        = "aws-s3"
+	defaultKeyPrefix    = "uploads"
+	metadataFileNameKey = "filename"
+	metadataUploaderKey = "uploader"
+)
+
+type Client struct {
+	s3Client        *s3.Client
+	presignClient   *s3.PresignClient
+	bucket          string
+	region          string
+	cdnBaseURL      string
+	presignDuration time.Duration
+}
+
+func NewClient(cfg config.S3) (*Client, error) {
+	if cfg.Bucket == "" {
+		return nil, errors.New("s3 bucket is required")
+	}
+	if cfg.Region == "" {
+		return nil, errors.New("s3 region is required")
+	}
+
+	expires, err := time.ParseDuration(cfg.PresignDuration)
+	if err != nil {
+		return nil, fmt.Errorf("invalid s3 presign duration: %w", err)
+	}
+
+	loadOpts := []func(*awsconfig.LoadOptions) error{
+		awsconfig.WithRegion(cfg.Region),
+	}
+
+	if cfg.AccessKeyID != "" && cfg.SecretAccessKey != "" {
+		loadOpts = append(loadOpts, awsconfig.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, cfg.SessionToken),
+		))
+	}
+
+	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(), loadOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("loading aws configuration failed: %w", err)
+	}
+
+	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		o.UsePathStyle = cfg.UsePathStyle
+
+		if cfg.Endpoint != "" {
+			o.BaseEndpoint = aws.String(cfg.Endpoint)
+			o.Region = cfg.Region
+		}
+	})
+
+	return &Client{
+		s3Client:        s3Client,
+		presignClient:   s3.NewPresignClient(s3Client, func(o *s3.PresignOptions) { o.Expires = expires }),
+		bucket:          cfg.Bucket,
+		region:          cfg.Region,
+		cdnBaseURL:      cfg.CDNBaseURL,
+		presignDuration: expires,
+	}, nil
+}
+
+func (c *Client) Upload(ctx context.Context, params model.UploadMediaParams) (model.MediaAsset, error) {
+	objectKey := c.buildObjectKey(params)
+
+	contentLength := int64(len(params.Data))
+	_, err := c.s3Client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:        aws.String(c.bucket),
+		Key:           aws.String(objectKey),
+		Body:          bytes.NewReader(params.Data),
+		ContentType:   aws.String(params.MimeType),
+		ContentLength: &contentLength,
+		Metadata: map[string]string{
+			metadataFileNameKey: params.FileName,
+			metadataUploaderKey: params.Uploader,
+		},
+	})
+	if err != nil {
+		return model.MediaAsset{}, fmt.Errorf("s3 client: uploading media failed: %w", err)
+	}
+
+	// Use CDN URL if configured, otherwise use presigned URL
+	var url string
+	var expiresAt time.Time
+
+	if c.cdnBaseURL != "" {
+		// Generate permanent URL using CDN
+		url = c.buildPermanentURL(objectKey)
+		expiresAt = time.Time{} // No expiration for permanent URLs
+	} else {
+		// Use presigned URL (fallback)
+		var err error
+		url, err = c.presignGetURL(ctx, objectKey)
+		if err != nil {
+			return model.MediaAsset{}, fmt.Errorf("s3 client: generating media url failed: %w", err)
+		}
+		expiresAt = time.Now().Add(c.presignDuration)
+	}
+
+	return model.MediaAsset{
+		Key:          objectKey,
+		URL:          url,
+		URLExpiresAt: expiresAt,
+		FileName:     params.FileName,
+		MimeType:     params.MimeType,
+		Size:         int64(len(params.Data)),
+		Provider:     providerName,
+		Uploader:     params.Uploader,
+	}, nil
+}
+
+func (c *Client) Get(ctx context.Context, key string) (model.MediaAsset, error) {
+	objectKey := strings.TrimPrefix(key, "/")
+
+	headOutput, err := c.s3Client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(objectKey),
+	})
+	if err != nil {
+		return model.MediaAsset{}, c.handleS3Error(err, "media asset not found", "fetching media metadata failed")
+	}
+
+	// Use CDN URL if configured, otherwise use presigned URL
+	var url string
+	var expiresAt time.Time
+
+	if c.cdnBaseURL != "" {
+		// Generate permanent URL using CDN
+		url = c.buildPermanentURL(objectKey)
+		expiresAt = time.Time{} // No expiration for permanent URLs
+	} else {
+		// Use presigned URL (fallback)
+		var err error
+		url, err = c.presignGetURL(ctx, objectKey)
+		if err != nil {
+			return model.MediaAsset{}, fmt.Errorf("s3 client: generating media url failed: %w", err)
+		}
+		expiresAt = time.Now().Add(c.presignDuration)
+	}
+
+	fileName := headOutput.Metadata[metadataFileNameKey]
+	if fileName == "" {
+		fileName = filepath.Base(objectKey)
+	}
+
+	var size int64
+	if headOutput.ContentLength != nil {
+		size = *headOutput.ContentLength
+	}
+
+	return model.MediaAsset{
+		Key:          objectKey,
+		URL:          url,
+		URLExpiresAt: expiresAt,
+		FileName:     fileName,
+		MimeType:     aws.ToString(headOutput.ContentType),
+		Size:         size,
+		Provider:     providerName,
+		Uploader:     headOutput.Metadata[metadataUploaderKey],
+	}, nil
+}
+
+func (c *Client) Delete(ctx context.Context, key string) error {
+	objectKey := strings.TrimPrefix(key, "/")
+
+	_, err := c.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(objectKey),
+	})
+	if err != nil {
+		return c.handleS3Error(err, "media asset not found", "deleting media asset failed")
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteMany(ctx context.Context, urls []string) error {
+	for _, u := range urls {
+		objectKey, err := extractObjectKey(u, c.cdnBaseURL)
+		if err != nil {
+			return fmt.Errorf("S3Client::DeleteMany: could not extract object key from URL (%s): %w", u, err)
+		}
+
+		slog.DebugContext(ctx, "S3Client::DeleteMany: found object key", "object_key", objectKey, "url", u)
+
+		if err := c.Delete(ctx, objectKey); err != nil {
+			return fmt.Errorf("S3Client::DeleteMany: could not delete image with key %s and url %s: %w", objectKey, u, err)
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) presignGetURL(ctx context.Context, key string) (string, error) {
+	presigned, err := c.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return presigned.URL, nil
+}
+
+// buildPermanentURL generates a permanent URL using CDN base URL
+func (c *Client) buildPermanentURL(key string) string {
+	baseURL := strings.TrimRight(c.cdnBaseURL, "/")
+	// Ensure protocol is present
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+	return fmt.Sprintf("%s/%s", baseURL, key)
+}
+
+func (c *Client) buildObjectKey(params model.UploadMediaParams) string {
+	ext := strings.ToLower(filepath.Ext(params.FileName))
+	if ext == "" {
+		ext = ".bin"
+	}
+
+	uploaderSegment := sanitizeKeySegment(params.Uploader)
+	timestamp := time.Now().UTC().Format("20060102T150405Z")
+	randomPart := strings.ReplaceAll(uuid.NewString(), "-", "")
+	fileNameSegment := sanitizeKeySegment(strings.TrimSuffix(params.FileName, ext))
+
+	objectParts := []string{
+		defaultKeyPrefix,
+		uploaderSegment,
+		fmt.Sprintf("%s-%s-%s%s", timestamp, randomPart, fileNameSegment, ext),
+	}
+
+	return path.Join(objectParts...)
+}
+
+func (c *Client) handleS3Error(err error, notFoundMsg, genericMsg string) error {
+	var apiErr interface {
+		ErrorCode() string
+	}
+	if errors.As(err, &apiErr) {
+		code := apiErr.ErrorCode()
+		if code == "NotFound" || code == "NoSuchKey" {
+			return errs.Error{
+				Type:     errs.TypeNotFound,
+				Message:  notFoundMsg,
+				Internal: err,
+			}
+		}
+	}
+
+	return fmt.Errorf("s3 client: %s: %w", genericMsg, err)
+}

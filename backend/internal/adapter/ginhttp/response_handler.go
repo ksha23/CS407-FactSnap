@@ -20,25 +20,19 @@ func NewResponseHandler(responseService port.ResponseService) *ResponseHandler {
 }
 
 func (h *ResponseHandler) RegisterRoutes(r *gin.RouterGroup) {
-	// Register routes under the passed router group.
-	// If you call RegisterRoutes(apiGroup) where apiGroup is router.Group("/api"),
-	// the final paths will be: /api/questions/:question_id/responses etc.
-	r.POST("/questions/:question_id/responses", h.CreateResponse)
-	r.GET("/questions/:question_id/responses", h.GetResponsesByQuestionID)
-	r.PUT("/questions/:question_id/responses/:response_id", h.EditResponse)
-	r.DELETE("/questions/:question_id/responses/:response_id", h.DeleteResponse)
+	responseRoutes := r.Group("/responses")
+	responseRoutes.GET("/:response_id", h.GetResponseByID)
+	responseRoutes.POST("", h.CreateResponse)
+	responseRoutes.PUT("", h.EditResponse)
+	responseRoutes.DELETE("/:response_id", h.DeleteResponse)
+
+	questionRoutes := responseRoutes.Group("/questions/:question_id")
+	questionRoutes.GET("", h.GetResponsesByQuestionID) // query params: limit, offset
+	questionRoutes.GET("/summary", h.GetQuestionSummary)
 }
 
-// CreateResponse creates a new response for a question
 func (h *ResponseHandler) CreateResponse(c *gin.Context) {
 	userID := getAuthUserID(c)
-
-	qidStr := c.Param("question_id")
-	qid, err := uuid.Parse(qidStr)
-	if err != nil {
-		c.Error(BadRequest(c, "could not parse question id", fmt.Errorf("%s: %w", "ResponseHandler::CreateResponse", err)))
-		return
-	}
 
 	var req dto.CreateResponseReq
 	if err := unmarshalAndValidateReq(c, &req); err != nil {
@@ -47,7 +41,7 @@ func (h *ResponseHandler) CreateResponse(c *gin.Context) {
 	}
 
 	resp, err := h.ResponseService.CreateResponse(c.Request.Context(), userID, model.CreateResponseParams{
-		QuestionID: qid,
+		QuestionID: req.QuestionID,
 		Body:       req.Body,
 		ImageURLs:  req.ImageURLs,
 	})
@@ -59,37 +53,26 @@ func (h *ResponseHandler) CreateResponse(c *gin.Context) {
 	c.JSON(http.StatusCreated, dto.CreateResponseRes{Response: resp})
 }
 
-// GetResponsesByQuestionID returns responses for a question (no pagination for now)
-func (h *ResponseHandler) GetResponsesByQuestionID(c *gin.Context) {
+func (h *ResponseHandler) GetResponseByID(c *gin.Context) {
 	userID := getAuthUserID(c)
 
-	qidStr := c.Param("question_id")
-	qid, err := uuid.Parse(qidStr)
+	responseID, err := uuid.Parse(c.Param("response_id"))
 	if err != nil {
-		c.Error(BadRequest(c, "could not parse question id", fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err)))
+		c.Error(BadRequest(c, "could not parse response id", fmt.Errorf("%s: %w", "ResponseHandler::GetResponseByID", err)))
 		return
 	}
 
-	// TODO: For now we pass empty PageParams (no paging)
-	resps, err := h.ResponseService.GetResponsesByQuestionID(c.Request.Context(), userID, qid, model.PageParams{})
+	response, err := h.ResponseService.GetResponseByID(c.Request.Context(), userID, responseID)
 	if err != nil {
-		HandleErr(c, fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err))
+		HandleErr(c, fmt.Errorf("%s: %w", "ResponseHandler::GetResponseByID", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"responses": resps})
+	c.JSON(http.StatusOK, dto.GetResponseByIDRes{Response: response})
 }
 
-// EditResponse edits an existing response (only author allowed)
 func (h *ResponseHandler) EditResponse(c *gin.Context) {
 	userID := getAuthUserID(c)
-
-	ridStr := c.Param("response_id")
-	rid, err := uuid.Parse(ridStr)
-	if err != nil {
-		c.Error(BadRequest(c, "could not parse response id", fmt.Errorf("%s: %w", "ResponseHandler::EditResponse", err)))
-		return
-	}
 
 	var req dto.EditResponseReq
 	if err := unmarshalAndValidateReq(c, &req); err != nil {
@@ -98,7 +81,7 @@ func (h *ResponseHandler) EditResponse(c *gin.Context) {
 	}
 
 	resp, err := h.ResponseService.EditResponse(c.Request.Context(), userID, model.EditResponseParams{
-		ResponseID: rid,
+		ResponseID: req.ResponseID,
 		Body:       req.Body,
 	})
 	if err != nil {
@@ -112,23 +95,70 @@ func (h *ResponseHandler) EditResponse(c *gin.Context) {
 func (h *ResponseHandler) DeleteResponse(c *gin.Context) {
 	userID := getAuthUserID(c)
 
-	qid, err := uuid.Parse(c.Param("question_id"))
-	if err != nil {
-		c.Error(BadRequest(c, "could not parse question_id id", fmt.Errorf("%s: %w", "ResponseHandler::DeleteResponse", err)))
-		return
-	}
-
 	rid, err := uuid.Parse(c.Param("response_id"))
 	if err != nil {
 		c.Error(BadRequest(c, "could not parse response id", fmt.Errorf("%s: %w", "ResponseHandler::DeleteResponse", err)))
 		return
 	}
 
-	err = h.ResponseService.DeleteResponse(c.Request.Context(), userID, qid, rid)
+	err = h.ResponseService.DeleteResponse(c.Request.Context(), userID, rid)
 	if err != nil {
 		HandleErr(c, fmt.Errorf("%s: %w", "ResponseHandler::DeleteResponse", err))
 		return
 	}
 
 	c.Status(http.StatusOK)
+}
+
+func (h *ResponseHandler) GetResponsesByQuestionID(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	qid, err := uuid.Parse(c.Param("question_id"))
+	if err != nil {
+		c.Error(BadRequest(c, "could not parse question id", fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err)))
+		return
+	}
+
+	limit, err := validateLimitQueryParam(c.DefaultQuery("limit", "5"))
+	if err != nil {
+		c.Error(BadRequest(c, err.Error(), fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err)))
+		return
+	}
+
+	offset, err := validateOffsetQueryParam(c.DefaultQuery("offset", "0"))
+	if err != nil {
+		c.Error(BadRequest(c, err.Error(), fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err)))
+		return
+	}
+
+	page := model.PageParams{
+		Limit:  limit,
+		Offset: offset,
+	}
+
+	resps, err := h.ResponseService.GetResponsesByQuestionID(c.Request.Context(), userID, qid, page)
+	if err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.GetResponsesByQuestionIDRes{Responses: resps})
+}
+
+func (h *ResponseHandler) GetQuestionSummary(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	qid, err := uuid.Parse(c.Param("question_id"))
+	if err != nil {
+		c.Error(BadRequest(c, "could not parse question id", fmt.Errorf("%s: %w", "ResponseHandler::GetResponsesByQuestionID", err)))
+		return
+	}
+
+	summary, err := h.ResponseService.SummarizeResponsesByQuestionID(c.Request.Context(), userID, qid)
+	if err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "ResponseHandler::SummarizeResponsesByQuestionID", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.GetQuestionSummaryRes{Summary: summary})
 }

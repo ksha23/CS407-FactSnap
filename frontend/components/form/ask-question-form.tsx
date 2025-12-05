@@ -29,6 +29,10 @@ import { ReactNode, useState } from "react";
 import AskQuestionAdditionalForm from "@/components/form/ask-question-additional-form";
 import { useCreatePoll, useCreateQuestion } from "@/hooks/tanstack/question";
 import DurationInput from "@/components/input/duration-input";
+import { ImageUploadField } from "@/components/input/image-picker-input";
+import { uploadMedia } from "@/services/media-service";
+import { Alert } from "react-native";
+import { isAxiosError } from "axios";
 
 export default function AskQuestionForm() {
     const router = useRouter();
@@ -59,6 +63,29 @@ export default function AskQuestionForm() {
     async function handleSubmit(values: any) {
         console.log("ASK_QUESTION_FORM", values);
 
+        // Upload all images
+        // NOTE: we're assuming that the images are local files that haven't been uploaded yet
+        const uploadedImageUrls: string[] = []
+        if (values.image_urls && values.image_urls.length > 0) {
+            console.debug("UPLOADING IMAGES...")
+
+            // For now, we are uploading each image sequentially
+            for (const uri of values.image_urls) {
+                try {
+                    const asset = await uploadMedia(uri)
+                    console.debug("UPLOADED_IMAGE", asset)
+                    uploadedImageUrls.push(asset.url)
+                } catch (e) {
+                    if (isAxiosError(e)) {
+                        Alert.alert("Failed to upload images. Please try again.", e.message)
+                    } else {
+                        Alert.alert("Failed to upload images. Please try again.", JSON.stringify(e))
+                    }
+                    return;
+                }
+            }
+        }
+
         let questionId;
         try {
             const req: CreateQuestionReq = {
@@ -68,7 +95,7 @@ export default function AskQuestionForm() {
                 location: values.location,
                 duration: values.duration,
                 content_type: values.content.content_type,
-                // image_urls: values.image_urls,
+                image_urls: uploadedImageUrls,
             };
             questionId = await createQuestionMutation.mutateAsync(req);
         } catch {
@@ -88,7 +115,6 @@ export default function AskQuestionForm() {
                     return;
                 }
                 break;
-            case ContentType.NONE:
             default:
                 break;
         }
@@ -274,7 +300,7 @@ export default function AskQuestionForm() {
                         ))}
                 </Field>
 
-                {/* Location Picker – preserved logic */}
+                {/* Location Picker */}
                 <Field>
                     <LabelText>Location</LabelText>
                     <Controller
@@ -300,6 +326,25 @@ export default function AskQuestionForm() {
                     />
                     <HelperText>Where is this about?</HelperText>
                     {errors.location && <ErrorText>{errors.location.message}</ErrorText>}
+                </Field>
+
+                {/* Images */}
+                <Field>
+                    <LabelText>Images (optional)</LabelText>
+                    <Controller
+                        name={"image_urls"}
+                        control={control}
+                        render={({ field }) => (
+                            <ImageUploadField
+                                value={field.value ?? []}
+                                onChange={field.onChange}
+                                disabled={isLoading}
+                            />
+                        )}
+
+                    />
+                    <HelperText>Share any images for additional context</HelperText>
+                    {errors.image_urls && <ErrorText>{errors.image_urls.message}</ErrorText>}
                 </Field>
 
                 {/* Reset + Submit buttons */}

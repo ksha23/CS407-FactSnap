@@ -17,7 +17,7 @@ func (row CreateResponseRow) ToDomainModel() model.Response {
 	}
 }
 
-func (row GetAllResponsesByQuestionIDRow) ToDomainModel() model.Response {
+func (row GetResponsesByQuestionIDRow) ToDomainModel() model.Response {
 	return model.Response{
 		ID:         row.Response.ID,
 		QuestionID: row.Response.QuestionID,
