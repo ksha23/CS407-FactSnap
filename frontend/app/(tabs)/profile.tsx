@@ -1,4 +1,4 @@
-import { Avatar, Button, Text, View, YStack, ScrollView, Spinner } from "tamagui";
+import { Avatar, Button, Text, View, YStack, ScrollView, Spinner, XStack } from "tamagui";
 import { useClerk } from "@clerk/clerk-expo";
 import { useGetAuthUser } from "@/hooks/tanstack/user";
 import { useEffect } from "react";
@@ -72,6 +72,57 @@ export default function ProfilePage() {
                                     </Text>
                                 </YStack>
                             </View>
+
+                           {/* === Fake statistics card (UI only) === */}
+                            <YStack
+                                backgroundColor="$gray2"
+                                borderRadius="$6"
+                                padding="$4"
+                                gap="$3"
+                            >
+                                <XStack
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    marginBottom="$1"
+                                >
+                                    <Text fontSize="$5" fontWeight="bold">
+                                        Statistics
+                                    </Text>
+                                    {/* simple arrow / trend text, can be changed later */}
+                                    <Text fontSize="$3" color="$gray11">
+                                        Overview
+                                    </Text>
+                                </XStack>
+
+                                {/* Questions Asked row */}
+                                <XStack
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    paddingVertical="$2"
+                                    borderBottomWidth={1}
+                                    borderBottomColor="$gray4"
+                                >
+                                    <Text fontSize="$4">Questions Asked</Text>
+                                    {/* TODO: replace 0 with backend value from getQuestionNumber() */}
+                                    <Text fontSize="$4" fontWeight="bold">
+                                        0
+                                    </Text>
+                                </XStack>
+
+                                {/* Responses Given row */}
+                                <XStack
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    paddingVertical="$2"
+                                >
+                                    <Text fontSize="$4">Responses Given</Text>
+                                    {/* TODO: replace 0 with backend value from getUserResponseNumber() */}
+                                    <Text fontSize="$4" fontWeight="bold">
+                                        0
+                                    </Text>
+                                </XStack>
+                            </YStack>
+
                             <LocationNotificationSettings />
                         </YStack>
                     )}
