@@ -65,6 +65,7 @@ export default function SummarizeResponsesButton(props: Props) {
                     start={[0, 0]}
                     end={[1, 1]}
                     borderRadius="$4"
+                    mx="$3"
                 >
                     <Button
                         onPress={handleClick}

@@ -85,7 +85,7 @@ export default function CreateResponseForm({ question_id }: Props) {
     return (
         <>
             {/* Trigger button above Responses feed */}
-            <Button onPress={() => setOpen(true)}>
+            <Button onPress={() => setOpen(true)} mx="$3">
                 <Button.Icon>
                     <Pencil size={20}/>
                 </Button.Icon>
