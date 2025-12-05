@@ -1,14 +1,12 @@
 package postgres
 
 import (
-    "context"
-    "github.com/google/uuid"
-    "github.com/jackc/pgx/v5"
-    "github.com/jackc/pgx/v5/pgxpool"
-    "github.com/ksha23/CS407-FactSnap/internal/adapter/postgres/sqlc"
-    "github.com/ksha23/CS407-FactSnap/internal/core/model"
-    "time"
-    "errors"
+	"context"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres/sqlc"
+	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 )
 
 type responseRepo struct {
@@ -23,253 +21,82 @@ func NewResponseRepo(db *pgxpool.Pool) *responseRepo {
 	}
 }
 
-//Jerry:  only GetResponsesByUserID have not implemented yet
 func (r *responseRepo) CreateResponse(ctx context.Context, userID string, params model.CreateResponseParams) (model.Response, error) {
-    // use our db pool directly to insert and RETURNING the row
-    id := uuid.New()
-    now := time.Now().UTC()
+	var responseRow sqlc.CreateResponseRow
+	err := execTx(ctx, r.db, func(query *sqlc.Queries) error {
+		// create response
+		row, err := r.query.CreateResponse(ctx, params.QuestionID, userID, params.Body, params.ImageURLs)
+		if err != nil {
+			return fmt.Errorf("CreateResponse: %w", wrapError(err))
+		}
 
-    insertSQL := `
-    INSERT INTO responses (id, question_id, author_id, body, image_urls, created_at, edited_at)
-    VALUES ($1, $2, $3, $4, $5, $6, $6)
-    RETURNING id, question_id, author_id, body, image_urls, created_at, edited_at;
-    `
-    var rowID, questionID uuid.UUID
-    var authorID string
-    var body string
-    var imageURLs []string
-    var createdAt time.Time
-    var editedAt *time.Time
+		// increment response amount for the question
+		err = r.query.IncrementResponseAmount(ctx, params.QuestionID)
+		if err != nil {
+			return fmt.Errorf("IncrementResponseAmount: %w", wrapError(err))
+		}
 
-    err := r.db.QueryRow(ctx, insertSQL, id, params.QuestionID, userID, params.Body, params.ImageURLs, now).
-        Scan(&rowID, &questionID, &authorID, &body, &imageURLs, &createdAt, &editedAt)
-    if err != nil {
-        return model.Response{}, err
-    }
+		responseRow = row
+		return nil
+	})
+	if err != nil {
+		return model.Response{}, fmt.Errorf("ResponseRepo::CreateResponse: %w", err)
+	}
 
-    // load user info (join) - simpler: fetch from users table
-    var username, displayName string
-    var avatarUrl *string
-    usrSel := `SELECT username, display_name, avatar_url FROM users WHERE id = $1`
-    if err := r.db.QueryRow(ctx, usrSel, authorID).Scan(&username, &displayName, &avatarUrl); err != nil {
-        return model.Response{}, err
-    }
-
-    // Map to model.Response
-    var editedVal time.Time
-    if editedAt != nil {
-        editedVal = *editedAt
-    } else {
-        editedVal = time.Time{}
-    }
-
-    author := model.User{
-        ID:          authorID,
-        Username:    username,
-        DisplayName: displayName,
-        AvatarURL:   avatarUrl,
-    }
-
-    resp := model.Response{
-        ID:         rowID,
-        QuestionID: questionID,
-        Author:     author,
-        Body:       &body,
-        Data:       nil,
-        ImageURLs:  imageURLs,
-        CreatedAt:  createdAt,
-        EditedAt:   editedVal,
-    }
-
-    return resp, nil
+	return responseRow.ToDomainModel(), nil
 }
 
 func (r *responseRepo) GetResponsesByQuestionID(ctx context.Context, userID string, questionID uuid.UUID, page model.PageParams) ([]model.Response, error) {
-    sql := `
-    SELECT
-      r.id,
-      r.question_id,
-      r.author_id,
-      u.username,
-      u.display_name,
-      u.avatar_url,
-      r.body,
-      r.image_urls,
-      r.created_at,
-      r.edited_at
-    FROM responses r
-    JOIN users u ON u.id = r.author_id
-    WHERE r.question_id = $1
-    ORDER BY r.created_at DESC
-    `
-    rows, err := r.db.Query(ctx, sql, questionID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	// TODO: eventually switch to pagination
 
-    var out []model.Response
-    for rows.Next() {
-        var rowID uuid.UUID
-        var qid uuid.UUID
-        var authorID string
-        var username, displayName string
-        var avatarURL *string
-        var body string
-        var imageURLs []string
-        var createdAt time.Time
-        var editedAt *time.Time
+	responses, err := r.query.GetAllResponsesByQuestionID(ctx, userID, questionID)
+	if err != nil {
+		return nil, fmt.Errorf("ResponseRepo::GetResponsesByQuestionID: %w", wrapError(err))
+	}
 
-        if err := rows.Scan(&rowID, &qid, &authorID, &username, &displayName, &avatarURL, &body, &imageURLs, &createdAt, &editedAt); err != nil {
-            return nil, err
-        }
-
-        var editedVal time.Time
-        if editedAt != nil {
-            editedVal = *editedAt
-        } else {
-            editedVal = time.Time{}
-        }
-
-        author := model.User{
-            ID:          authorID,
-            Username:    username,
-            DisplayName: displayName,
-            AvatarURL:   avatarURL,
-        }
-
-        out = append(out, model.Response{
-            ID:         rowID,
-            QuestionID: qid,
-            Author:     author,
-            Body:       &body,
-            Data:       nil,
-            ImageURLs:  imageURLs,
-            CreatedAt:  createdAt,
-            EditedAt:   editedVal,
-        })
-    }
-
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    return out, nil
+	return convertRowsToDomain(responses), nil
 }
-
-
 
 func (r *responseRepo) EditResponse(ctx context.Context, userID string, params model.EditResponseParams) (model.Response, error) {
-    updateSQL := `
-    UPDATE responses
-    SET body = $1, image_urls = $2, edited_at = now()
-    WHERE id = $3 AND author_id = $4
-    RETURNING id, question_id, author_id, body, image_urls, created_at, edited_at;
-    `
+	row, err := r.query.EditResponse(ctx, params.Body, params.ResponseID)
+	if err != nil {
+		return model.Response{}, fmt.Errorf("ResponseRepo::EditResponse: %w", wrapError(err))
+	}
 
-    var rowID, questionID uuid.UUID
-    var authorID string
-    var body string
-    var imageURLs []string
-    var createdAt time.Time
-    var editedAt *time.Time
-
-    err := r.db.QueryRow(ctx, updateSQL, params.Body, params.ImageURLs, params.ResponseID, userID).
-        Scan(&rowID, &questionID, &authorID, &body, &imageURLs, &createdAt, &editedAt)
-    if err != nil {
-        if errors.Is(err, pgx.ErrNoRows) {
-            var existsAuthor string
-            sel := `SELECT author_id FROM responses WHERE id = $1`
-            if err2 := r.db.QueryRow(ctx, sel, params.ResponseID).Scan(&existsAuthor); err2 != nil {
-                if errors.Is(err2, pgx.ErrNoRows) {
-                    return model.Response{}, pgx.ErrNoRows // not found
-                }
-                return model.Response{}, err2
-            }
-            // found but different author
-            return model.Response{}, errors.New("forbidden")
-        }
-        return model.Response{}, err
-    }
-
-    // load user info from users table
-    var username, displayName string
-    var avatarUrl *string
-    usrSel := `SELECT username, display_name, avatar_url FROM users WHERE id = $1`
-    if err := r.db.QueryRow(ctx, usrSel, authorID).Scan(&username, &displayName, &avatarUrl); err != nil {
-        return model.Response{}, err
-    }
-
-    var editedVal time.Time
-    if editedAt != nil {
-        editedVal = *editedAt
-    } else {
-        editedVal = time.Time{}
-    }
-
-    author := model.User{
-        ID:          authorID,
-        Username:    username,
-        DisplayName: displayName,
-        AvatarURL:   avatarUrl,
-    }
-
-    resp := model.Response{
-        ID:         rowID,
-        QuestionID: questionID,
-        Author:     author,
-        Body:       &body,
-        Data:       nil,
-        ImageURLs:  imageURLs,
-        CreatedAt:  createdAt,
-        EditedAt:   editedVal,
-    }
-
-    return resp, nil
+	return row.ToDomainModel(), nil
 }
 
-// DeleteResponse: check if author exists -> delete response -> decrement questions.num_responses
-func (r *responseRepo) DeleteResponse(ctx context.Context, userID string, responseID uuid.UUID) (uuid.UUID, error) {
-    tx, err := r.db.Begin(ctx)
-    if err != nil {
-        return uuid.Nil, err
-    }
-    defer func() {
-        _ = tx.Rollback(ctx)
-    }()
+func (r *responseRepo) DeleteResponse(ctx context.Context, userID string, questionID uuid.UUID, responseID uuid.UUID) error {
+	err := execTx(ctx, r.db, func(query *sqlc.Queries) error {
+		// delete response
+		err := query.DeleteResponse(ctx, responseID)
+		if err != nil {
+			return fmt.Errorf("DeleteResponse: %w", wrapError(err))
+		}
 
-    // check question_id and author_id
-    var questionID uuid.UUID
-    var authorID string
-    selSQL := `SELECT question_id, author_id FROM responses WHERE id = $1 FOR UPDATE`
-    if err := tx.QueryRow(ctx, selSQL, responseID).Scan(&questionID, &authorID); err != nil {
-        if errors.Is(err, pgx.ErrNoRows) {
-            return uuid.Nil, pgx.ErrNoRows
-        }
-        return uuid.Nil, err
-    }
+		// decrement response amount by one for question
+		err = query.DecrementResponseAmount(ctx, questionID, 1)
+		if err != nil {
+			return fmt.Errorf("DecrementResponseAmount: %w", wrapError(err))
+		}
 
-    if authorID != userID {
-        return uuid.Nil, errors.New("forbidden")
-    }
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("ResponseRepo::DeleteResponse: %w", err)
+	}
 
-    // Delete
-    if _, err := tx.Exec(ctx, `DELETE FROM responses WHERE id = $1`, responseID); err != nil {
-        return uuid.Nil, err
-    }
-
-    // update questions.num_responses
-    if _, err := tx.Exec(ctx, `UPDATE questions SET num_responses = GREATEST(num_responses - 1, 0) WHERE id = $1`, questionID); err != nil {
-        return uuid.Nil, err
-    }
-
-    if err := tx.Commit(ctx); err != nil {
-        return uuid.Nil, err
-    }
-
-    return questionID, nil
+	return nil
 }
 
+func (r *responseRepo) GetResponseByID(ctx context.Context, userID string, responseID uuid.UUID) (model.Response, error) {
+	row, err := r.query.GetResponseByID(ctx, userID, responseID)
+	if err != nil {
+		return model.Response{}, fmt.Errorf("ResponseRepo::GetResponseByID: %w", wrapError(err))
+	}
 
+	return row.ToDomainModel(), nil
+}
 
 //func (r *responseRepo) GetResponsesByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Response, error) {
 //	//TODO implement me

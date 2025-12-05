@@ -298,20 +298,3 @@ func (r *questionRepo) getPoll(ctx context.Context, question model.Question, use
 
 	return poll, nil
 }
-
-//func (r *questionRepo) GetQuestions(ctx context.Context, userID string, params model.GetQuestionsParams, page model.PageParams) ([]model.Question, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (r *questionRepo) DeleteQuestion(ctx context.Context, userID string, questionID uuid.UUID) (model.Question, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//
-//
-//func (r *questionRepo) GetQuestionsByUserID(ctx context.Context, userID string, page model.PageParams) ([]model.Question, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}

@@ -56,21 +56,21 @@ export const multiFormatDateString = (timestamp: string = ""): string => {
 };
 
 export function formatExpirationDate(timestamp: string): string {
-    const now = new Date()
-    const end = new Date(timestamp)
-    const diffMs = end.getTime() - now.getTime()
+    const now = new Date();
+    const end = new Date(timestamp);
+    const diffMs = end.getTime() - now.getTime();
 
-    if (diffMs <= 0) return "expired"
+    if (diffMs <= 0) return "expired";
 
-    const diffSec = Math.floor(diffMs / 1000)
-    const diffMin = Math.floor(diffSec / 60)
-    const diffHr = Math.floor(diffMin / 60)
-    const diffDay = Math.floor(diffHr / 24)
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
 
-    if (diffDay >= 1) return `${diffDay}d left`
-    if (diffHr >= 1) return `${diffHr}h left`
-    if (diffMin >= 1) return `${diffMin}m left`
-    return `${diffSec}s left`
+    if (diffDay >= 1) return `${diffDay}d left`;
+    if (diffHr >= 1) return `${diffHr}h left`;
+    if (diffMin >= 1) return `${diffMin}m left`;
+    return `${diffSec}s left`;
 }
 
 export function formatDisplayNumber(num: number): string {
@@ -79,12 +79,12 @@ export function formatDisplayNumber(num: number): string {
         return num.toString();
     } else if (num < 1000000) {
         // If the number is in thousands, format it with "k".
-        return (num / 1000).toFixed(2) + 'k';
+        return (num / 1000).toFixed(2) + "k";
     } else if (num < 1000000000) {
         // If the number is in millions, format it with "M".
-        return (num / 1000000).toFixed(2) + 'M';
+        return (num / 1000000).toFixed(2) + "M";
     } else {
         // If the number is in billions or more, format it with "B".
-        return (num / 1000000000).toFixed(2) + 'B';
+        return (num / 1000000000).toFixed(2) + "B";
     }
 }

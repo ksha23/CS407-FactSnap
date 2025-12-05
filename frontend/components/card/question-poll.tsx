@@ -1,57 +1,57 @@
-import React, { useMemo } from "react"
-import { XStack, YStack, Text, Progress, RadioGroup, Button } from "tamagui"
-import { Poll, PollOption, VotePollReq } from "@/models/question"
-import { useVotePoll } from "@/hooks/tanstack/question"
+import React, { useMemo } from "react";
+import { XStack, YStack, Text, Progress, RadioGroup, Button } from "tamagui";
+import { Poll, PollOption, VotePollReq } from "@/models/question";
+import { useVotePoll } from "@/hooks/tanstack/question";
 
 type Props = {
-    poll: Poll
-}
+    poll: Poll;
+};
 
 export function QuestionPollCard({ poll }: Props) {
-    const votePollMutation = useVotePoll()
+    const votePollMutation = useVotePoll();
 
     const isExpired = useMemo(() => {
-        const expiry = new Date(poll.expired_at)
-        const now = new Date()
-        return now.getTime() >= expiry.getTime()
-    }, [poll.expired_at])
+        const expiry = new Date(poll.expired_at);
+        const now = new Date();
+        return now.getTime() >= expiry.getTime();
+    }, [poll.expired_at]);
 
     const selectedOptionId =
-        poll.options.find((o: PollOption) => o.is_selected)?.id ?? null
+        poll.options.find((o: PollOption) => o.is_selected)?.id ?? null;
 
     async function onSubmit(optionId: string) {
-        if (isExpired || optionId === selectedOptionId) return
+        if (isExpired || optionId === selectedOptionId) return;
 
-        console.log("POLL_VOTE_SUBMISSION", "option id", optionId)
+        console.log("POLL_VOTE_SUBMISSION", "option id", optionId);
 
         try {
             const req: VotePollReq = {
                 question_id: poll.question_id,
                 poll_id: poll.id,
                 option_id: optionId,
-            }
-            await votePollMutation.mutateAsync(req)
+            };
+            await votePollMutation.mutateAsync(req);
         } catch (e) {
             // error alert is already shown
-            console.error("could not vote on poll", e)
+            console.error("could not vote on poll", e);
         }
     }
 
     async function onRemoveVote() {
-        if (!selectedOptionId || isExpired) return
+        if (!selectedOptionId || isExpired) return;
 
-        console.log("POLL_VOTE_REMOVE", "option id", selectedOptionId)
+        console.log("POLL_VOTE_REMOVE", "option id", selectedOptionId);
 
         try {
             const req: VotePollReq = {
                 question_id: poll.question_id,
                 poll_id: poll.id,
                 option_id: undefined,
-            }
-            await votePollMutation.mutateAsync(req)
+            };
+            await votePollMutation.mutateAsync(req);
         } catch (e) {
             // error alert is already shown
-            console.error("could not remove poll vote", e)
+            console.error("could not remove poll vote", e);
         }
     }
 
@@ -85,9 +85,9 @@ export function QuestionPollCard({ poll }: Props) {
                     const percent =
                         poll.num_total_votes > 0
                             ? Math.round((option.num_votes / poll.num_total_votes) * 100)
-                            : 0
+                            : 0;
 
-                    const isSelected = selectedOptionId === option.id
+                    const isSelected = selectedOptionId === option.id;
 
                     return (
                         <YStack key={option.id} gap="$1">
@@ -116,7 +116,7 @@ export function QuestionPollCard({ poll }: Props) {
                                 <Progress.Indicator backgroundColor="$blue8" />
                             </Progress>
                         </YStack>
-                    )
+                    );
                 })}
             </RadioGroup>
 
@@ -131,5 +131,5 @@ export function QuestionPollCard({ poll }: Props) {
                 </Button>
             )}
         </YStack>
-    )
+    );
 }
