@@ -24,8 +24,8 @@ func NewMediaHandler(mediaService port.MediaService) *MediaHandler {
 func (h *MediaHandler) RegisterRoutes(r *gin.RouterGroup) {
 	mediaRoutes := r.Group("/media")
 	mediaRoutes.POST("/upload", h.UploadMedia)
-	mediaRoutes.GET("/:key", h.GetMediaByKey)
-	mediaRoutes.DELETE("/:key", h.DeleteMediaByKey)
+	//mediaRoutes.GET("/:key", h.GetMediaByKey)
+	//mediaRoutes.DELETE("/:key", h.DeleteMediaByKey)
 }
 
 func (h *MediaHandler) UploadMedia(c *gin.Context) {
@@ -78,27 +78,27 @@ func (h *MediaHandler) UploadMedia(c *gin.Context) {
 	c.JSON(http.StatusCreated, res)
 }
 
-func (h *MediaHandler) GetMediaByKey(c *gin.Context) {
-	key := c.Param("key")
-
-	asset, err := h.MediaService.GetMediaURL(c.Request.Context(), key)
-	if err != nil {
-		HandleErr(c, fmt.Errorf("%s: %w", "MediaHandler::GetMediaByKey", err))
-		return
-	}
-
-	res := dto.MediaAssetRes{Asset: asset}
-	c.JSON(http.StatusOK, res)
-}
-
-func (h *MediaHandler) DeleteMediaByKey(c *gin.Context) {
-	key := c.Param("key")
-
-	if err := h.MediaService.DeleteMedia(c.Request.Context(), key); err != nil {
-		HandleErr(c, fmt.Errorf("%s: %w", "MediaHandler::DeleteMediaByKey", err))
-		return
-	}
-
-	res := dto.MessageRes{Message: "Media deleted"}
-	c.JSON(http.StatusOK, res)
-}
+//func (h *MediaHandler) GetMediaByKey(c *gin.Context) {
+//	key := c.Param("key")
+//
+//	asset, err := h.MediaService.GetMediaURL(c.Request.Context(), key)
+//	if err != nil {
+//		HandleErr(c, fmt.Errorf("%s: %w", "MediaHandler::GetMediaByKey", err))
+//		return
+//	}
+//
+//	res := dto.MediaAssetRes{Asset: asset}
+//	c.JSON(http.StatusOK, res)
+//}
+//
+//func (h *MediaHandler) DeleteMediaByKey(c *gin.Context) {
+//	key := c.Param("key")
+//
+//	if err := h.MediaService.DeleteMedia(c.Request.Context(), key); err != nil {
+//		HandleErr(c, fmt.Errorf("%s: %w", "MediaHandler::DeleteMediaByKey", err))
+//		return
+//	}
+//
+//	res := dto.MessageRes{Message: "Media deleted"}
+//	c.JSON(http.StatusOK, res)
+//}

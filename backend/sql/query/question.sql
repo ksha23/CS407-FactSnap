@@ -73,7 +73,8 @@ SELECT
 FROM questions q
          JOIN users u ON q.author_id = u.id
          JOIN locations l ON q.id = l.question_id
-WHERE ST_DWithin(
+WHERE q.expired_at > now() AND
+      ST_DWithin(
               l.location::geography,
               ST_SetSRID(
                       ST_MakePoint(
@@ -97,8 +98,9 @@ FROM questions q
          JOIN users u ON q.author_id = u.id
          JOIN locations l ON q.id = l.question_id
 WHERE
-    q.category = sqlc.arg(category)
-    AND ST_DWithin(
+    q.category = sqlc.arg(category) AND
+    q.expired_at > now() AND
+    ST_DWithin(
               l.location::geography,
               ST_SetSRID(
                       ST_MakePoint(

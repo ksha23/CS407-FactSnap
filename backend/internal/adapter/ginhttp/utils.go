@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp/dto"
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
+	"github.com/ksha23/CS407-FactSnap/internal/validate"
 	"net/http"
 	"strconv"
 )
@@ -54,8 +55,9 @@ func validateLimitQueryParam(limitQuery string) (int, error) {
 	if err != nil {
 		return 0, errors.New("limit must be an integer")
 	}
-	if limit < 0 {
-		return 0, errors.New("limit must be greater than or equal to 0")
+
+	if err := validate.PageLimit(int(limit)); err != nil {
+		return 0, err
 	}
 
 	return int(limit), nil
@@ -66,9 +68,11 @@ func validateOffsetQueryParam(offsetQuery string) (int, error) {
 	if err != nil {
 		return 0, errors.New("offset must be an integer")
 	}
-	if offset < 0 {
-		return 0, errors.New("offset must be greater than or equal to 0")
+
+	if err := validate.PageOffset(int(offset)); err != nil {
+		return 0, err
 	}
+
 	return int(offset), nil
 }
 

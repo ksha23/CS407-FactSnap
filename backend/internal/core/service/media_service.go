@@ -34,8 +34,6 @@ func (s *mediaService) UploadMedia(ctx context.Context, params model.UploadMedia
 		return model.MediaAsset{}, fmt.Errorf("MediaService::UploadMedia: %w", err)
 	}
 
-	// TODO: insert asset into DB with object key and url
-
 	return asset, nil
 }
 
@@ -56,20 +54,11 @@ func (s *mediaService) GetMediaURL(ctx context.Context, key string) (model.Media
 	return asset, nil
 }
 
-func (s *mediaService) DeleteMedia(ctx context.Context, key string) error {
-	if key == "" {
-		return errs.Error{
-			Type:     errs.TypeBadRequest,
-			Message:  "media key is required",
-			Internal: errors.New("media key was empty"),
-		}
-	}
-
-	err := s.client.Delete(ctx, key)
+func (s *mediaService) DeleteMedia(ctx context.Context, mediaUrls []string) error {
+	err := s.client.DeleteMany(ctx, mediaUrls)
 	if err != nil {
 		return fmt.Errorf("MediaService::DeleteMedia: %w", err)
 	}
-
 	return nil
 }
 

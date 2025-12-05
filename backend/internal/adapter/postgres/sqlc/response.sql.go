@@ -131,60 +131,6 @@ func (q *Queries) EditResponse(ctx context.Context, body string, iD uuid.UUID) (
 	return i, err
 }
 
-const getAllResponsesByQuestionID = `-- name: GetAllResponsesByQuestionID :many
-SELECT
-    r.id, r.author_id, r.question_id, r.body, r.image_urls, r.created_at, r.edited_at,
-    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
-    r.author_id = $1 AS is_owned
-FROM responses r
-    JOIN users u ON u.id = r.author_id
-WHERE r.question_id = $2
-ORDER BY r.created_at DESC
-`
-
-type GetAllResponsesByQuestionIDRow struct {
-	Response Response
-	User     User
-	IsOwned  bool
-}
-
-func (q *Queries) GetAllResponsesByQuestionID(ctx context.Context, userID string, iD uuid.UUID) ([]GetAllResponsesByQuestionIDRow, error) {
-	rows, err := q.db.Query(ctx, getAllResponsesByQuestionID, userID, iD)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []GetAllResponsesByQuestionIDRow{}
-	for rows.Next() {
-		var i GetAllResponsesByQuestionIDRow
-		if err := rows.Scan(
-			&i.Response.ID,
-			&i.Response.AuthorID,
-			&i.Response.QuestionID,
-			&i.Response.Body,
-			&i.Response.ImageUrls,
-			&i.Response.CreatedAt,
-			&i.Response.EditedAt,
-			&i.User.ID,
-			&i.User.Username,
-			&i.User.Email,
-			&i.User.DisplayName,
-			&i.User.Role,
-			&i.User.AboutMe,
-			&i.User.AvatarUrl,
-			&i.User.CreatedAt,
-			&i.IsOwned,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getResponseByID = `-- name: GetResponseByID :one
 SELECT
     r.id, r.author_id, r.question_id, r.body, r.image_urls, r.created_at, r.edited_at,
@@ -226,4 +172,64 @@ func (q *Queries) GetResponseByID(ctx context.Context, userID string, iD uuid.UU
 		&i.IsOwned,
 	)
 	return i, err
+}
+
+const getResponsesByQuestionID = `-- name: GetResponsesByQuestionID :many
+SELECT
+    r.id, r.author_id, r.question_id, r.body, r.image_urls, r.created_at, r.edited_at,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    r.author_id = $1 AS is_owned
+FROM responses r
+    JOIN users u ON u.id = r.author_id
+WHERE r.question_id = $2
+ORDER BY r.created_at DESC, r.id DESC
+LIMIT $4 OFFSET $3
+`
+
+type GetResponsesByQuestionIDRow struct {
+	Response Response
+	User     User
+	IsOwned  bool
+}
+
+func (q *Queries) GetResponsesByQuestionID(ctx context.Context, userID string, iD uuid.UUID, offsetNum int32, limitNum int32) ([]GetResponsesByQuestionIDRow, error) {
+	rows, err := q.db.Query(ctx, getResponsesByQuestionID,
+		userID,
+		iD,
+		offsetNum,
+		limitNum,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetResponsesByQuestionIDRow{}
+	for rows.Next() {
+		var i GetResponsesByQuestionIDRow
+		if err := rows.Scan(
+			&i.Response.ID,
+			&i.Response.AuthorID,
+			&i.Response.QuestionID,
+			&i.Response.Body,
+			&i.Response.ImageUrls,
+			&i.Response.CreatedAt,
+			&i.Response.EditedAt,
+			&i.User.ID,
+			&i.User.Username,
+			&i.User.Email,
+			&i.User.DisplayName,
+			&i.User.Role,
+			&i.User.AboutMe,
+			&i.User.AvatarUrl,
+			&i.User.CreatedAt,
+			&i.IsOwned,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

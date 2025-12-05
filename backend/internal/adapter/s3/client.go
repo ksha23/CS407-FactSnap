@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path"
 	"path/filepath"
 	"strings"
@@ -187,7 +188,7 @@ func (c *Client) Get(ctx context.Context, key string) (model.MediaAsset, error) 
 func (c *Client) Delete(ctx context.Context, key string) error {
 	objectKey := strings.TrimPrefix(key, "/")
 
-	_, err := c.s3Client.HeadObject(ctx, &s3.HeadObjectInput{
+	_, err := c.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(objectKey),
 	})
@@ -195,12 +196,21 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 		return c.handleS3Error(err, "media asset not found", "deleting media asset failed")
 	}
 
-	_, err = c.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(objectKey),
-	})
-	if err != nil {
-		return c.handleS3Error(err, "media asset not found", "deleting media asset failed")
+	return nil
+}
+
+func (c *Client) DeleteMany(ctx context.Context, urls []string) error {
+	for _, u := range urls {
+		objectKey, err := extractObjectKey(u, c.cdnBaseURL)
+		if err != nil {
+			return fmt.Errorf("S3Client::DeleteMany: could not extract object key from URL (%s): %w", u, err)
+		}
+
+		slog.DebugContext(ctx, "S3Client::DeleteMany: found object key", "object_key", objectKey, "url", u)
+
+		if err := c.Delete(ctx, objectKey); err != nil {
+			return fmt.Errorf("S3Client::DeleteMany: could not delete image with key %s and url %s: %w", objectKey, u, err)
+		}
 	}
 
 	return nil
@@ -246,29 +256,6 @@ func (c *Client) buildObjectKey(params model.UploadMediaParams) string {
 	}
 
 	return path.Join(objectParts...)
-}
-
-func sanitizeKeySegment(value string) string {
-	value = strings.ToLower(value)
-	if value == "" {
-		return "unknown"
-	}
-
-	var builder strings.Builder
-	for _, r := range value {
-		switch {
-		case r >= 'a' && r <= 'z':
-			builder.WriteRune(r)
-		case r >= '0' && r <= '9':
-			builder.WriteRune(r)
-		case r == '-' || r == '_':
-			builder.WriteRune(r)
-		default:
-			builder.WriteRune('-')
-		}
-	}
-
-	return strings.Trim(builder.String(), "-")
 }
 
 func (c *Client) handleS3Error(err error, notFoundMsg, genericMsg string) error {

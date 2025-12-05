@@ -9,11 +9,12 @@ import (
 type MediaService interface {
 	UploadMedia(ctx context.Context, params model.UploadMediaParams) (model.MediaAsset, error)
 	GetMediaURL(ctx context.Context, key string) (model.MediaAsset, error)
-	DeleteMedia(ctx context.Context, key string) error
+	DeleteMedia(ctx context.Context, urls []string) error
 }
 
 type MediaClient interface {
 	Upload(ctx context.Context, params model.UploadMediaParams) (model.MediaAsset, error)
 	Get(ctx context.Context, key string) (model.MediaAsset, error)
 	Delete(ctx context.Context, key string) error
+	DeleteMany(ctx context.Context, urls []string) error
 }

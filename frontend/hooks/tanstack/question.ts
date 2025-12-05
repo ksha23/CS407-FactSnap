@@ -27,7 +27,7 @@ import {
     votePoll,
 } from "@/services/question-service";
 import { Alert } from "react-native";
-import { questionKeys } from "@/hooks/tanstack/query-keys";
+import { questionKeys, responseKeys } from "@/hooks/tanstack/query-keys";
 import { produce } from "immer";
 import { Coordinates } from "@/services/location-service";
 import { PAGE_SIZE, PageFilterType } from "@/services/axios-client";
@@ -206,8 +206,14 @@ export function useDeleteQuestion() {
                 },
             );
 
-            // // delete the cache for question details
+            // delete the cache for question details
             queryClient.setQueryData(questionKeys.getQuestionById(variables), null);
+
+            // delete the list of response ids for this question
+            queryClient.removeQueries({queryKey: responseKeys.getResponsesByQuestionId(variables)})
+
+            // also delete all response details cache for this question
+            queryClient.removeQueries({queryKey: responseKeys.responseByQuestionId(variables)})
         },
     });
 }

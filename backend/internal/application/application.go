@@ -37,6 +37,7 @@ type App struct {
 
 	// clients
 	MediaClient port.MediaClient
+	AIClient    port.AIClient
 
 	// third-party integrations
 	ClerkClient clerk.Client
