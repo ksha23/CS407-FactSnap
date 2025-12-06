@@ -1,6 +1,6 @@
 import { Avatar, Button, Text, View, YStack, ScrollView, Spinner, XStack } from "tamagui";
 import { useClerk } from "@clerk/clerk-expo";
-import { useGetAuthUser } from "@/hooks/tanstack/user";
+import { useGetAuthUser, useGetUserStatistics } from "@/hooks/tanstack/user";
 import { useEffect } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,15 +9,24 @@ import { isAxiosError } from "axios";
 
 export default function ProfilePage() {
     const authUserQuery = useGetAuthUser();
+    const statisticsQuery = useGetUserStatistics();
     const { signOut } = useClerk();
 
     useEffect(() => {
         if (authUserQuery.error) {
             Alert.alert("Error loading profile", authUserQuery.error.message);
         }
-    }, [authUserQuery.error]);
+        if (statisticsQuery.error) {
+            Alert.alert("Error loading statistics", statisticsQuery.error.message);
+        }
+    }, [authUserQuery.error, statisticsQuery.error]);
 
-    if (authUserQuery.isPending || authUserQuery.isFetching) {
+    if (
+        authUserQuery.isPending ||
+        authUserQuery.isFetching ||
+        statisticsQuery.isPending ||
+        statisticsQuery.isFetching
+    ) {
         return (
             <View style={{ flex: 1 }}>
                 <YStack
@@ -38,9 +47,12 @@ export default function ProfilePage() {
             <ScrollView
                 refreshControl={
                     <RefreshControl
-                        refreshing={authUserQuery.isRefetching}
+                        refreshing={authUserQuery.isRefetching || statisticsQuery.isRefetching}
                         enabled={true}
-                        onRefresh={authUserQuery.refetch}
+                        onRefresh={() => {
+                            authUserQuery.refetch();
+                            statisticsQuery.refetch();
+                        }}
                     />
                 }
             >
@@ -73,7 +85,7 @@ export default function ProfilePage() {
                                 </YStack>
                             </View>
 
-                           {/* === Fake statistics card (UI only) === */}
+                           {/* === Statistics card === */}
                             <YStack
                                 backgroundColor="$gray2"
                                 borderRadius="$6"
@@ -94,33 +106,39 @@ export default function ProfilePage() {
                                     </Text>
                                 </XStack>
 
-                                {/* Questions Asked row */}
-                                <XStack
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                    paddingVertical="$2"
-                                    borderBottomWidth={1}
-                                    borderBottomColor="$gray4"
-                                >
-                                    <Text fontSize="$4">Questions Asked</Text>
-                                    {/* TODO: replace 0 with backend value from getQuestionNumber() */}
-                                    <Text fontSize="$4" fontWeight="bold">
-                                        0
+                                {statisticsQuery.isError ? (
+                                    <Text color={"$red10"} fontSize="$3">
+                                        Could not load statistics
                                     </Text>
-                                </XStack>
+                                ) : (
+                                    <>
+                                        {/* Questions Asked row */}
+                                        <XStack
+                                            alignItems="center"
+                                            justifyContent="space-between"
+                                            paddingVertical="$2"
+                                            borderBottomWidth={1}
+                                            borderBottomColor="$gray4"
+                                        >
+                                            <Text fontSize="$4">Questions Asked</Text>
+                                            <Text fontSize="$4" fontWeight="bold">
+                                                {statisticsQuery.data?.question_count ?? 0}
+                                            </Text>
+                                        </XStack>
 
-                                {/* Responses Given row */}
-                                <XStack
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                    paddingVertical="$2"
-                                >
-                                    <Text fontSize="$4">Responses Given</Text>
-                                    {/* TODO: replace 0 with backend value from getUserResponseNumber() */}
-                                    <Text fontSize="$4" fontWeight="bold">
-                                        0
-                                    </Text>
-                                </XStack>
+                                        {/* Responses Given row */}
+                                        <XStack
+                                            alignItems="center"
+                                            justifyContent="space-between"
+                                            paddingVertical="$2"
+                                        >
+                                            <Text fontSize="$4">Responses Given</Text>
+                                            <Text fontSize="$4" fontWeight="bold">
+                                                {statisticsQuery.data?.response_count ?? 0}
+                                            </Text>
+                                        </XStack>
+                                    </>
+                                )}
                             </YStack>
 
                             <LocationNotificationSettings />
