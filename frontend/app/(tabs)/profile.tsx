@@ -221,7 +221,41 @@ export default function ProfilePage() {
                                 </YStack>
                             )}
 
+                            {showMyResponses && (
+                                <YStack
+                                    backgroundColor="$gray1"
+                                    borderRadius="$6"
+                                    padding="$4"
+                                    gap="$3"
+                                >
+                                    <Text fontSize="$5" fontWeight="bold">
+                                        Questions You Responded To
+                                    </Text>
 
+                                    {myRespondedQuery.isPending || myRespondedQuery.isFetching ? (
+                                        <YStack alignItems="center" paddingVertical="$3" gap="$2">
+                                            <Spinner size="small" />
+                                            <Text fontSize="$3" color="$gray11">
+                                                Loading questions you responded to...
+                                            </Text>
+                                        </YStack>
+                                    ) : myRespondedQuery.data && myRespondedQuery.data.length > 0 ? (
+                                        <YStack gap="$2">
+                                            {myRespondedQuery.data.map((q) => (
+                                                <QuestionCard
+                                                    key={q.id}
+                                                    questionId={q.id}
+                                                    showDetails={false}
+                                                />
+                                            ))}
+                                        </YStack>
+                                    ) : (
+                                        <Text fontSize="$3" color="$gray11">
+                                            You haven't responded to any questions yet.
+                                        </Text>
+                                    )}
+                                </YStack>
+                            )}
 
                             <LocationNotificationSettings />
                         </YStack>
