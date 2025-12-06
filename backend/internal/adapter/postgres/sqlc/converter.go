@@ -62,3 +62,30 @@ func (row GetQuestionsByUserIDRow) ToDomainModel() model.Question {
         ExpiredAt:       row.Question.ExpiredAt,
     }
 }
+
+
+func (row GetQuestionsRespondedByUserIDRow) ToDomainModel() model.Question {
+	return model.Question{
+		ID:    row.Question.ID,
+		Author: toDomainUser(row.User),
+
+		Title: row.Question.Title,
+		Body:  row.Question.Body,
+
+		Category: model.Category(row.Question.Category),
+		Content: model.QuestionContent{
+			Type: model.ContentType(row.Question.ContentType),
+			Data: nil,
+		},
+
+		Location: toDomainLocation(row.Location),
+
+		ResponsesAmount: row.Question.NumResponses,
+		ImageURLs:       row.Question.ImageUrls,
+		IsOwned:         row.IsOwned,
+
+		CreatedAt: row.Question.CreatedAt,
+		EditedAt:  row.Question.EditedAt,
+		ExpiredAt: row.Question.ExpiredAt,
+	}
+}
