@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres/sqlc"
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
@@ -43,6 +44,22 @@ func (r *userRepo) GetAuthUserByID(ctx context.Context, clerkID string) (model.A
 	}
 
 	return authUser.ToDomainModel(), nil
+}
+
+func (r *userRepo) GetUserQuestionCount(ctx context.Context, userID string) (int, error) {
+	count, err := r.query.GetUserQuestionCount(ctx, userID)
+	if err != nil {
+		return 0, fmt.Errorf("UserRepo::GetUserQuestionCount: %w", wrapError(err))
+	}
+	return count, nil
+}
+
+func (r *userRepo) GetUserResponseCount(ctx context.Context, userID string) (int, error) {
+	count, err := r.query.GetUserResponseCount(ctx, userID)
+	if err != nil {
+		return 0, fmt.Errorf("UserRepo::GetUserResponseCount: %w", wrapError(err))
+	}
+	return count, nil
 }
 
 //func (r *userRepo) EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error) {
