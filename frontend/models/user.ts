@@ -29,3 +29,8 @@ export type SyncClerkUserRes = {
 export type GetAuthUser = {
     auth_user: AuthUser;
 };
+
+export type GetUserStatistics = {
+    question_count: number;
+    response_count: number;
+};

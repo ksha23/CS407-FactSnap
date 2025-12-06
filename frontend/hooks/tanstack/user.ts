@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { userKeys } from "@/hooks/tanstack/query-keys";
-import { getAuthUser, syncClerkUser } from "@/services/auth-service";
+import { getAuthUser, getUserStatistics, syncClerkUser } from "@/services/auth-service";
 import { Alert } from "react-native";
 
 // QUERIES
@@ -8,6 +8,13 @@ export function useGetAuthUser() {
     return useQuery({
         queryKey: userKeys.authUser(),
         queryFn: () => getAuthUser(),
+    });
+}
+
+export function useGetUserStatistics() {
+    return useQuery({
+        queryKey: userKeys.statistics(),
+        queryFn: () => getUserStatistics(),
     });
 }
 
