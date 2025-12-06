@@ -185,6 +185,75 @@ func (q *Queries) GetAllResponsesByQuestionID(ctx context.Context, userID string
 	return items, nil
 }
 
+const getQuestionsRespondedByUserID = `-- name: GetQuestionsRespondedByUserID :many
+SELECT
+    q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
+    l.id, l.question_id, l.location, l.name, l.address,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    q.author_id = $1 AS is_owned
+FROM questions q
+    JOIN responses r ON r.question_id = q.id
+    JOIN users u ON q.author_id = u.id
+    JOIN locations l ON q.id = l.question_id
+WHERE
+    r.author_id = $1
+ORDER BY r.created_at DESC, q.created_at DESC, q.id DESC
+LIMIT $3 OFFSET $2
+`
+
+type GetQuestionsRespondedByUserIDRow struct {
+	Question Question
+	Location Location
+	User     User
+	IsOwned  bool
+}
+
+func (q *Queries) GetQuestionsRespondedByUserID(ctx context.Context, userID string, offsetNum int32, limitNum int32) ([]GetQuestionsRespondedByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, getQuestionsRespondedByUserID, userID, offsetNum, limitNum)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetQuestionsRespondedByUserIDRow{}
+	for rows.Next() {
+		var i GetQuestionsRespondedByUserIDRow
+		if err := rows.Scan(
+			&i.Question.ID,
+			&i.Question.AuthorID,
+			&i.Question.ContentType,
+			&i.Question.Title,
+			&i.Question.Body,
+			&i.Question.ImageUrls,
+			&i.Question.Category,
+			&i.Question.NumResponses,
+			&i.Question.CreatedAt,
+			&i.Question.EditedAt,
+			&i.Question.ExpiredAt,
+			&i.Location.ID,
+			&i.Location.QuestionID,
+			&i.Location.Location,
+			&i.Location.Name,
+			&i.Location.Address,
+			&i.User.ID,
+			&i.User.Username,
+			&i.User.Email,
+			&i.User.DisplayName,
+			&i.User.Role,
+			&i.User.AboutMe,
+			&i.User.AvatarUrl,
+			&i.User.CreatedAt,
+			&i.IsOwned,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getResponseByID = `-- name: GetResponseByID :one
 SELECT
     r.id, r.author_id, r.question_id, r.body, r.image_urls, r.created_at, r.edited_at,

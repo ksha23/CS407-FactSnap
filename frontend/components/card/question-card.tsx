@@ -17,6 +17,8 @@ import { useAuth } from "@clerk/clerk-expo";
 import { ActivityIndicator } from "react-native";
 import { TextInput } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
+import { useQueryClient } from "@tanstack/react-query";
+import { questionKeys, userKeys } from "@/hooks/tanstack/query-keys";
 
 type Props = {
     questionId: string;
@@ -30,8 +32,7 @@ export default function QuestionCard(props: Props) {
     const question = questionQuery.data;
     const router = useRouter();
     const isDetails = !!props.showDetails;
-
-
+    const queryClient = useQueryClient();
 
     // Jerry: responses & summary state + auth
     const API_BASE = process.env.EXPO_PUBLIC_BACKEND_API_URL; // Using your own base url in .env
@@ -158,20 +159,22 @@ export default function QuestionCard(props: Props) {
           return;
         }
 
-        // parse response
         let body: any = {};
         try { body = JSON.parse(text); } catch (e) { body = { response: null }; }
         const newResp = body.response;
 
         if (newResp) {
-          // optimistic update for instant UI feedback
           setResponses(prev => [ newResp, ...(prev ?? []) ]);
           setReplyText("");
-          // essential: re-fetch to sync with DB/backend canonical data
+
+          queryClient.invalidateQueries({ queryKey: questionKeys.responded() });
+          queryClient.invalidateQueries({ queryKey: userKeys.statistics() });
+
           await fetchResponses();
         } else {
-          // backend didn't return created object -> re-fetch
           await fetchResponses();
+          queryClient.invalidateQueries({ queryKey: questionKeys.responded() });
+          queryClient.invalidateQueries({ queryKey: userKeys.statistics() });
         }
       } catch (err) {
         Alert.alert("Error", String(err));

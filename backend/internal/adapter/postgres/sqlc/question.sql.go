@@ -387,6 +387,74 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 	return i, err
 }
 
+const getQuestionsByUserID = `-- name: GetQuestionsByUserID :many
+SELECT
+    q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
+    l.id, l.question_id, l.location, l.name, l.address,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    q.author_id = $1 AS is_owned
+FROM questions q
+         JOIN users u ON q.author_id = u.id
+         JOIN locations l ON q.id = l.question_id
+WHERE
+    q.author_id = $1
+ORDER BY q.created_at DESC, q.id DESC
+LIMIT $3 OFFSET $2
+`
+
+type GetQuestionsByUserIDRow struct {
+	Question Question
+	Location Location
+	User     User
+	IsOwned  bool
+}
+
+func (q *Queries) GetQuestionsByUserID(ctx context.Context, userID string, offsetNum int32, limitNum int32) ([]GetQuestionsByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, getQuestionsByUserID, userID, offsetNum, limitNum)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetQuestionsByUserIDRow{}
+	for rows.Next() {
+		var i GetQuestionsByUserIDRow
+		if err := rows.Scan(
+			&i.Question.ID,
+			&i.Question.AuthorID,
+			&i.Question.ContentType,
+			&i.Question.Title,
+			&i.Question.Body,
+			&i.Question.ImageUrls,
+			&i.Question.Category,
+			&i.Question.NumResponses,
+			&i.Question.CreatedAt,
+			&i.Question.EditedAt,
+			&i.Question.ExpiredAt,
+			&i.Location.ID,
+			&i.Location.QuestionID,
+			&i.Location.Location,
+			&i.Location.Name,
+			&i.Location.Address,
+			&i.User.ID,
+			&i.User.Username,
+			&i.User.Email,
+			&i.User.DisplayName,
+			&i.User.Role,
+			&i.User.AboutMe,
+			&i.User.AvatarUrl,
+			&i.User.CreatedAt,
+			&i.IsOwned,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getQuestionsInRadiusFeed = `-- name: GetQuestionsInRadiusFeed :many
 SELECT
     q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
