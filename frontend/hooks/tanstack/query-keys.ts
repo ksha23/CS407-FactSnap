@@ -24,6 +24,8 @@ export const questionKeys = {
             { lat, lon, radiusMiles, pageFilter, pageFilterValue },
         ] as const,
 
+    myQuestions: () => [...questionKeys.lists(), "my"] as const,
+
     // detail
     details: () => [...questionKeys.all, "detail"] as const,
     getQuestionById: (id: string) => [...questionKeys.details(), id] as const,
