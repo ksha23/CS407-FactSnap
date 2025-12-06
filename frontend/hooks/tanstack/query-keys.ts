@@ -12,6 +12,8 @@ export const questionKeys = {
 
     // list
     lists: () => [...questionKeys.all, "list"] as const,
+    mine: () => [...questionKeys.all, "mine"] as const,
+    responded: () => [...questionKeys.all, "responded"] as const,
     getQuestionsFeed: (
         lat: number,
         lon: number,
