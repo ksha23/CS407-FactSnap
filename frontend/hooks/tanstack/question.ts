@@ -57,8 +57,13 @@ export function resetInfiniteQuestionsList(
 
             return produce(oldData, (draft) => {
                 // Reset to the first page
-                draft.pages = draft.pages?.slice(0, 1) || [];
-                draft.pageParams = draft.pageParams?.slice(0, 1) || [];
+                if (draft.pages && draft.pages.length > 1) {
+                    draft.pages.splice(1);
+                }
+
+                if (draft.pageParams && draft.pageParams.length > 1) {
+                    draft.pageParams.splice(1);
+                }
             });
         },
     );
