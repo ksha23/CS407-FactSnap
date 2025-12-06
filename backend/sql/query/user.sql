@@ -6,3 +6,11 @@ RETURNING *;
 -- name: GetUserByID :one
 SELECT * FROM users
 WHERE id = $1 LIMIT 1;
+
+-- name: GetUserQuestionCount :one
+SELECT COUNT(*) FROM questions
+WHERE author_id = $1;
+
+-- name: GetUserResponseCount :one
+SELECT COUNT(*) FROM responses
+WHERE author_id = $1;
