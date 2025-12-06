@@ -154,3 +154,15 @@ func (s *questionService) GetQuestionsByUserID(
     }
     return questions, nil
 }
+
+func (s *questionService) GetQuestionsRespondedByUserID(
+	ctx context.Context,
+	userID string,
+	page model.PageParams,
+) ([]model.Question, error) {
+	questions, err := s.questionRepo.GetQuestionsRespondedByUserID(ctx, userID, page)
+	if err != nil {
+		return nil, fmt.Errorf("QuestionService::GetQuestionsRespondedByUserID: %w", err)
+	}
+	return questions, nil
+}

@@ -323,3 +323,34 @@ func (r *questionRepo) GetQuestionsByUserID(
 
     return questions, nil
 }
+
+
+func (r *questionRepo) GetQuestionsRespondedByUserID(
+	ctx context.Context,
+	userID string,
+	page model.PageParams,
+) ([]model.Question, error) {
+	rows, err := r.query.GetQuestionsRespondedByUserID(
+		ctx,
+		userID,
+		int32(page.Offset),
+		int32(page.Limit),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("QuestionRepo::GetQuestionsRespondedByUserID: %w", wrapError(err))
+	}
+
+	questions := convertRowsToDomain(rows)
+
+	seen := make(map[uuid.UUID]bool)
+	result := make([]model.Question, 0, len(questions))
+
+	for _, q := range questions {
+		if !seen[q.ID] {
+			seen[q.ID] = true
+			result = append(result, q)
+		}
+	}
+
+	return result, nil
+}
