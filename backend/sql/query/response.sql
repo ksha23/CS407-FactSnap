@@ -1,7 +1,12 @@
 -- name: CreateResponse :one
 WITH new_response AS (
-    INSERT INTO responses (question_id, author_id, body, image_urls)
-    VALUES($1, $2, $3, $4)
+    INSERT INTO responses (
+        author_id,
+        question_id,
+        body,
+        image_urls
+    )
+    VALUES ($1, $2, $3, $4)
     RETURNING *
 )
 SELECT
@@ -27,21 +32,10 @@ SELECT
     TRUE AS is_owned
 FROM
     edited_response er
-    JOIN users u ON er.author_id = u.id;
+        JOIN users u ON er.author_id = u.id;
 
 -- name: DeleteResponse :exec
 DELETE FROM responses WHERE id = $1;
-
--- name: GetResponsesByQuestionID :many
-SELECT
-    sqlc.embed(r),
-    sqlc.embed(u),
-    r.author_id = sqlc.arg(user_id) AS is_owned
-FROM responses r
-    JOIN users u ON u.id = r.author_id
-WHERE r.question_id = sqlc.arg(id)
-ORDER BY r.created_at DESC, r.id DESC
-LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
 
 -- name: GetResponseByID :one
 SELECT
@@ -50,7 +44,20 @@ SELECT
     r.author_id = sqlc.arg(user_id) AS is_owned
 FROM
     responses r
-    JOIN users u ON u.id = r.author_id
+    JOIN users u ON r.author_id = u.id
 WHERE
     r.id = sqlc.arg(id)
     LIMIT 1;
+
+-- name: GetResponsesByQuestionID :many
+SELECT
+    sqlc.embed(r),
+    sqlc.embed(u),
+    r.author_id = sqlc.arg(user_id) AS is_owned
+FROM
+    responses r
+    JOIN users u ON r.author_id = u.id
+WHERE
+    r.question_id = sqlc.arg(question_id)
+ORDER BY r.created_at DESC
+LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);

@@ -58,6 +58,11 @@ interface FeedMapProps {
      * Unique key built from all location ids to force map remount when ids change
      */
     mapKey: string;
+
+    /**
+     * When this token changes we recenter the map to the user's current location.
+     */
+    recenterToken?: number;
 }
 
 /**
@@ -74,6 +79,7 @@ export default function FeedMap({
     showRadiusCircle = false,
     disableAutoFetch = false,
     mapKey,
+    recenterToken,
 }: FeedMapProps) {
     const [region, setRegion] = useState<Region | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>("");
@@ -212,6 +218,13 @@ export default function FeedMap({
             );
         }
     };
+
+    useEffect(() => {
+        if (!recenterToken) {
+            return;
+        }
+        void handleResetToCurrentLocation();
+    }, [recenterToken]);
 
     if (isLoading || !region) {
         return (

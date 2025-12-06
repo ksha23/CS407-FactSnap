@@ -1,11 +1,9 @@
-// Hook to manage background location notifications
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
-    startBackgroundLocationTracking,
-    stopBackgroundLocationTracking,
-    isBackgroundLocationTrackingActive,
-    requestNotificationPermissions,
+    registerForPushNotificationsAsync,
+    sendPushTokenToBackend,
+    sendLocationToBackend,
+    getCurrentLocation,
 } from "@/services/notification-service";
 
 /**
@@ -15,68 +13,60 @@ export function useBackgroundLocationNotifications() {
     const [isActive, setIsActive] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Function to check current status of background location tracking
-    const checkStatus = useCallback(async () => {
-        try {
-            const active = await isBackgroundLocationTrackingActive();
-            setIsActive(active);
-            return active;
-        } catch (error) {
-            console.error("Error checking background tracking status:", error);
-            setIsActive(false);
-            return false;
-        }
-    }, []);
-
-    // Check if background tracking is active on mount
-    useEffect(() => {
-        void checkStatus();
-    }, [checkStatus]);
-
-    // Function to start background location tracking
     const startTracking = async () => {
         try {
+            console.log("Starting background notification tracking...");
             setLoading(true);
-
-            // Request notification permissions first
-            const hasNotificationPermission = await requestNotificationPermissions();
-            if (!hasNotificationPermission) {
-                console.log("Notification permissions required");
-                return false;
+            
+            // 1. Register for push notifications
+            console.log("Registering for push notifications...");
+            const token = await registerForPushNotificationsAsync();
+            if (token) {
+                console.log("Got token, sending to backend...");
+                await sendPushTokenToBackend(token);
+            } else {
+                console.log("Failed to get push token");
             }
 
-            // Start background location tracking. We don't pass an explicit callback
-            // so the background service will use the app's QueryClient and the
-            // `fetchNearbyLocationsForNotifications` service via the queryClient
-            // fallback, ensuring background fetches go through TanStack Query.
-            const success = await startBackgroundLocationTracking();
-            await checkStatus();
-            return success;
+            // 2. Send initial location
+            console.log("Getting current location...");
+            const location = await getCurrentLocation();
+            if (location) {
+                console.log("Got location, sending to backend...", location.latitude, location.longitude);
+                await sendLocationToBackend(location.latitude, location.longitude);
+            }
+
+            setIsActive(true);
+            console.log("Tracking started successfully");
+            return true;
         } catch (error) {
-            console.error("Error starting background tracking:", error);
+            console.error("Error starting tracking:", error);
             return false;
         } finally {
             setLoading(false);
         }
     };
 
-    const stopTracking = async () => {
-        try {
-            setLoading(true);
-            await stopBackgroundLocationTracking();
-            await checkStatus();
-        } catch (error) {
-            console.error("Error stopping background tracking:", error);
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval>;
+        if (isActive) {
+            intervalId = setInterval(async () => {
+                const location = await getCurrentLocation();
+                if (location) {
+                    await sendLocationToBackend(location.latitude, location.longitude);
+                }
+            }, 30000); // 30 seconds
         }
-    };
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [isActive]);
 
     return {
         isActive,
         loading,
         startTracking,
-        stopTracking,
-        checkStatus,
+        stopTracking: () => setIsActive(false),
+        checkStatus: async () => isActive,
     };
 }

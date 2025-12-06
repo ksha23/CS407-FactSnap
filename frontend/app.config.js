@@ -12,8 +12,10 @@ export default ({ config }) => ({
 
         ios: {
             supportsTablet: true,
+            bundleIdentifier: "com.factsnap.app",
             infoPlist: {
                 UIBackgroundModes: ["location", "fetch"],
+                ITSAppUsesNonExemptEncryption: false,
                 // These strings are shown in iOS permission prompts / Settings
                 NSLocationWhenInUseUsageDescription:
                     "Allow FactSnap to access your location to show nearby questions.",
@@ -24,11 +26,12 @@ export default ({ config }) => ({
             },
             config: {
                 // Don't hardcode in git. Use env. This is used for Apple Maps replacement.
-                googleMapsApiKey: process.env.IOS_GOOGLE_MAPS_API_KEY,
+                googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
             },
         },
 
         android: {
+            package: "com.factsnap.app",
             adaptiveIcon: {
                 backgroundColor: "#E6F4FE",
                 foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -37,6 +40,7 @@ export default ({ config }) => ({
             },
             edgeToEdgeEnabled: true,
             predictiveBackGestureEnabled: false,
+            googleServicesFile: "./google-services.json",
 
             // ---- OPTION A: minimal perms (foreground only) ----
             // permissions: [
@@ -54,6 +58,12 @@ export default ({ config }) => ({
                 "FOREGROUND_SERVICE",
                 "FOREGROUND_SERVICE_LOCATION",
             ],
+            config: {
+                // Don't hardcode in git. Use env. This is used for Google Maps replacement.
+                googleMaps: {
+                    apiKey: process.env.GOOGLE_MAPS_API_KEY,
+                },
+            },
         },
 
         extra: {
@@ -61,7 +71,12 @@ export default ({ config }) => ({
             // DO NOT put secrets here unless the key is locked down in Google Cloud.
             EXPO_PUBLIC_GOOGLE_PLACES_API_KEY:
                 process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY,
+            eas: {
+                projectId: "1bba6479-f33f-494c-b88a-6f180a58cc68",
+            }
         },
+
+        owner: "ksha",
 
         web: {
             output: "single",

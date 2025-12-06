@@ -8,6 +8,11 @@ export type User = {
     display_name?: string;
     role: Role;
     created_at: string;
+    expo_push_token?: string;
+    last_known_location?: {
+        latitude: number;
+        longitude: number;
+    };
 };
 
 export type AuthUser = {
@@ -19,6 +24,11 @@ export type AuthUser = {
     display_name?: string;
     role: Role;
     created_at: string;
+    expo_push_token?: string;
+    last_known_location?: {
+        latitude: number;
+        longitude: number;
+    };
 };
 
 // DTOs

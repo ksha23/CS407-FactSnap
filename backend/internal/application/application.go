@@ -3,6 +3,8 @@ package application
 import (
 	"context"
 	"fmt"
+	"log/slog"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres"
@@ -10,7 +12,6 @@ import (
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
 	"golang.org/x/sync/errgroup"
-	"log/slog"
 )
 
 type App struct {
@@ -24,11 +25,12 @@ type App struct {
 	PostgresDB *pgxpool.Pool
 
 	// services
-	AuthService     port.AuthService
-	UserService     port.UserService
-	QuestionService port.QuestionService
-	ResponseService port.ResponseService
-	MediaService    port.MediaService
+	AuthService         port.AuthService
+	UserService         port.UserService
+	QuestionService     port.QuestionService
+	ResponseService     port.ResponseService
+	MediaService        port.MediaService
+	NotificationService port.NotificationService
 
 	// repos
 	UserRepo     port.UserRepository
