@@ -176,3 +176,17 @@ SET num_responses =
             END
 WHERE id = $1;
 
+
+-- name: GetQuestionsByUserID :many
+SELECT
+    sqlc.embed(q),
+    sqlc.embed(l),
+    sqlc.embed(u),
+    q.author_id = sqlc.arg(user_id) AS is_owned
+FROM questions q
+         JOIN users u ON q.author_id = u.id
+         JOIN locations l ON q.id = l.question_id
+WHERE
+    q.author_id = sqlc.arg(user_id)
+ORDER BY q.created_at DESC, q.id DESC
+LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
