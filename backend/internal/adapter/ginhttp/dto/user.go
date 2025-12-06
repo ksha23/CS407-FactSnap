@@ -9,3 +9,8 @@ type SyncClerkUserRes struct {
 type GetAuthUserRes struct {
 	AuthUser model.AuthUser `json:"auth_user"`
 }
+
+type GetUserStatisticsRes struct {
+	QuestionCount int `json:"question_count"`
+	ResponseCount int `json:"response_count"`
+}
