@@ -7,7 +7,7 @@ run:
 	go run cmd/api/main.go
 
 install:
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.27.0
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 # SQLC
