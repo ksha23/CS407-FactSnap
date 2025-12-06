@@ -96,6 +96,12 @@ export default function RootLayout() {
                                             title: "Edit Question",
                                         }}
                                     />
+
+                                    {/* Statistics stack (contains /statistics/my-questions and /statistics/my-responses) */}
+                                    <Stack.Screen
+                                      name="statistics"
+                                      options={{ headerShown: false }}
+                                    />
                                 </Stack>
                             ) : null}
                         </QueryClientProvider>

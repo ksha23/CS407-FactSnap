@@ -6,39 +6,18 @@ import { Alert, RefreshControl, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LocationNotificationSettings from "@/components/settings/location-notification-settings";
 import { isAxiosError } from "axios";
-import { useGetMyQuestions, useGetRespondedQuestions } from "@/hooks/tanstack/question";
+import { useRouter } from "expo-router";
 import QuestionCard from "@/components/card/question-card";
 
 export default function ProfilePage() {
     const authUserQuery = useGetAuthUser();
     const statisticsQuery = useGetUserStatistics();
     const { signOut } = useClerk();
+    const router = useRouter();
 
-    const [showMyQuestions, setShowMyQuestions] = useState(false);
-    const [showMyResponses, setShowMyResponses] = useState(false);
 
-    const myQuestionsQuery = useGetMyQuestions();
-    const myRespondedQuery = useGetRespondedQuestions();
 
-    useEffect(() => {
-        if (authUserQuery.error) {
-            Alert.alert("Error loading profile", authUserQuery.error.message);
-        }
-        if (statisticsQuery.error) {
-            Alert.alert("Error loading statistics", statisticsQuery.error.message);
-        }
-        if (myQuestionsQuery.error) {
-            Alert.alert("Error loading questions", myQuestionsQuery.error.message);
-        }
-        if (myRespondedQuery.error) {
-            Alert.alert("Error loading responded questions", myRespondedQuery.error.message);
-        }
-    }, [
-        authUserQuery.error,
-        statisticsQuery.error,
-        myQuestionsQuery.error,
-        myRespondedQuery.error,
-    ]);
+
 
 
     useEffect(() => {
@@ -142,7 +121,7 @@ export default function ProfilePage() {
                                     <>
                                         {/* Questions Asked row - clickable */}
                                         <Pressable
-                                            onPress={() => setShowMyQuestions((prev) => !prev)}
+                                            onPress={() => router.push("/statistics/my-questions")}
                                         >
                                             <XStack
                                                 alignItems="center"
@@ -157,14 +136,14 @@ export default function ProfilePage() {
                                                         {statisticsQuery.data?.question_count ?? 0}
                                                     </Text>
                                                     <Text fontSize="$3" color="$gray10">
-                                                        {showMyQuestions ? "Hide" : "View"}
+                                                      View
                                                     </Text>
                                                 </XStack>
                                             </XStack>
                                         </Pressable>
 
                                         {/* Responses Given row */}
-                                        <Pressable onPress={() => setShowMyResponses((prev) => !prev)}>
+                                        <Pressable onPress={() => router.push("/statistics/my-responses")}>
                                             <XStack
                                                 alignItems="center"
                                                 justifyContent="space-between"
@@ -176,7 +155,7 @@ export default function ProfilePage() {
                                                         {statisticsQuery.data?.response_count ?? 0}
                                                     </Text>
                                                     <Text fontSize="$3" color="$gray10">
-                                                        {showMyResponses ? "Hide" : "View"}
+                                                      View
                                                     </Text>
                                                 </XStack>
                                             </XStack>
@@ -184,78 +163,6 @@ export default function ProfilePage() {
                                     </>
                                 )}
                             </YStack>
-
-                            {showMyQuestions && (
-                                <YStack
-                                    backgroundColor="$gray1"
-                                    borderRadius="$6"
-                                    padding="$4"
-                                    gap="$3"
-                                >
-                                    <Text fontSize="$5" fontWeight="bold">
-                                        Your Questions
-                                    </Text>
-
-                                    {myQuestionsQuery.isPending || myQuestionsQuery.isFetching ? (
-                                        <YStack alignItems="center" paddingVertical="$3" gap="$2">
-                                            <Spinner size="small" />
-                                            <Text fontSize="$3" color="$gray11">
-                                                Loading your questions...
-                                            </Text>
-                                        </YStack>
-                                    ) : myQuestionsQuery.data && myQuestionsQuery.data.length > 0 ? (
-                                        <YStack gap="$2">
-                                            {myQuestionsQuery.data.map((q) => (
-                                                <QuestionCard
-                                                    key={q.id}
-                                                    questionId={q.id}
-                                                    showDetails={false}
-                                                />
-                                            ))}
-                                        </YStack>
-                                    ) : (
-                                        <Text fontSize="$3" color="$gray11">
-                                            You haven't asked any questions yet.
-                                        </Text>
-                                    )}
-                                </YStack>
-                            )}
-
-                            {showMyResponses && (
-                                <YStack
-                                    backgroundColor="$gray1"
-                                    borderRadius="$6"
-                                    padding="$4"
-                                    gap="$3"
-                                >
-                                    <Text fontSize="$5" fontWeight="bold">
-                                        Questions You Responded To
-                                    </Text>
-
-                                    {myRespondedQuery.isPending || myRespondedQuery.isFetching ? (
-                                        <YStack alignItems="center" paddingVertical="$3" gap="$2">
-                                            <Spinner size="small" />
-                                            <Text fontSize="$3" color="$gray11">
-                                                Loading questions you responded to...
-                                            </Text>
-                                        </YStack>
-                                    ) : myRespondedQuery.data && myRespondedQuery.data.length > 0 ? (
-                                        <YStack gap="$2">
-                                            {myRespondedQuery.data.map((q) => (
-                                                <QuestionCard
-                                                    key={q.id}
-                                                    questionId={q.id}
-                                                    showDetails={false}
-                                                />
-                                            ))}
-                                        </YStack>
-                                    ) : (
-                                        <Text fontSize="$3" color="$gray11">
-                                            You haven't responded to any questions yet.
-                                        </Text>
-                                    )}
-                                </YStack>
-                            )}
 
                             <LocationNotificationSettings />
                         </YStack>
