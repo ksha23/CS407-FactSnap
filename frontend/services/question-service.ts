@@ -9,6 +9,9 @@ import {
     UpdateQuestionReq,
     UpdateQuestionRes,
     VotePollReq,
+
+    GetMyQuestionsReq,
+    GetMyQuestionsRes,
 } from "@/models/question";
 import { apiClient } from "@/services/axios-client";
 import { Coordinates } from "@/services/location-service";
@@ -47,3 +50,11 @@ export async function createPoll(req: CreatePollReq) {
 export async function votePoll(req: VotePollReq) {
     return await apiClient.post(`/questions/poll/vote`, req);
 }
+
+
+export async function getMyQuestions(req: GetMyQuestionsReq) {
+    return (
+        await apiClient.post<GetMyQuestionsRes>(`/questions/mine`, req)
+    ).data.questions;
+}
+
