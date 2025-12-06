@@ -37,3 +37,28 @@ func toDomainLocation(location Location) model.Location {
 		Address:   location.Address,
 	}
 }
+
+// NEW: row -> domain Question
+func (row GetQuestionsByUserIDRow) ToDomainModel() model.Question {
+    return model.Question{
+        ID:     row.Question.ID,
+        Author: toDomainUser(row.User),
+
+        Title: row.Question.Title,
+        Body:  row.Question.Body,
+
+        Category: model.Category(row.Question.Category),
+        Content: model.QuestionContent{
+            Type: model.ContentType(row.Question.ContentType),
+            Data: nil, // 内容（Poll 等）由仓库层单独补充
+        },
+
+        Location:        toDomainLocation(row.Location),
+        ImageURLs:       row.Question.ImageUrls,
+        IsOwned:         row.IsOwned,
+        ResponsesAmount: row.Question.NumResponses,
+        CreatedAt:       row.Question.CreatedAt,
+        EditedAt:        row.Question.EditedAt,
+        ExpiredAt:       row.Question.ExpiredAt,
+    }
+}
