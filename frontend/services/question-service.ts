@@ -58,3 +58,8 @@ export async function getMyQuestions(req: GetMyQuestionsReq) {
     ).data.questions;
 }
 
+export async function getMyRespondedQuestions(req: GetRespondedQuestionsReq) {
+    return (
+        await apiClient.post<GetRespondedQuestionsRes>(`/questions/responded`, req)
+    ).data.questions;
+}
