@@ -13,6 +13,7 @@ import {
     CreateQuestionReq,
     GetQuestionsInRadiusFeedReq,
     Poll,
+    GetMyQuestionsReq,
     Question,
     UpdateQuestionReq,
     VotePollReq,
@@ -25,6 +26,8 @@ import {
     getQuestionsInRadiusFeed,
     updateQuestion,
     votePoll,
+    getMyQuestions,
+    getMyRespondedQuestions,
 } from "@/services/question-service";
 import { Alert } from "react-native";
 import { questionKeys } from "@/hooks/tanstack/query-keys";
@@ -289,3 +292,28 @@ export function useVotePoll() {
         },
     });
 }
+
+
+export function useGetMyQuestions(limit: number = PAGE_SIZE) {
+    const queryClient = useQueryClient();
+
+    return useQuery({
+        queryKey: questionKeys.myQuestions(),
+        queryFn: async () => {
+            const req: GetMyQuestionsReq = {
+                limit,
+                offset: 0,
+            };
+            const questions = await getMyQuestions(req);
+
+            // 像 feed 一样把每个 question 写进 details cache
+            questions.forEach((q) => {
+                queryClient.setQueryData(questionKeys.getQuestionById(q.id), q);
+            });
+
+            return questions;
+        },
+    });
+}
+
+
