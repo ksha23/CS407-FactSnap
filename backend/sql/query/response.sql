@@ -53,3 +53,18 @@ FROM
 WHERE
     r.id = sqlc.arg(id)
     LIMIT 1;
+
+-- name: GetQuestionsRespondedByUserID :many
+SELECT
+    sqlc.embed(q),
+    sqlc.embed(l),
+    sqlc.embed(u),
+    q.author_id = sqlc.arg(user_id) AS is_owned
+FROM questions q
+    JOIN responses r ON r.question_id = q.id
+    JOIN users u ON q.author_id = u.id
+    JOIN locations l ON q.id = l.question_id
+WHERE
+    r.author_id = sqlc.arg(user_id)
+ORDER BY r.created_at DESC, q.created_at DESC, q.id DESC
+LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
