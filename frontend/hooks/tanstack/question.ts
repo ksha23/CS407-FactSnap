@@ -316,4 +316,13 @@ export function useGetMyQuestions(limit: number = PAGE_SIZE) {
     });
 }
 
-
+export function useGetRespondedQuestions() {
+    return useQuery({
+        queryKey: questionKeys.responded(),
+        queryFn: () =>
+            getMyRespondedQuestions({
+                limit: PAGE_SIZE,
+                offset: 0,
+            }),
+    });
+}

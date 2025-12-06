@@ -127,3 +127,13 @@ export type GetMyQuestionsReq = {
 export type GetMyQuestionsRes = {
     questions: Question[];
 };
+
+
+export type GetRespondedQuestionsReq = {
+    limit: number;
+    offset: number;
+};
+
+export type GetRespondedQuestionsRes = {
+    questions: Question[];
+};
