@@ -205,11 +205,16 @@ export function useDeleteQuestion() {
                     if (!oldData) return oldData;
 
                     return produce(oldData, (draft) => {
+
+                        if (!draft.pages || !Array.isArray(draft.pages)) return;
+
                         draft.pages.forEach((page) => {
+                            if (!page.questionIds) return;
                             page.questionIds = page.questionIds.filter(
                                 (questionId) => questionId !== variables,
                             );
                         });
+
                     });
                 },
             );
