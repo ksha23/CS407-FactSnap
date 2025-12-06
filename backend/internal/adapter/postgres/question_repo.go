@@ -298,3 +298,28 @@ func (r *questionRepo) getPoll(ctx context.Context, question model.Question, use
 
 	return poll, nil
 }
+
+
+
+func (r *questionRepo) GetQuestionsByUserID(
+    ctx context.Context,
+    userID string,
+    page model.PageParams,
+) ([]model.Question, error) {
+    rows, err := r.query.GetQuestionsByUserID(
+        ctx,
+        userID,
+        int32(page.Offset),
+        int32(page.Limit),
+    )
+    if err != nil {
+        return nil, fmt.Errorf("QuestionRepo::GetQuestionsByUserID: %w", wrapError(err))
+    }
+
+    questions := make([]model.Question, len(rows))
+    for i, row := range rows {
+        questions[i] = row.ToDomainModel()
+    }
+
+    return questions, nil
+}
