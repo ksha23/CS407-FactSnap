@@ -49,6 +49,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteUserPushToken = `-- name: DeleteUserPushToken :exec
+UPDATE users
+SET expo_push_token = NULL
+WHERE id = $1
+`
+
+func (q *Queries) DeleteUserPushToken(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteUserPushToken, id)
+	return err
+}
+
 const getUserByID = `-- name: GetUserByID :one
 SELECT id, username, email, display_name, role, about_me, avatar_url, created_at, expo_push_token, last_known_location
 FROM users

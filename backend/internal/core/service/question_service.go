@@ -49,9 +49,9 @@ func (s *questionService) CreateQuestion(ctx context.Context, userID string, par
 
 		var tokens []string
 		for _, u := range users {
-			if u.ID == userID {
-				continue // Don't notify the author
-			}
+			// if u.ID == userID {
+			// 	continue // Don't notify the author
+			// }
 			if u.ExpoPushToken != nil {
 				tokens = append(tokens, *u.ExpoPushToken)
 			}

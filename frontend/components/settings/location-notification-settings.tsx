@@ -1,44 +1,36 @@
 import React from "react";
-import { Alert } from "react-native";
+import { Alert, Linking } from "react-native";
 import { View, Text, YStack, XStack, Switch, Button, Spinner } from "tamagui";
 import { useBackgroundLocationNotifications } from "@/hooks/use-background-notifications";
-import { useLocationPermissions } from "@/hooks/use-location";
 
 /**
  * Component to manage background location notification settings
  * Can be added to a settings page or profile page
  */
 export default function LocationNotificationSettings() {
-    const { isActive, loading, startTracking, stopTracking, checkStatus } =
+    const { isActive, loading, hasPermission: hasNotificationPermission, startTracking, stopTracking, checkStatus } =
         useBackgroundLocationNotifications();
-
-    const {
-        hasBackgroundPermission,
-        requestBackgroundPermissions,
-        loading: permissionLoading,
-    } = useLocationPermissions();
 
     const handleToggle = async (enabled: boolean) => {
         try {
             if (enabled) {
-                if (!hasBackgroundPermission) {
-                    const granted = await requestBackgroundPermissions();
-                    if (!granted) {
-                        Alert.alert(
-                            "Permission required",
-                            "Background location permission is required for notifications.",
-                        );
-                        await checkStatus();
-                        return;
-                    }
-                }
-
                 const started = await startTracking();
                 if (!started) {
-                    Alert.alert(
-                        "Unable to enable",
-                        "We couldn't enable background notifications. Please try again.",
-                    );
+                    if (!hasNotificationPermission) {
+                         Alert.alert(
+                            "Permission required",
+                            "Notification permission is required. Please enable it in settings.",
+                            [
+                                { text: "Cancel", style: "cancel" },
+                                { text: "Open Settings", onPress: () => Linking.openSettings() }
+                            ]
+                        );
+                    } else {
+                        Alert.alert(
+                            "Unable to enable",
+                            "We couldn't enable background notifications. Please try again.",
+                        );
+                    }
                     await checkStatus();
                 }
             } else {
@@ -92,25 +84,28 @@ export default function LocationNotificationSettings() {
                 )}
             </XStack>
 
-            {!hasBackgroundPermission && (
+            {!hasNotificationPermission && (
                 <View
                     padding="$3"
-                    backgroundColor="$yellow2"
+                    backgroundColor="$red2"
                     borderRadius="$3"
                     borderWidth={1}
-                    borderColor="$yellow6"
+                    borderColor="$red6"
+                    marginTop="$2"
                 >
-                    <Text fontSize="$3" color="$yellow11">
-                        ⚠️ Background location permission is required for this feature
+                    <Text fontSize="$3" color="$red11">
+                        ⚠️ Notification permission is required to receive alerts
                     </Text>
                     <Button
                         size="$3"
                         marginTop="$2"
-                        onPress={requestBackgroundPermissions}
-                        disabled={permissionLoading}
-                        theme="yellow"
+                        onPress={async () => {
+                            await startTracking();
+                        }}
+                        disabled={loading}
+                        theme="red"
                     >
-                        Grant Permission
+                        Enable Notifications
                     </Button>
                 </View>
             )}

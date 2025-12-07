@@ -22,6 +22,7 @@ type Querier interface {
 	DeletePollVote(ctx context.Context, userID string, pollID uuid.UUID) error
 	DeleteQuestion(ctx context.Context, id uuid.UUID) error
 	DeleteResponse(ctx context.Context, id uuid.UUID) error
+	DeleteUserPushToken(ctx context.Context, id string) error
 	EditLocation(ctx context.Context, wkt string, name *string, address *string, iD uuid.UUID) (Location, error)
 	EditQuestion(ctx context.Context, title string, body *string, category string, iD uuid.UUID) (EditQuestionRow, error)
 	EditResponse(ctx context.Context, body string, iD uuid.UUID) (EditResponseRow, error)

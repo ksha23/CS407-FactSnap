@@ -26,3 +26,7 @@ func (s *userService) UpdateLocation(ctx context.Context, userID string, lat, lo
 func (s *userService) UpdatePushToken(ctx context.Context, userID, token string) error {
 	return s.userRepo.UpdatePushToken(ctx, userID, token)
 }
+
+func (s *userService) DeletePushToken(ctx context.Context, userID string) error {
+	return s.userRepo.DeletePushToken(ctx, userID)
+}

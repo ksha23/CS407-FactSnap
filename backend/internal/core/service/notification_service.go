@@ -29,8 +29,12 @@ type ExpoMessage struct {
 
 func (s *ExpoNotificationService) SendPushNotification(ctx context.Context, tokens []string, title, body string, data map[string]interface{}) error {
 	if len(tokens) == 0 {
+		// log that there are no tokens to send to
+		fmt.Println("No tokens to send push notifications to")
 		return nil
 	}
+
+	fmt.Println("Sending push notification to tokens:", tokens)
 
 	// Expo allows batching, but for simplicity we send one request with all messages
 	// Note: Expo recommends batching if sending to many users.
@@ -70,9 +74,10 @@ func (s *ExpoNotificationService) SendPushNotification(ctx context.Context, toke
 	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
 		return fmt.Errorf("failed to decode response body: %w", err)
 	}
+	fmt.Println("Expo push notification response:", respBody)
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("expo api returned status: %d", resp.StatusCode)
+		return fmt.Errorf("expo api returned status: %d, response: %v", resp.StatusCode, respBody)
 	}
 
 	return nil

@@ -62,6 +62,14 @@ func (r *userRepo) UpdatePushToken(ctx context.Context, userID, token string) er
 	return nil
 }
 
+func (r *userRepo) DeletePushToken(ctx context.Context, userID string) error {
+	err := r.query.DeleteUserPushToken(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("UserRepo::DeletePushToken: %w", wrapError(err))
+	}
+	return nil
+}
+
 func (r *userRepo) GetUsersInRadius(ctx context.Context, lat, long, radius float64) ([]model.User, error) {
 	users, err := r.query.GetUsersInRadius(ctx, lat, long, radius)
 	if err != nil {

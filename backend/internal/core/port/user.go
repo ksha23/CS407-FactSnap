@@ -10,6 +10,7 @@ type UserService interface {
 	//EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error)
 	UpdateLocation(ctx context.Context, userID string, lat, long float64) error
 	UpdatePushToken(ctx context.Context, userID, token string) error
+	DeletePushToken(ctx context.Context, userID string) error
 }
 
 type UserRepository interface {
@@ -18,5 +19,6 @@ type UserRepository interface {
 	//EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error)
 	UpdateLocation(ctx context.Context, userID string, lat, long float64) error
 	UpdatePushToken(ctx context.Context, userID, token string) error
+	DeletePushToken(ctx context.Context, userID string) error
 	GetUsersInRadius(ctx context.Context, lat, long, radius float64) ([]model.User, error)
 }

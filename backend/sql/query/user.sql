@@ -18,6 +18,11 @@ UPDATE users
 SET expo_push_token = $2
 WHERE id = $1;
 
+-- name: DeleteUserPushToken :exec
+UPDATE users
+SET expo_push_token = NULL
+WHERE id = $1;
+
 -- name: GetUsersInRadius :many
 SELECT id, expo_push_token
 FROM users

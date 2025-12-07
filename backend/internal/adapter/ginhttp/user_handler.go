@@ -20,6 +20,7 @@ func (h *UserHandler) RegisterRoutes(r *gin.RouterGroup) {
 	users := r.Group("/users")
 	users.POST("/location", h.UpdateLocation)
 	users.POST("/push-token", h.UpdatePushToken)
+	users.DELETE("/push-token", h.DeletePushToken)
 }
 
 type UpdateLocationRequest struct {
@@ -62,5 +63,18 @@ func (h *UserHandler) UpdatePushToken(c *gin.Context) {
 	}
 
 	slog.Info("UpdatePushToken success", "user_id", userID)
+	c.Status(http.StatusOK)
+}
+
+func (h *UserHandler) DeletePushToken(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	if err := h.UserService.DeletePushToken(c.Request.Context(), userID); err != nil {
+		slog.Error("DeletePushToken failed", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	slog.Info("DeletePushToken success", "user_id", userID)
 	c.Status(http.StatusOK)
 }

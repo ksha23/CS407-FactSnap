@@ -70,6 +70,16 @@ export async function sendPushTokenToBackend(token: string) {
     }
 }
 
+export async function deletePushTokenFromBackend() {
+    try {
+        console.log("Deleting push token from backend...");
+        await apiClient.delete("/users/push-token");
+        console.log("Push token deleted successfully");
+    } catch (error) {
+        console.error("Error deleting push token:", error);
+    }
+}
+
 export async function sendLocationToBackend(latitude: number, longitude: number) {
     try {
         await apiClient.post("/users/location", { latitude, longitude });
