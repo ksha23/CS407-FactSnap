@@ -72,10 +72,10 @@ export default ({ config }) => ({
             EXPO_PUBLIC_GOOGLE_PLACES_API_KEY:
                 process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY,
             eas: {
-                projectId: "eb0c8c1a-4ed6-41e2-9cb3-561caea4ec71",
+                projectId: "0a1d39cd-3065-41e6-93dc-a94f7ecb9fc5",
             }
         },
-        owner: "rray9",
+        owner: "factsnap",
         web: {
             output: "single",
             bundler: "metro",
