@@ -1,6 +1,6 @@
-import { Avatar, Button, Text, View, YStack, ScrollView, Spinner, XStack } from "tamagui";
+import { Avatar, Button, Text, View, YStack, ScrollView, Spinner, XStack, Input } from "tamagui";
 import { useClerk } from "@clerk/clerk-expo";
-import { useGetAuthUser, useGetUserStatistics } from "@/hooks/tanstack/user";
+import { useGetAuthUser, useGetUserStatistics, useEditAuthUser } from "@/hooks/tanstack/user";
 import { useEffect, useState } from "react";
 import { Alert, RefreshControl, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,10 +15,15 @@ export default function ProfilePage() {
     const { signOut } = useClerk();
     const router = useRouter();
 
+    const editUserMutation = useEditAuthUser();
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newDisplayName, setNewDisplayName] = useState("");
 
-
-
-
+    useEffect(() => {
+        if (authUserQuery.data?.display_name) {
+            setNewDisplayName(authUserQuery.data.display_name);
+        }
+    }, [authUserQuery.data?.display_name]);
 
     useEffect(() => {
         if (authUserQuery.error) {
@@ -80,10 +85,80 @@ export default function ProfilePage() {
                                     />
                                     <Avatar.Fallback backgroundColor={"$gray5"} />
                                 </Avatar>
-                                <YStack alignItems="center">
-                                    <Text fontSize="$6" fontWeight="bold">
-                                        {authUserQuery.data.display_name}
-                                    </Text>
+                                <YStack alignItems="center" gap="$2">
+                                    {/* 显示名 + 编辑 */}
+                                    {!isEditingName ? (
+                                        <XStack alignItems="center" gap="$2">
+                                            <Text fontSize="$6" fontWeight="bold">
+                                                {authUserQuery.data.display_name}
+                                            </Text>
+                                            <Button
+                                                size="$2"
+                                                backgroundColor="$gray3"
+                                                onPress={() => setIsEditingName(true)}
+                                            >
+                                                <Text fontSize="$2">Edit</Text>
+                                            </Button>
+                                        </XStack>
+                                    ) : (
+                                        <YStack alignItems="center" gap="$2">
+                                            <Input
+                                                value={newDisplayName}
+                                                onChangeText={setNewDisplayName}
+                                                width={220}
+                                                textAlign="center"
+                                                maxLength={40}
+                                                placeholder="Enter display name"
+                                            />
+                                            <XStack gap="$2">
+                                                <Button
+                                                    size="$2"
+                                                    backgroundColor="$gray3"
+                                                    onPress={() => {
+                                                        setIsEditingName(false);
+                                                        setNewDisplayName(authUserQuery.data.display_name ?? "");
+                                                    }}
+                                                >
+                                                    <Text>Cancel</Text>
+                                                </Button>
+                                                <Button
+                                                    size="$2"
+                                                    backgroundColor="$blue8"
+                                                    disabled={
+                                                        editUserMutation.isPending ||
+                                                        newDisplayName.trim().length === 0
+                                                    }
+                                                    onPress={() => {
+                                                        const trimmed = newDisplayName.trim();
+                                                        if (!trimmed) return;
+                                                        editUserMutation.mutate(
+                                                            { display_name: trimmed },
+                                                            {
+                                                                onSuccess: () => {
+                                                                    // 成功后退出编辑态
+                                                                    setIsEditingName(false);
+                                                                },
+                                                                onError: (err: any) => {
+                                                                    Alert.alert(
+                                                                        "Failed to update name",
+                                                                        err?.message ?? "Unknown error",
+                                                                    );
+                                                                },
+                                                            },
+                                                        );
+                                                    }}
+                                                >
+                                                    {editUserMutation.isPending ? (
+                                                        <Spinner size="small" />
+                                                    ) : (
+                                                        <Text>Save</Text>
+                                                    )}
+                                                </Button>
+                                            </XStack>
+                                        </YStack>
+                                    )}
+
+                                    {/* 下面两行保持不变 */}
                                     <Text fontSize="$4" color="$gray11">
                                         @{authUserQuery.data.username}
                                     </Text>

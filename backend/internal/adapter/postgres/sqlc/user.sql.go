@@ -91,3 +91,26 @@ func (q *Queries) GetUserResponseCount(ctx context.Context, authorID string) (in
 	err := row.Scan(&count)
 	return count, err
 }
+
+const updateUserDisplayName = `-- name: UpdateUserDisplayName :one
+UPDATE users
+SET display_name = $1
+WHERE id = $2
+RETURNING id, username, email, display_name, role, about_me, avatar_url, created_at
+`
+
+func (q *Queries) UpdateUserDisplayName(ctx context.Context, displayName string, iD string) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserDisplayName, displayName, iD)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.DisplayName,
+		&i.Role,
+		&i.AboutMe,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+	)
+	return i, err
+}
