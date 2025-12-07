@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LocationNotificationSettings from "@/components/settings/location-notification-settings";
-import { isAxiosError } from "axios";
 
 export default function ProfilePage() {
     const authUserQuery = useGetAuthUser();
@@ -56,7 +55,7 @@ export default function ProfilePage() {
                             <View alignItems="center" gap="$3">
                                 <Avatar circular size={100}>
                                     <Avatar.Image
-                                        srcSet={authUserQuery.data.avatar_url}
+                                        src={authUserQuery.data.avatar_url}
                                     />
                                     <Avatar.Fallback backgroundColor={"$gray5"} />
                                 </Avatar>

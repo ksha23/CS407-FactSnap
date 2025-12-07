@@ -133,7 +133,7 @@ export default function QuestionCard(props: Props) {
                         {/* Author info (detailed) */}
                         <XStack alignItems="center" gap="$3">
                             <Avatar circular>
-                                <Avatar.Image srcSet={question.author.avatar_url} />
+                                <Avatar.Image src={question.author.avatar_url} />
                                 <Avatar.Fallback backgroundColor={"$gray5"} />
                             </Avatar>
                             <YStack>
@@ -155,7 +155,7 @@ export default function QuestionCard(props: Props) {
                     // COMPACT HEADER (showDetails = false)
                     <XStack alignItems="center" gap="$2">
                         <Avatar circular size="$2">
-                            <Avatar.Image srcSet={question.author.avatar_url} />
+                            <Avatar.Image src={question.author.avatar_url} />
                             <Avatar.Fallback backgroundColor="$gray5" />
                         </Avatar>
 

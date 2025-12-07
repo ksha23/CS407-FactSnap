@@ -90,7 +90,7 @@ export default function ResponseCard(props: Props) {
                     {/* Section: Avatar */}
                     <XStack alignItems="center" gap="$3">
                         <Avatar circular>
-                            <Avatar.Image srcSet={response.author.avatar_url} />
+                            <Avatar.Image src={response.author.avatar_url} />
                             <Avatar.Fallback backgroundColor={"$gray5"} />
                         </Avatar>
                         <YStack>
