@@ -62,7 +62,11 @@ func (r *userRepo) GetUserResponseCount(ctx context.Context, userID string) (int
 	return count, nil
 }
 
-//func (r *userRepo) EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
+
+func (r *userRepo) UpdateDisplayName(ctx context.Context, userID string, displayName string) (model.AuthUser, error) {
+    row, err := r.query.UpdateUserDisplayName(ctx, displayName, userID)
+    if err != nil {
+        return model.AuthUser{}, fmt.Errorf("UserRepo::UpdateDisplayName: %w", wrapError(err))
+    }
+    return row.ToDomainModel(), nil
+}

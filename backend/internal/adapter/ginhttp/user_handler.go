@@ -20,6 +20,7 @@ func NewUserHandler(userService port.UserService) *UserHandler {
 func (h *UserHandler) RegisterRoutes(r *gin.RouterGroup) {
 	userRoutes := r.Group("/users")
 	userRoutes.GET("/stats", h.GetUserStatistics)
+    userRoutes.PUT("/me", h.UpdateProfile)
 }
 
 func (h *UserHandler) GetUserStatistics(c *gin.Context) {
@@ -36,4 +37,23 @@ func (h *UserHandler) GetUserStatistics(c *gin.Context) {
 		ResponseCount: responseCount,
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+
+
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+    userID := getAuthUserID(c)
+
+    var req dto.UpdateProfileReq
+    if err := unmarshalAndValidateReq(c, &req); err != nil {
+        return
+    }
+
+    user, err := h.UserService.UpdateProfile(c.Request.Context(), userID, req.DisplayName)
+    if err != nil {
+        HandleErr(c, fmt.Errorf("UserHandler::UpdateProfile: %w", err))
+        return
+    }
+
+    c.JSON(http.StatusOK, dto.GetAuthUserRes{AuthUser: user})
 }
