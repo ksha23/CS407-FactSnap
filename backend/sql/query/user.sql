@@ -14,3 +14,10 @@ WHERE author_id = $1;
 -- name: GetUserResponseCount :one
 SELECT COUNT(*) FROM responses
 WHERE author_id = $1;
+
+
+-- name: UpdateUserDisplayName :one
+UPDATE users
+SET display_name = $1
+WHERE id = $2
+RETURNING id, username, email, display_name, role, about_me, avatar_url, created_at;
