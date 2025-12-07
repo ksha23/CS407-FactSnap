@@ -1,12 +1,12 @@
 // app.config.js
 export default ({ config }) => ({
     expo: {
-        name: "frontend",
-        slug: "frontend",
+        name: "FactSnap",
+        slug: "factsnap",
         version: "1.0.0",
         orientation: "portrait",
         icon: "./assets/images/icon.png",
-        scheme: "frontend",
+        scheme: "factsnap",
         userInterfaceStyle: "automatic",
         newArchEnabled: true,
 
@@ -72,18 +72,15 @@ export default ({ config }) => ({
             EXPO_PUBLIC_GOOGLE_PLACES_API_KEY:
                 process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY,
             eas: {
-                projectId: "1bba6479-f33f-494c-b88a-6f180a58cc68",
+                projectId: "eb0c8c1a-4ed6-41e2-9cb3-561caea4ec71",
             }
         },
-
-        owner: "ksha",
-
+        owner: "rray9",
         web: {
             output: "single",
             bundler: "metro",
             favicon: "./assets/images/favicon.png",
         },
-
         plugins: [
             "expo-router",
 
