@@ -41,6 +41,7 @@ type Querier interface {
 	IncrementResponseAmount(ctx context.Context, id uuid.UUID) error
 	IsPollExpired(ctx context.Context, id uuid.UUID) (bool, error)
 	SetQuestionContentType(ctx context.Context, iD uuid.UUID, contentType string) error
+	UpdateUserDisplayName(ctx context.Context, displayName string, iD string) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)
