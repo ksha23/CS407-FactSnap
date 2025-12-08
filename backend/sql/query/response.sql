@@ -61,8 +61,7 @@ WHERE
     r.question_id = sqlc.arg(question_id)
 ORDER BY r.created_at DESC
 LIMIT sqlc.arg(limit_num) OFFSET sqlc.arg(offset_num);
-    r.id = sqlc.arg(id)
-    LIMIT 1;
+
 
 -- name: GetQuestionsRespondedByUserID :many
 SELECT
