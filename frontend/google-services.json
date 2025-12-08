@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "438894076098",
+    "project_id": "factsnap-ea895",
+    "storage_bucket": "factsnap-ea895.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:438894076098:android:76512407ebf901eb1d5b5b",
+        "android_client_info": {
+          "package_name": "com.factsnap.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9DdqIRYCNpMZDCtL42tYuu76Oj9gowso"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

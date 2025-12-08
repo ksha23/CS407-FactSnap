@@ -15,3 +15,16 @@ postgres:
 
 clerk:
   secretKey:
+
+s3:
+  bucket:
+  region:
+  accessKeyId:
+  secretAccessKey:
+  sessionToken:
+  usePathStyle: false  # Set to true for LocalStack/MinIO, can be overridden by S3_USE_PATH_STYLE env var
+  presignDuration:
+  cdnBaseUrl:
+
+openai:
+  apiKey:

@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres/sqlc"
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
+	"golang.org/x/sync/errgroup"
 )
 
 type questionRepo struct {
@@ -206,7 +207,7 @@ func (r *questionRepo) GetQuestionsInRadiusFeed(
 ) ([]model.Question, error) {
 	switch page.Filter.Type {
 	case model.PageFilterTypeNone:
-		questions, err := r.query.GetQuestionsInRadiusFeed(ctx, sqlc.GetQuestionsInRadiusFeedParams{
+		questionRows, err := r.query.GetQuestionsInRadiusFeed(ctx, sqlc.GetQuestionsInRadiusFeedParams{
 			UserID:      userID,
 			Longitude:   params.Lon,
 			Latitude:    params.Lat,
@@ -217,21 +218,41 @@ func (r *questionRepo) GetQuestionsInRadiusFeed(
 		if err != nil {
 			return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed (Page Filter None): %w", wrapError(err))
 		}
-		return convertRowsToDomain(questions), nil
-	case model.PageFilterTypeQuestionCategory:
-		questions, err := r.query.GetQuestionsInRadiusFeedByCategory(ctx, sqlc.GetQuestionsInRadiusFeedByCategoryParams{
-			UserID:      userID,
-			Category:    page.Filter.Value,
-			Longitude:   params.Lon,
-			Latitude:    params.Lat,
-			RadiusMiles: params.RadiusMiles,
-			OffsetNum:   int32(page.Offset),
-			LimitNum:    int32(page.Limit),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed (Page Filter Category): %w", wrapError(err))
+
+		domainQuestions := make([]model.Question, len(questionRows))
+
+		// populate question content for each question (parallelized)
+		grouper, gCtx := errgroup.WithContext(ctx)
+		for i, questionRow := range questionRows {
+			grouper.Go(func() error {
+				domainQuestion := questionRow.ToDomainModel()
+				domainQuestion.Content, err = r.getQuestionContent(gCtx, domainQuestion, userID)
+				if err != nil {
+					return err
+				}
+				domainQuestions[i] = domainQuestion
+				return nil
+			})
 		}
-		return convertRowsToDomain(questions), nil
+		if err := grouper.Wait(); err != nil {
+			return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed: grouper err: %w", err)
+		}
+
+		return domainQuestions, nil
+	//case model.PageFilterTypeQuestionCategory:
+	//	questions, err := r.query.GetQuestionsInRadiusFeedByCategory(ctx, sqlc.GetQuestionsInRadiusFeedByCategoryParams{
+	//		UserID:      userID,
+	//		Category:    page.Filter.Value,
+	//		Longitude:   params.Lon,
+	//		Latitude:    params.Lat,
+	//		RadiusMiles: params.RadiusMiles,
+	//		OffsetNum:   int32(page.Offset),
+	//		LimitNum:    int32(page.Limit),
+	//	})
+	//	if err != nil {
+	//		return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed (Page Filter Category): %w", wrapError(err))
+	//	}
+	//	return convertRowsToDomain(questions), nil
 	default:
 		err := fmt.Errorf("page filter %s is unsupported or invalid", page.Filter.Type)
 		return nil, fmt.Errorf("QuestionRepo::GetQuestionsInRadiusFeed: %w", err)

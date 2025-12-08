@@ -61,6 +61,45 @@ func (r *userRepo) GetUserResponseCount(ctx context.Context, userID string) (int
 	}
 	return count, nil
 }
+func (r *userRepo) UpdateLocation(ctx context.Context, userID string, lat, long float64) error {
+	err := r.query.UpdateUserLocation(ctx, userID, lat, long)
+	if err != nil {
+		return fmt.Errorf("UserRepo::UpdateLocation: %w", wrapError(err))
+	}
+	return nil
+}
+
+func (r *userRepo) UpdatePushToken(ctx context.Context, userID, token string) error {
+	err := r.query.UpdateUserPushToken(ctx, userID, &token)
+	if err != nil {
+		return fmt.Errorf("UserRepo::UpdatePushToken: %w", wrapError(err))
+	}
+	return nil
+}
+
+func (r *userRepo) DeletePushToken(ctx context.Context, userID string) error {
+	err := r.query.DeleteUserPushToken(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("UserRepo::DeletePushToken: %w", wrapError(err))
+	}
+	return nil
+}
+
+func (r *userRepo) GetUsersInRadius(ctx context.Context, lat, long, radius float64) ([]model.User, error) {
+	users, err := r.query.GetUsersInRadius(ctx, lat, long, radius)
+	if err != nil {
+		return nil, fmt.Errorf("UserRepo::GetUsersInRadius: %w", wrapError(err))
+	}
+
+	var domainUsers []model.User
+	for _, u := range users {
+		domainUsers = append(domainUsers, model.User{
+			ID:            u.ID,
+			ExpoPushToken: u.ExpoPushToken,
+		})
+	}
+	return domainUsers, nil
+}
 
 
 func (r *userRepo) UpdateDisplayName(ctx context.Context, userID string, displayName string) (model.AuthUser, error) {

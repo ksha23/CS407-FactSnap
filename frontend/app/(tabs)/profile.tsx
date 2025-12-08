@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 import { Alert, RefreshControl, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LocationNotificationSettings from "@/components/settings/location-notification-settings";
+import { useLocationNotificationStore } from "@/hooks/zustand/location-notification-store";
 import { isAxiosError } from "axios";
 import { useRouter } from "expo-router";
 import QuestionCard from "@/components/card/question-card";
 
 export default function ProfilePage() {
     const authUserQuery = useGetAuthUser();
+    const {stopTracking} = useLocationNotificationStore()
     const statisticsQuery = useGetUserStatistics();
     const { signOut } = useClerk();
     const router = useRouter();
@@ -81,7 +83,7 @@ export default function ProfilePage() {
                             <View alignItems="center" gap="$3">
                                 <Avatar circular size={100}>
                                     <Avatar.Image
-                                        srcSet={authUserQuery.data.avatar_url}
+                                        src={authUserQuery.data.avatar_url}
                                     />
                                     <Avatar.Fallback backgroundColor={"$gray5"} />
                                 </Avatar>
@@ -244,7 +246,10 @@ export default function ProfilePage() {
                     )}
                     <Button
                         backgroundColor={"$red8"}
-                        onPress={() => signOut()}
+                        onPress={() => {
+                            stopTracking()
+                            signOut()
+                        }}
                         theme="red"
                     >
                         Sign Out

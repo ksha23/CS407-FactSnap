@@ -59,3 +59,21 @@ sql:
               pointer: true
           - db_type: "geometry"
             go_type: "github.com/cridenour/go-postgis.PointS"
+          - db_type: "geometry"
+            nullable: true
+            go_type:
+              import: "github.com/cridenour/go-postgis"
+              type: "PointS"
+              pointer: true
+          - db_type: "geography"
+            go_type: "github.com/cridenour/go-postgis.PointS"
+          - db_type: "public.geometry"
+            go_type: "github.com/cridenour/go-postgis.PointS"
+          - db_type: "public.geography"
+            go_type: "github.com/cridenour/go-postgis.PointS"
+          - db_type: "public.geography"
+            nullable: true
+            go_type:
+              import: "github.com/cridenour/go-postgis"
+              type: "PointS"
+              pointer: true

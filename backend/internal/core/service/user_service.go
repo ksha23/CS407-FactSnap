@@ -2,9 +2,8 @@ package service
 
 import (
 	"context"
-    "fmt"
+	"fmt"
     "strings"
-
     "github.com/ksha23/CS407-FactSnap/internal/core/model"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
 )
@@ -31,10 +30,17 @@ func (s *userService) GetUserStatistics(ctx context.Context, userID string) (int
 	return questionCount, responseCount, nil
 }
 
-//func (s *userService) EditUser(ctx context.Context, params model.EditUserParams) (model.AuthUser, error) {
-//	//TODO implement me
-//	panic("implement me")
-//}
+func (s *userService) UpdateLocation(ctx context.Context, userID string, lat, long float64) error {
+	return s.userRepo.UpdateLocation(ctx, userID, lat, long)
+}
+
+func (s *userService) UpdatePushToken(ctx context.Context, userID, token string) error {
+	return s.userRepo.UpdatePushToken(ctx, userID, token)
+}
+
+func (s *userService) DeletePushToken(ctx context.Context, userID string) error {
+	return s.userRepo.DeletePushToken(ctx, userID)
+}
 
 func (s *userService) UpdateProfile(ctx context.Context, userID string, displayName string) (model.AuthUser, error) {
     name := strings.TrimSpace(displayName)

@@ -3,10 +3,11 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
-	"strings"
 )
 
 func ClerkAuth(authService port.AuthService) gin.HandlerFunc {

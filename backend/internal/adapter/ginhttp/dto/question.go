@@ -49,6 +49,7 @@ func (r *CreateQuestionReq) Validate() error {
 	if err := validate.Location(r.Location.Latitude, r.Location.Longitude); err != nil {
 		errsMap["location"] = err
 	}
+
 	// validate image urls
 	if len(r.ImageURLs) > 0 {
 		for _, url := range r.ImageURLs {
@@ -65,7 +66,7 @@ func (r *CreateQuestionReq) Validate() error {
 	if err != nil {
 		errsMap["duration"] = fmt.Errorf("duration is in bad format")
 	} else {
-		if duration.Hours() < 0.25 || duration.Hours() > 1{
+		if duration.Hours() < 0.25 || duration.Hours() > 1 {
 			errsMap["duration"] = fmt.Errorf("duration must be between 15 minutes and 1 hour")
 		} else {
 			expiresAt := time.Now().Add(duration)

@@ -13,6 +13,7 @@ import {
     TextArea,
     View,
     YStack,
+    XStack,
     Select,
     Sheet,
 } from "tamagui";
@@ -29,6 +30,10 @@ import { ReactNode, useState } from "react";
 import AskQuestionAdditionalForm from "@/components/form/ask-question-additional-form";
 import { useCreatePoll, useCreateQuestion } from "@/hooks/tanstack/question";
 import DurationInput from "@/components/input/duration-input";
+import { ImageUploadField } from "@/components/input/image-picker-input";
+import { uploadMedia } from "@/services/media-service";
+import { Alert } from "react-native";
+import { isAxiosError } from "axios";
 
 export default function AskQuestionForm() {
     const router = useRouter();
@@ -59,6 +64,29 @@ export default function AskQuestionForm() {
     async function handleSubmit(values: any) {
         console.log("ASK_QUESTION_FORM", values);
 
+        // Upload all images
+        // NOTE: we're assuming that the images are local files that haven't been uploaded yet
+        const uploadedImageUrls: string[] = []
+        if (values.image_urls && values.image_urls.length > 0) {
+            console.debug("UPLOADING IMAGES...")
+
+            // For now, we are uploading each image sequentially
+            for (const uri of values.image_urls) {
+                try {
+                    const asset = await uploadMedia(uri)
+                    console.debug("UPLOADED_IMAGE", asset)
+                    uploadedImageUrls.push(asset.url)
+                } catch (e) {
+                    if (isAxiosError(e)) {
+                        Alert.alert("Failed to upload images. Please try again.", e.message)
+                    } else {
+                        Alert.alert("Failed to upload images. Please try again.", JSON.stringify(e))
+                    }
+                    return;
+                }
+            }
+        }
+
         let questionId;
         try {
             const req: CreateQuestionReq = {
@@ -68,7 +96,7 @@ export default function AskQuestionForm() {
                 location: values.location,
                 duration: values.duration,
                 content_type: values.content.content_type,
-                // image_urls: values.image_urls,
+                image_urls: uploadedImageUrls,
             };
             questionId = await createQuestionMutation.mutateAsync(req);
         } catch {
@@ -88,11 +116,12 @@ export default function AskQuestionForm() {
                     return;
                 }
                 break;
-            case ContentType.NONE:
             default:
                 break;
         }
 
+        // Navigate to feed first so back button goes to feed
+        router.navigate("/(tabs)");
         router.push({
             pathname: "/question/[id]",
             params: { id: questionId },
@@ -102,9 +131,24 @@ export default function AskQuestionForm() {
     return (
         <View>
             {/* size boosts text + inputs slightly; gap keeps things tight but readable */}
-            <YStack paddingHorizontal="$3" paddingTop="$2" gap="$4">
+            <YStack paddingHorizontal="$3" paddingTop="$1" gap="$3">
                 {/* Question Title */}
                 <Field>
+                    <XStack alignItems="center" justifyContent="space-between">
+                        <LabelText>Question</LabelText>
+                        <Button
+                            size="$2"
+                            chromeless
+                            color="$red10"
+                            onPress={() => {
+                                setLocPickerKey((prev) => prev + 1);
+                                reset();
+                            }}
+                            disabled={isLoading}
+                        >
+                            Reset Form
+                        </Button>
+                    </XStack>
                     <Controller
                         name="title"
                         control={control}
@@ -116,18 +160,18 @@ export default function AskQuestionForm() {
                                 value={field.value}
                                 onChangeText={field.onChange}
                                 onBlur={field.onBlur}
-                                size="$5"
+                                size="$4"
                                 bg="$color3"
-                                borderWidth={0}
+                                // borderWidth={0}
                                 borderRadius="$4"
                                 px="$3"
                                 py="$2"
                             />
                         )}
                     />
-                    <HelperText>
+                    {/* <HelperText>
                         Give everyone a clear headline for your question.
-                    </HelperText>
+                    </HelperText> */}
                     {errors.title && <ErrorText>{errors.title.message}</ErrorText>}
                 </Field>
 
@@ -164,9 +208,9 @@ export default function AskQuestionForm() {
                             >
                                 <Select.Trigger
                                     iconAfter={ChevronDown}
-                                    size="$5"
+                                    size="$4"
                                     bg="$color3"
-                                    borderWidth={0}
+                                    // borderWidth={0}
                                     borderRadius="$4"
                                 >
                                     <Select.Value placeholder="Select category" />
@@ -218,12 +262,14 @@ export default function AskQuestionForm() {
                             </Select>
                         )}
                     />
-                    <HelperText>What is your question about?</HelperText>
+                    {/* <HelperText>What is your question about?</HelperText> */}
                     {errors.category && <ErrorText>{errors.category.message}</ErrorText>}
                 </Field>
 
                 {/* Details / Body */}
                 <Field>
+                    <LabelText>Details</LabelText>
+
                     <Controller
                         name="body"
                         control={control}
@@ -238,16 +284,18 @@ export default function AskQuestionForm() {
                                     field.onChange(text !== "" ? text : null)
                                 }
                                 onBlur={field.onBlur}
-                                size="$5"
+                                size="$3"
                                 bg="$color3"
-                                borderWidth={0}
+                                // borderWidth={0}
                                 borderRadius="$4"
                                 px="$3"
-                                py="$2"
+                                py="$3"
+                                verticalAlign="top"
+                                textAlign="left"
                             />
                         )}
                     />
-                    <HelperText>Share more context to help locals answer.</HelperText>
+                    {/* <HelperText>Share more context to help locals answer.</HelperText> */}
                     {errors.body && <ErrorText>{errors.body.message}</ErrorText>}
                 </Field>
 
@@ -264,7 +312,7 @@ export default function AskQuestionForm() {
                             />
                         )}
                     />
-                    <HelperText>You can add a poll or more.</HelperText>
+                    {/* <HelperText>You can add a poll or more.</HelperText> */}
                     {errors.content &&
                         Object.values(errors.content).map((value, i) => (
                             <ErrorText key={i}>
@@ -274,7 +322,7 @@ export default function AskQuestionForm() {
                         ))}
                 </Field>
 
-                {/* Location Picker – preserved logic */}
+                {/* Location Picker */}
                 <Field>
                     <LabelText>Location</LabelText>
                     <Controller
@@ -285,7 +333,6 @@ export default function AskQuestionForm() {
                                 key={locPickerKey}
                                 height={400}
                                 onChange={(loc) => {
-                                    // 🔴 same pattern as your original code
                                     // @ts-ignore dont need location id
                                     const newLoc: Location = {
                                         latitude: loc.coords.latitude,
@@ -298,37 +345,43 @@ export default function AskQuestionForm() {
                             />
                         )}
                     />
-                    <HelperText>Where is this about?</HelperText>
+                    {/* <HelperText>Where is this about?</HelperText> */}
                     {errors.location && <ErrorText>{errors.location.message}</ErrorText>}
                 </Field>
 
-                {/* Reset + Submit buttons */}
-                <YStack gap="$3" marginTop="$2">
-                    {isLoading ? (
-                        <Button disabled={true} opacity={0.7}>
-                            <Spinner size="large" />
-                        </Button>
-                    ) : (
-                        <Button
-                            onPress={() => {
-                                // reset location picker + form
-                                setLocPickerKey((prev) => prev + 1);
-                                reset();
-                            }}
-                            backgroundColor="$red8"
-                        >
-                            <Paragraph>Reset</Paragraph>
-                        </Button>
-                    )}
+                {/* Images */}
+                <Field>
+                    <LabelText>Images (optional)</LabelText>
+                    <Controller
+                        name={"image_urls"}
+                        control={control}
+                        render={({ field }) => (
+                            <ImageUploadField
+                                value={field.value ?? []}
+                                onChange={field.onChange}
+                                disabled={isLoading}
+                            />
+                        )}
 
+                    />
+                    {/* <HelperText>Share any images for additional context</HelperText> */}
+                    {errors.image_urls && <ErrorText>{errors.image_urls.message}</ErrorText>}
+                </Field>
+
+                {/* Submit button */}
+                <YStack marginBottom="$4">
                     {isLoading ? (
                         <Button disabled={true} opacity={0.7}>
                             <Spinner size="large" />
                         </Button>
                     ) : (
-                        <Button onPress={submit(handleSubmit)}>
-                            <Paragraph>Post Question</Paragraph>
+                        <Button 
+                        onPress={submit(handleSubmit)}
+                        bg="$green7"
+                        >
+                        <Paragraph>Post Question</Paragraph>
                         </Button>
+
                     )}
                 </YStack>
             </YStack>

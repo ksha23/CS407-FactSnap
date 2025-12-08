@@ -57,7 +57,7 @@ WITH new_question AS (
 )
 SELECT
     nq.id, nq.author_id, nq.content_type, nq.title, nq.body, nq.image_urls, nq.category, nq.num_responses, nq.created_at, nq.edited_at, nq.expired_at,
-    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at, u.expo_push_token, u.last_known_location,
     TRUE AS is_owned
 FROM
     new_question nq
@@ -121,6 +121,8 @@ func (q *Queries) CreateQuestion(ctx context.Context, arg CreateQuestionParams) 
 		&i.User.AboutMe,
 		&i.User.AvatarUrl,
 		&i.User.CreatedAt,
+		&i.User.ExpoPushToken,
+		&i.User.LastKnownLocation,
 		&i.IsOwned,
 	)
 	return i, err
@@ -176,7 +178,7 @@ WITH edited_question AS (
 SELECT
     eq.id, eq.author_id, eq.content_type, eq.title, eq.body, eq.image_urls, eq.category, eq.num_responses, eq.created_at, eq.edited_at, eq.expired_at,
     l.id, l.question_id, l.location, l.name, l.address,
-    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at, u.expo_push_token, u.last_known_location,
     TRUE AS is_owned
 FROM
     edited_question eq
@@ -234,6 +236,8 @@ func (q *Queries) EditQuestion(ctx context.Context, title string, body *string, 
 		&i.User.AboutMe,
 		&i.User.AvatarUrl,
 		&i.User.CreatedAt,
+		&i.User.ExpoPushToken,
+		&i.User.LastKnownLocation,
 		&i.IsOwned,
 	)
 	return i, err
@@ -335,7 +339,7 @@ func (q *Queries) GetPollVotes(ctx context.Context, pollID uuid.UUID, userID str
 const getQuestionByID = `-- name: GetQuestionByID :one
 SELECT
     q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
-    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at, u.expo_push_token, u.last_known_location,
     l.id, l.question_id, l.location, l.name, l.address,
     q.author_id = $2 AS is_owned
 FROM
@@ -377,6 +381,8 @@ func (q *Queries) GetQuestionByID(ctx context.Context, iD uuid.UUID, authorID st
 		&i.User.AboutMe,
 		&i.User.AvatarUrl,
 		&i.User.CreatedAt,
+		&i.User.ExpoPushToken,
+		&i.User.LastKnownLocation,
 		&i.Location.ID,
 		&i.Location.QuestionID,
 		&i.Location.Location,
@@ -459,12 +465,13 @@ const getQuestionsInRadiusFeed = `-- name: GetQuestionsInRadiusFeed :many
 SELECT
     q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
     l.id, l.question_id, l.location, l.name, l.address,
-    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at, u.expo_push_token, u.last_known_location,
     q.author_id = $1 AS is_owned
 FROM questions q
          JOIN users u ON q.author_id = u.id
          JOIN locations l ON q.id = l.question_id
-WHERE ST_DWithin(
+WHERE q.expired_at > now() AND
+      ST_DWithin(
               l.location::geography,
               ST_SetSRID(
                       ST_MakePoint(
@@ -536,6 +543,8 @@ func (q *Queries) GetQuestionsInRadiusFeed(ctx context.Context, arg GetQuestions
 			&i.User.AboutMe,
 			&i.User.AvatarUrl,
 			&i.User.CreatedAt,
+			&i.User.ExpoPushToken,
+			&i.User.LastKnownLocation,
 			&i.IsOwned,
 		); err != nil {
 			return nil, err
@@ -552,14 +561,15 @@ const getQuestionsInRadiusFeedByCategory = `-- name: GetQuestionsInRadiusFeedByC
 SELECT
     q.id, q.author_id, q.content_type, q.title, q.body, q.image_urls, q.category, q.num_responses, q.created_at, q.edited_at, q.expired_at,
     l.id, l.question_id, l.location, l.name, l.address,
-    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at,
+    u.id, u.username, u.email, u.display_name, u.role, u.about_me, u.avatar_url, u.created_at, u.expo_push_token, u.last_known_location,
     q.author_id = $1 AS is_owned
 FROM questions q
          JOIN users u ON q.author_id = u.id
          JOIN locations l ON q.id = l.question_id
 WHERE
-    q.category = $2
-    AND ST_DWithin(
+    q.category = $2 AND
+    q.expired_at > now() AND
+    ST_DWithin(
               l.location::geography,
               ST_SetSRID(
                       ST_MakePoint(
@@ -633,6 +643,8 @@ func (q *Queries) GetQuestionsInRadiusFeedByCategory(ctx context.Context, arg Ge
 			&i.User.AboutMe,
 			&i.User.AvatarUrl,
 			&i.User.CreatedAt,
+			&i.User.ExpoPushToken,
+			&i.User.LastKnownLocation,
 			&i.IsOwned,
 		); err != nil {
 			return nil, err

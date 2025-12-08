@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Spinner, Text, View, YStack } from "tamagui";
 import FeedMap, { MapLocation } from "@/components/map/feed-map";
@@ -11,7 +11,7 @@ import {
 import { PageFilterType } from "@/services/axios-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Question } from "@/models/question";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { questionKeys } from "@/hooks/tanstack/query-keys";
 import QuestionCard from "@/components/card/question-card";
 import { ArrowUp } from "@tamagui/lucide-icons";
@@ -29,6 +29,7 @@ export default function FeedPage() {
         center: Coordinates;
         radius: number;
     } | null>(null);
+    const [recenterToken, setRecenterToken] = useState(0);
 
     const mapKey = useMemo(() => {
         return locations
@@ -54,6 +55,12 @@ export default function FeedPage() {
     }
 
     const router = useRouter();
+
+    useFocusEffect(
+        useCallback(() => {
+            setRecenterToken((token) => token + 1);
+        }, []),
+    );
 
     const queryClient = useQueryClient();
     const query = useGetQuestionsFeed(
@@ -180,6 +187,7 @@ export default function FeedPage() {
                                 showRadiusCircle={true}
                                 disableAutoFetch={false}
                                 height={300}
+                                recenterToken={recenterToken}
                             />
                         </View>
                     </YStack>

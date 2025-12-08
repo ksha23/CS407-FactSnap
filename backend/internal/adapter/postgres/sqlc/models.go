@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cridenour/go-postgis"
+	go_postgis "github.com/cridenour/go-postgis"
 	"github.com/google/uuid"
 )
 
@@ -64,12 +65,14 @@ type Response struct {
 }
 
 type User struct {
-	ID          string
-	Username    string
-	Email       string
-	DisplayName string
-	Role        string
-	AboutMe     *string
-	AvatarUrl   *string
-	CreatedAt   time.Time
+	ID                string
+	Username          string
+	Email             string
+	DisplayName       string
+	Role              string
+	AboutMe           *string
+	AvatarUrl         *string
+	CreatedAt         time.Time
+	ExpoPushToken     *string
+	LastKnownLocation *go_postgis.PointS
 }

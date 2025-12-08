@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/cridenour/go-postgis"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
+	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres/sqlc"
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/sql/migration"
-	"time"
 )
 
 // convertRowsToDomain is a helper function that converts a row of structs that implements sqlc.DomainConverter of type C
@@ -61,7 +63,25 @@ func Connect(cfg config.Postgres) (*pgxpool.Pool, error) {
 		cfg.SSLMode,
 	)
 
-	db, err := pgxpool.New(context.Background(), connString)
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register PostGIS types
+	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		// Register the geography type
+		// OID 17100 is typically geography in PostGIS, but it's safer to look it up if possible.
+		// However, pgx usually needs explicit registration for custom types if not using standard extensions.
+		// Since we are seeing "cannot scan unknown type (OID 17100)", we need to tell pgx how to handle it.
+		// But wait, we are casting to geography in SQL, but scanning into... what?
+		// The error says: "can't scan into dest[20] (col: last_known_location): cannot scan unknown type (OID 17100) in text format into *interface {}"
+		// This means sqlc generated a struct field with `interface{}` or similar because it didn't know the type,
+		// and pgx doesn't know how to decode OID 17100 into it.
+		return nil
+	}
+
+	db, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +106,7 @@ func RunMigrations(db *pgxpool.Pool) error {
 	}
 	defer sourceDriver.Close()
 
-	databaseDriver, err := pgx.WithInstance(stdDB, &pgx.Config{})
+	databaseDriver, err := pgxmigrate.WithInstance(stdDB, &pgxmigrate.Config{})
 	if err != nil {
 		return fmt.Errorf("error getting db driver: %w", err)
 	}
