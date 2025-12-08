@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { AppState } from "react-native";
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from "@clerk/clerk-expo";
@@ -7,8 +8,9 @@ import {
     sendPushTokenToBackend,
     deletePushTokenFromBackend,
     sendLocationToBackend,
-    getCurrentLocation,
 } from "@/services/notification-service";
+
+import { getCurrentLocation } from "@/services/location-service";
 
 const NOTIFICATION_ENABLED_KEY = 'notifications_enabled';
 
@@ -17,6 +19,7 @@ export function useBackgroundLocationNotifications() {
     const [loading, setLoading] = useState(true);
     const [hasPermission, setHasPermission] = useState(false);
     const { isSignedIn } = useAuth();
+    const appState = useRef(AppState.currentState);
     
     // Use a Ref to ensure we don't create duplicate intervals even if state flickers
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -63,13 +66,16 @@ export function useBackgroundLocationNotifications() {
             await sendPushTokenToBackend(token);
 
             getCurrentLocation().then(location => {
-                if (location) {
-                    sendLocationToBackend(location.latitude, location.longitude).catch(err => 
+                if (location && appState.current === 'active') {
+                    sendLocationToBackend(location.coordinates.latitude, location.coordinates.longitude).catch(err => 
                         console.error("Error sending location in background:", err)
                     );
                 }
             }).catch(err => {
-                console.error("Error getting location in background:", err);
+                // Only log if we are still active; otherwise this is expected when backgrounding/killing
+                if (appState.current === 'active') {
+                    console.error("Error getting location in background:", err);
+                }
             });
 
             await SecureStore.setItemAsync(NOTIFICATION_ENABLED_KEY, 'true');
@@ -115,28 +121,57 @@ export function useBackgroundLocationNotifications() {
         }
     }, [isSignedIn, isActive, stopTracking]);
 
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            appState.current = nextAppState;
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
     // 4. INTERVAL: Depends on isSignedIn so it cuts immediately on logout
     useEffect(() => {
-        // Clear any existing interval first
+        // CLEANUP FIRST: Always try to clear before potentially setting a new one
         if (intervalRef.current) {
+            console.log("Cleaning up existing interval before starting new one");
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
 
         // Only start if active AND signed in
         if (isActive && isSignedIn) {
-            console.log("Initializing tracking interval");
+            console.log("Initializing tracking interval ID:", Date.now()); // Unique ID for debugging
+            
+            // Execute IMMEDIATE update so we don't wait 10s for the first hit
+            const runUpdate = async () => {
+                if (appState.current !== 'active') return;
+                try {
+                    const location = await getCurrentLocation();
+                    if (appState.current !== 'active') return;
+                    
+                    if (location) {
+                        await sendLocationToBackend(location.coordinates.latitude, location.coordinates.longitude);
+                    }
+                } catch (e) {
+                    if (appState.current === 'active') {
+                        console.error("Location update failed", e);
+                    }
+                }
+            };
+            
             intervalRef.current = setInterval(async () => {
-                const location = await getCurrentLocation();
-                if (location) {
-                    await sendLocationToBackend(location.latitude, location.longitude);
+                if (appState.current === 'active') {
+                    await runUpdate();
                 }
             }, 30000);
         }
 
-        // Cleanup function
+        // Cleanup function for when component unmounts or deps change
         return () => {
             if (intervalRef.current) {
+                console.log("Tearing down interval on effect cleanup");
                 clearInterval(intervalRef.current);
                 intervalRef.current = null;
             }

@@ -1,7 +1,7 @@
 // Provides location services: permissions, current location, geocoding, place autocomplete/details
 
 import * as Location from "expo-location";
-import { Alert } from "react-native";
+import { Alert, AppState } from "react-native";
 import Constants from "expo-constants";
 
 export interface Coordinates {
@@ -121,8 +121,33 @@ export async function getCurrentLocation(): Promise<LocationResult | null> {
             timestamp: location.timestamp,
         };
     } catch (error) {
-        console.error("Error getting current location:", error);
-        Alert.alert("Error", "Unable to get current location. Please try again.");
+        if (AppState.currentState === 'active') {
+            console.error("Error getting current location:", error);
+            Alert.alert("Error", "Unable to get current location. Please try again.");
+        }
+        return null;
+    }
+}
+
+export async function getLastKnownLocation() {
+    try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') return null;
+
+        // This is much faster than getCurrentPositionAsync
+        // It returns the last cached location from the OS
+        const location = await Location.getLastKnownPositionAsync({});
+        
+        if (!location) return null;
+
+        return {
+            coordinates: {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            }
+        };
+    } catch (error) {
+        console.warn("Error getting last known location:", error);
         return null;
     }
 }

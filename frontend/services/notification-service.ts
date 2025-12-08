@@ -87,14 +87,3 @@ export async function sendLocationToBackend(latitude: number, longitude: number)
         console.error("Error sending location:", error);
     }
 }
-
-export async function getCurrentLocation() {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-        console.log('Permission to access location was denied');
-        return null;
-    }
-
-    const location = await Location.getCurrentPositionAsync({});
-    return location.coords;
-}
