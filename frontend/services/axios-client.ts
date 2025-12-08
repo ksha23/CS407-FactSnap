@@ -32,6 +32,7 @@ apiClient.interceptors.response.use(
         if (error.response?.status === 401) {
             Alert.alert("Your session is no longer valid", "Please sign in again");
             await getClerkInstance().signOut();
+            return
         }
         return Promise.reject(error);
     },

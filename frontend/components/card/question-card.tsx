@@ -1,6 +1,6 @@
 import {useDeleteQuestion, useGetQuestionById} from "@/hooks/tanstack/question";
-import {Avatar, Card, XStack, YStack, Text, Image, Button, H2, H3, Label, View} from "tamagui";
-import {Calendar, Clock, MapPin, MessageCircle, SquarePen, Trash, ChevronLeft} from "@tamagui/lucide-icons";
+import {Avatar, Card, XStack, YStack, Text, Image, Button, H2, H3, Label, View, Popover, Adapt} from "tamagui";
+import {Calendar, Clock, MapPin, MessageCircle, SquarePen, Trash, ChevronLeft, MoreVertical} from "@tamagui/lucide-icons";
 import {ContentType, Question} from "@/models/question";
 import {Location} from "@/models/location"
 import QuestionMap from "@/components/map/question-map";
@@ -11,12 +11,7 @@ import {useRouter} from "expo-router";
 import { useMemo, useState, useEffect } from "react";
 import { Alert, ScrollView } from "react-native";
 
-// Jerry
-import ResponseCard from "@/components/card/response-card";
-import { useAuth } from "@clerk/clerk-expo";
-import { ActivityIndicator } from "react-native";
-import { TextInput } from "react-native";
-import { useUser } from "@clerk/clerk-expo";
+
 import { ImageCarousel } from "@/components/carousel/image-carousel";
 
 type Props = {
@@ -31,6 +26,7 @@ export default function QuestionCard(props: Props) {
     const question = questionQuery.data;
     const router = useRouter();
     const isDetails = !!props.showDetails;
+    const [menuOpen, setMenuOpen] = useState(false);
 
 
     const handleCardPress = () => {
@@ -67,6 +63,123 @@ export default function QuestionCard(props: Props) {
         return null;
     }
 
+    const hasImages = question.image_urls && question.image_urls.length > 0;
+
+    const HeaderContent = isDetails ? (
+        <>
+            {/* Author info (detailed) */}
+            <XStack alignItems="center" gap="$3">
+                <Avatar circular>
+                    <Avatar.Image src={question.author.avatar_url} />
+                    <Avatar.Fallback backgroundColor={"$gray5"} />
+                </Avatar>
+                <YStack>
+                    <Text>{question.author.display_name}</Text>
+                    <Text color="$gray10">@{question.author.username}</Text>
+                </YStack>
+            </XStack>
+
+            {/* Category + Expired At Badges */}
+            <XStack gap="$2">
+                <Badge label={question.category} />
+                <Badge
+                    icon={<Clock size={15} color="$red9" />}
+                    label={formatExpirationDate(question.expired_at)}
+                />
+            </XStack>
+        </>
+    ) : (
+        // COMPACT HEADER (showDetails = false)
+        <XStack alignItems="center" gap="$2">
+            <Avatar circular size="$2">
+                <Avatar.Image src={question.author.avatar_url} />
+                <Avatar.Fallback backgroundColor="$gray5" />
+            </Avatar>
+
+            <XStack gap="$1" flexShrink={1} flexWrap="wrap">
+                <Badge label={question.category} />
+                <Badge
+                    icon={<Clock size={14} color="$red9" />}
+                    label={formatExpirationDate(question.expired_at)}
+                />
+            </XStack>
+        </XStack>
+    );
+
+    const BodyContent = (
+        <>
+            {/* Title (always shown, but clamp in compact) */}
+            <YStack>
+                <H3 numberOfLines={isDetails ? undefined : 2}>{question.title}</H3>
+                {/* Description/body: ONLY in details mode */}
+                {isDetails && question.body && <Text>{question.body}</Text>}
+            </YStack>
+
+            {/* Images - ONLY IN DETAILS MODE HERE */}
+            {isDetails && hasImages && (
+                <YStack marginTop="$3">
+                    <ImageCarousel
+                        height={300}
+                        imageUrls={question.image_urls!}
+                    />
+                </YStack>
+            )}
+
+            {/* Map + Location (Details) */}
+            {isDetails &&
+                <YStack>
+                    <View>
+                        <QuestionMap
+                            location={question.location}
+                            height={undefined}
+                        />
+                    </View>
+                    <Text color="$gray10">Location: {question.location.name}</Text>
+                </YStack>
+            }
+
+
+
+            {/* Content */}
+            {isDetails && question.content.type !== ContentType.NONE && (
+                question.content.data ? (
+                    question.content.type === ContentType.POLL ? (
+                        <QuestionPollCard poll={question.content.data} />
+                    ) : null
+                ) : (
+                    <Text color={"red"}>
+                        Error loading {question.content.type.toLowerCase()}
+                    </Text>
+                )
+            )}
+
+            {/* Location (not details) */}
+            {!isDetails && (
+                <Text color="$gray10" numberOfLines={1}>
+                    📍 {question.location.name}
+                </Text>
+            )}
+        </>
+    );
+
+    const FooterContent = (
+        <XStack gap={"$1"} flexWrap="wrap">
+            <Text color="$gray10">
+                {multiFormatDateString(question.created_at)}
+            </Text>
+            {question.edited_at && question.created_at != question.edited_at && (
+                <Text color="$gray10">
+                    (edited {multiFormatDateString(question.edited_at).toLowerCase()})
+                </Text>
+
+            )}
+            <Text color="$gray10"> | </Text>
+            <Text color="$gray10">
+                {formatDisplayNumber(question.responses_amount)} responses
+            </Text>
+        </XStack>
+    );
+
     return (
         <Card
             padding="$4"
@@ -75,168 +188,142 @@ export default function QuestionCard(props: Props) {
 
             {/* Owner actions */}
             {question.is_owned && (
-                <XStack position="absolute" top="$3" right="$3" gap="$3">
-                    <Button
-                        size="$2"
-                        backgroundColor="$blue4"
-                        onPress={(e) => {
-                            e.stopPropagation();
-
-                            if (isExpired) {
-                                Alert.alert(
-                                    "You cannot edit this question",
-                                    "This question has expired",
-                                );
-                                return;
-                            }
-
-                            router.push({
-                                pathname: "/question/[id]/edit",
-                                params: { id: props.questionId },
-                            });
-                        }}
+                <View position="absolute" top="$3" right="$3" zIndex={10}>
+                    <Popover
+                        size="$5"
+                        allowFlip
+                        placement="bottom-end"
+                        open={menuOpen}
+                        onOpenChange={setMenuOpen}
                     >
-                        <SquarePen size={20} color="$blue11" />
-                    </Button>
+                        <Popover.Trigger asChild>
+                            <Button
+                                size="$4"
+                                circular
+                                chromeless
+                                icon={MoreVertical}
+                                onPress={(e) => {
+                                    // Important: stop propagation so we don't navigate to details
+                                    e.stopPropagation();
+                                    setMenuOpen(true);
+                                }}
+                            />
+                        </Popover.Trigger>
 
-                    <Button
-                        size="$2"
-                        backgroundColor="$red4"
-                        onPress={(e) => {
-                            e.stopPropagation();
-                            Alert.alert(
-                                "Confirm Action",
-                                "Are you sure you want to delete this question?",
-                                [
-                                    {
-                                        text: "Cancel",
-                                        onPress: () => {},
-                                        style: "cancel",
+                        <Adapt when="sm" platform="touch">
+                            <Popover.Sheet modal dismissOnSnapToBottom snapPoints={[25]}>
+                                <Popover.Sheet.Frame padding="$4">
+                                    <Adapt.Contents />
+                                </Popover.Sheet.Frame>
+                                <Popover.Sheet.Overlay
+                                    animation="lazy"
+                                    enterStyle={{ opacity: 0 }}
+                                    exitStyle={{ opacity: 0 }}
+                                />
+                            </Popover.Sheet>
+                        </Adapt>
+
+                        <Popover.Content
+                            borderWidth={1}
+                            borderColor="$borderColor"
+                            enterStyle={{ y: -10, opacity: 0 }}
+                            exitStyle={{ y: -10, opacity: 0 }}
+                            elevate
+                            animation={[
+                                'quick',
+                                {
+                                    opacity: {
+                                        overshootClamping: true,
                                     },
-                                    {
-                                        text: "OK",
-                                        onPress: handleDelete,
-                                    },
-                                ],
-                            );
-                        }}
-                    >
-                        <Trash size={20} color="$red11" />
-                    </Button>
-                </XStack>
+                                },
+                            ]}
+                        >
+                            <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+
+                            <YStack gap="$2" minWidth={150}>
+                                <Button
+                                    size="$4"
+                                    icon={SquarePen}
+                                    justifyContent="flex-start"
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        setMenuOpen(false);
+
+                                        if (isExpired) {
+                                            Alert.alert(
+                                                "You cannot edit this question",
+                                                "This question has expired",
+                                            );
+                                            return;
+                                        }
+
+                                        router.push({
+                                            pathname: "/question/[id]/edit",
+                                            params: { id: props.questionId },
+                                        });
+                                    }}
+                                >
+                                    Edit Question
+                                </Button>
+
+                                <Button
+                                    size="$4"
+                                    icon={Trash}
+                                    theme="red"
+                                    justifyContent="flex-start"
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        setMenuOpen(false);
+                                        Alert.alert(
+                                            "Confirm Action",
+                                            "Are you sure you want to delete this question?",
+                                            [
+                                                {
+                                                    text: "Cancel",
+                                                    onPress: () => {},
+                                                    style: "cancel",
+                                                },
+                                                {
+                                                    text: "OK",
+                                                    onPress: handleDelete,
+                                                },
+                                            ],
+                                        );
+                                    }}
+                                >
+                                    Delete Question
+                                </Button>
+                            </YStack>
+                        </Popover.Content>
+                    </Popover>
+                </View>
             )}
 
             <YStack gap={isDetails ? "$3" : "$2"}>
-                {/* Header: avatar + badges */}
-                {isDetails ? (
-                    <>
-                        {/* Author info (detailed) */}
-                        <XStack alignItems="center" gap="$3">
-                            <Avatar circular>
-                                <Avatar.Image srcSet={question.author.avatar_url} />
-                                <Avatar.Fallback backgroundColor={"$gray5"} />
-                            </Avatar>
-                            <YStack>
-                                <Text>{question.author.display_name}</Text>
-                                <Text color="$gray10">@{question.author.username}</Text>
-                            </YStack>
-                        </XStack>
+                {HeaderContent}
 
-                        {/* Category + Expired At Badges */}
-                        <XStack gap="$2">
-                            <Badge label={question.category} />
-                            <Badge
-                                icon={<Clock size={15} color="$red9" />}
-                                label={formatExpirationDate(question.expired_at)}
-                            />
-                        </XStack>
-                    </>
-                ) : (
-                    // COMPACT HEADER (showDetails = false)
-                    <XStack alignItems="center" gap="$2">
-                        <Avatar circular size="$2">
-                            <Avatar.Image srcSet={question.author.avatar_url} />
-                            <Avatar.Fallback backgroundColor="$gray5" />
-                        </Avatar>
-
-                        <XStack gap="$1" flexShrink={1} flexWrap="wrap">
-                            <Badge label={question.category} />
-                            <Badge
-                                icon={<Clock size={14} color="$red9" />}
-                                label={formatExpirationDate(question.expired_at)}
-                            />
-                        </XStack>
-                    </XStack>
-                )}
-
-                {/* Title (always shown, but clamp in compact) */}
-                <YStack>
-                    <H3 numberOfLines={isDetails ? undefined : 2}>{question.title}</H3>
-                    {/* Description/body: ONLY in details mode */}
-                    {isDetails && question.body && <Text>{question.body}</Text>}
-                </YStack>
-
-                {/* Images */}
-                {question.image_urls && question.image_urls.length > 0 && (
-                    <YStack marginTop="$3">
-                        <ImageCarousel
-                            height={300}
-                            imageUrls={question.image_urls}
+                {!isDetails && hasImages ? (
+                    <XStack gap="$3">
+                        <Image
+                            source={{ uri: question.image_urls![0] }}
+                            width={65}
+                            height={65}
+                            borderRadius="$4"
+                            objectFit="cover"
                         />
-                    </YStack>
-                )}
-
-                {/* Map + Location */}
-                {isDetails ? (
-                    <YStack>
-                        <View>
-                            <QuestionMap
-                                location={question.location}
-                                height={undefined}
-                            />
-                        </View>
-                        <Text color="$gray10">Location: {question.location.name}</Text>
-                    </YStack>
+                        <YStack flex={1} gap="$2">
+                            {BodyContent}
+                        </YStack>
+                    </XStack>
                 ) : (
-                    <Text color="$gray10" numberOfLines={1}>
-                        📍 {question.location.name}
-                    </Text>
+                    BodyContent
                 )}
 
-                {/* Content */}
-                {question.content.type !== ContentType.NONE &&
-                    (isDetails ? (
-                        question.content.data ? (
-                            question.content.type === ContentType.POLL ? (
-                                <QuestionPollCard poll={question.content.data} />
-                            ) : null
-                        ) : (
-                            <Text color={"red"}>
-                                Error loading {question.content.type.toLowerCase()}
-                            </Text>
-                        )
-                    ) : (
-                        <Text fontWeight={600} fontStyle={"italic"}>This question contains a {question.content.type.toLowerCase()}</Text>
-                    )
+                {!isDetails && question.content.type !== ContentType.NONE && (
+                    <Text fontWeight={600} fontStyle={"italic"}>This question contains a {question.content.type.toLowerCase()}</Text>
                 )}
-                {/* Section: Creation + Edited Date + Responses Amount */}
-                <XStack gap={"$1"}>
-                    <Text color="$gray10">
-                        {multiFormatDateString(question.created_at)}
-                    </Text>
-                    {question.edited_at && question.created_at != question.edited_at && (
-                        <Text color="$gray10">
-                            (edited {multiFormatDateString(question.edited_at).toLowerCase()})
-                        </Text>
-                        
-                    )} 
-                    <Text color="$gray10"> | </Text>
-                    <Text color="$gray10">
-                        {formatDisplayNumber(question.responses_amount)} responses
-                    </Text>  
-                </XStack>
 
-
+                {FooterContent}
             </YStack>
         </Card>
     );

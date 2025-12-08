@@ -13,6 +13,7 @@ import {
     TextArea,
     View,
     YStack,
+    XStack,
     Select,
     Sheet,
 } from "tamagui";
@@ -119,6 +120,8 @@ export default function AskQuestionForm() {
                 break;
         }
 
+        // Navigate to feed first so back button goes to feed
+        router.navigate("/(tabs)");
         router.push({
             pathname: "/question/[id]",
             params: { id: questionId },
@@ -128,9 +131,24 @@ export default function AskQuestionForm() {
     return (
         <View>
             {/* size boosts text + inputs slightly; gap keeps things tight but readable */}
-            <YStack paddingHorizontal="$3" paddingTop="$2" gap="$4">
+            <YStack paddingHorizontal="$3" paddingTop="$1" gap="$3">
                 {/* Question Title */}
                 <Field>
+                    <XStack alignItems="center" justifyContent="space-between">
+                        <LabelText>Question</LabelText>
+                        <Button
+                            size="$2"
+                            chromeless
+                            color="$red10"
+                            onPress={() => {
+                                setLocPickerKey((prev) => prev + 1);
+                                reset();
+                            }}
+                            disabled={isLoading}
+                        >
+                            Reset Form
+                        </Button>
+                    </XStack>
                     <Controller
                         name="title"
                         control={control}
@@ -142,18 +160,18 @@ export default function AskQuestionForm() {
                                 value={field.value}
                                 onChangeText={field.onChange}
                                 onBlur={field.onBlur}
-                                size="$5"
+                                size="$4"
                                 bg="$color3"
-                                borderWidth={0}
+                                // borderWidth={0}
                                 borderRadius="$4"
                                 px="$3"
                                 py="$2"
                             />
                         )}
                     />
-                    <HelperText>
+                    {/* <HelperText>
                         Give everyone a clear headline for your question.
-                    </HelperText>
+                    </HelperText> */}
                     {errors.title && <ErrorText>{errors.title.message}</ErrorText>}
                 </Field>
 
@@ -190,9 +208,9 @@ export default function AskQuestionForm() {
                             >
                                 <Select.Trigger
                                     iconAfter={ChevronDown}
-                                    size="$5"
+                                    size="$4"
                                     bg="$color3"
-                                    borderWidth={0}
+                                    // borderWidth={0}
                                     borderRadius="$4"
                                 >
                                     <Select.Value placeholder="Select category" />
@@ -244,12 +262,14 @@ export default function AskQuestionForm() {
                             </Select>
                         )}
                     />
-                    <HelperText>What is your question about?</HelperText>
+                    {/* <HelperText>What is your question about?</HelperText> */}
                     {errors.category && <ErrorText>{errors.category.message}</ErrorText>}
                 </Field>
 
                 {/* Details / Body */}
                 <Field>
+                    <LabelText>Details</LabelText>
+
                     <Controller
                         name="body"
                         control={control}
@@ -264,16 +284,18 @@ export default function AskQuestionForm() {
                                     field.onChange(text !== "" ? text : null)
                                 }
                                 onBlur={field.onBlur}
-                                size="$5"
+                                size="$3"
                                 bg="$color3"
-                                borderWidth={0}
+                                // borderWidth={0}
                                 borderRadius="$4"
                                 px="$3"
-                                py="$2"
+                                py="$3"
+                                verticalAlign="top"
+                                textAlign="left"
                             />
                         )}
                     />
-                    <HelperText>Share more context to help locals answer.</HelperText>
+                    {/* <HelperText>Share more context to help locals answer.</HelperText> */}
                     {errors.body && <ErrorText>{errors.body.message}</ErrorText>}
                 </Field>
 
@@ -290,7 +312,7 @@ export default function AskQuestionForm() {
                             />
                         )}
                     />
-                    <HelperText>You can add a poll or more.</HelperText>
+                    {/* <HelperText>You can add a poll or more.</HelperText> */}
                     {errors.content &&
                         Object.values(errors.content).map((value, i) => (
                             <ErrorText key={i}>
@@ -311,7 +333,6 @@ export default function AskQuestionForm() {
                                 key={locPickerKey}
                                 height={400}
                                 onChange={(loc) => {
-                                    // 🔴 same pattern as your original code
                                     // @ts-ignore dont need location id
                                     const newLoc: Location = {
                                         latitude: loc.coords.latitude,
@@ -324,7 +345,7 @@ export default function AskQuestionForm() {
                             />
                         )}
                     />
-                    <HelperText>Where is this about?</HelperText>
+                    {/* <HelperText>Where is this about?</HelperText> */}
                     {errors.location && <ErrorText>{errors.location.message}</ErrorText>}
                 </Field>
 
@@ -343,37 +364,24 @@ export default function AskQuestionForm() {
                         )}
 
                     />
-                    <HelperText>Share any images for additional context</HelperText>
+                    {/* <HelperText>Share any images for additional context</HelperText> */}
                     {errors.image_urls && <ErrorText>{errors.image_urls.message}</ErrorText>}
                 </Field>
 
-                {/* Reset + Submit buttons */}
-                <YStack gap="$3" marginTop="$2">
+                {/* Submit button */}
+                <YStack marginBottom="$4">
                     {isLoading ? (
                         <Button disabled={true} opacity={0.7}>
                             <Spinner size="large" />
                         </Button>
                     ) : (
-                        <Button
-                            onPress={() => {
-                                // reset location picker + form
-                                setLocPickerKey((prev) => prev + 1);
-                                reset();
-                            }}
-                            backgroundColor="$red8"
+                        <Button 
+                        onPress={submit(handleSubmit)}
+                        bg="$green7"
                         >
-                            <Paragraph>Reset</Paragraph>
+                        <Paragraph>Post Question</Paragraph>
                         </Button>
-                    )}
 
-                    {isLoading ? (
-                        <Button disabled={true} opacity={0.7}>
-                            <Spinner size="large" />
-                        </Button>
-                    ) : (
-                        <Button onPress={submit(handleSubmit)}>
-                            <Paragraph>Post Question</Paragraph>
-                        </Button>
                     )}
                 </YStack>
             </YStack>

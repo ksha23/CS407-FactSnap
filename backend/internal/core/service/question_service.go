@@ -3,21 +3,29 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/ksha23/CS407-FactSnap/internal/core/model"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
 	"github.com/ksha23/CS407-FactSnap/internal/errs"
-	"log/slog"
-	"time"
 )
 
 type questionService struct {
-	questionRepo port.QuestionRepo
-	mediaService port.MediaService
+	questionRepo        port.QuestionRepo
+	mediaService        port.MediaService
+	notificationService port.NotificationService
+	userRepo            port.UserRepository
 }
 
-func NewQuestionService(questionRepo port.QuestionRepo, mediaService port.MediaService) *questionService {
-	return &questionService{questionRepo: questionRepo, mediaService: mediaService}
+func NewQuestionService(questionRepo port.QuestionRepo, mediaService port.MediaService, notificationService port.NotificationService, userRepo port.UserRepository) *questionService {
+	return &questionService{
+		questionRepo:        questionRepo,
+		mediaService:        mediaService,
+		notificationService: notificationService,
+		userRepo:            userRepo,
+	}
 }
 
 func (s *questionService) CreateQuestion(ctx context.Context, userID string, params model.CreateQuestionParams) (uuid.UUID, error) {
@@ -25,6 +33,41 @@ func (s *questionService) CreateQuestion(ctx context.Context, userID string, par
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf("QuestionService::CreateQuestion: %w", err)
 	}
+
+	// Send notifications asynchronously
+	go func() {
+		// Create a new context for the background task
+		bgCtx := context.Background()
+
+		// Find users in radius (10 miles ~ 16093 meters)
+		radiusMeters := 16093.0
+		users, err := s.userRepo.GetUsersInRadius(bgCtx, params.Location.Latitude, params.Location.Longitude, radiusMeters)
+		if err != nil {
+			slog.Error("Failed to get users for notification", "error", err)
+			return
+		}
+
+		var tokens []string
+		for _, u := range users {
+			if u.ID == userID {
+				continue // Don't notify the author
+			}
+			if u.ExpoPushToken != nil {
+				tokens = append(tokens, *u.ExpoPushToken)
+			}
+		}
+
+		if len(tokens) > 0 {
+			err := s.notificationService.SendPushNotification(bgCtx, tokens, "New Question Nearby!", fmt.Sprintf("New question: %s", params.Title), map[string]interface{}{
+				"questionId": questionID.String(),
+				"type":       "new_question",
+			})
+			if err != nil {
+				slog.Error("Failed to send push notifications", "error", err)
+			}
+		}
+	}()
+
 	return questionID, nil
 }
 

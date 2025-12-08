@@ -12,9 +12,6 @@ import CreateResponseForm from "@/components/form/create-response-form";
 import { ArrowUp, Sparkles } from "@tamagui/lucide-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetResponsesByQuestionId, useUpdateResponse } from "@/hooks/tanstack/response";
-import {Response} from "@/models/response"
-import EmailVerificationDialog from "@/components/dialog/email-verification-dialog";
-import EditResponseFormModal from "@/components/form/edit-response-form";
 import SummarizeResponsesButton from "@/components/button/summarize-responses-btn";
 
 export default function QuestionDetailsPage() {
@@ -38,10 +35,11 @@ export default function QuestionDetailsPage() {
         if (questionQuery.data) {
             navigation.setOptions({
                 title: `${questionQuery.data.title}`,
-                // headerBackButton : true,
             });
         }
     }, [questionQuery.data, navigation]);
+
+
 
     // fetch responses (don't fetch on component mount)
     const responsesQuery = useGetResponsesByQuestionId(id as string)

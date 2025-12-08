@@ -2,24 +2,24 @@
 import "../tamagui-web.css";
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { SplashScreen, Stack } from "expo-router";
+import { SplashScreen, Stack, useRouter } from "expo-router";
 import { PortalProvider, TamaguiProvider } from "tamagui";
-import { useColorScheme } from "react-native";
-import { ClerkProvider } from "@clerk/clerk-expo";
+import { AppState, useColorScheme } from "react-native";
+import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { tamaguiConfig } from "@/tamagui.config";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useFonts } from "expo-font";
 import { setBackgroundColorAsync } from "expo-system-ui";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import * as Notifications from "expo-notifications";
+import { useLocationNotificationStore } from "@/hooks/zustand/location-notification-store";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
     const colorScheme = useColorScheme();
-    const insets = useSafeAreaInsets();
 
     setBackgroundColorAsync(
         colorScheme === "dark"
@@ -63,6 +63,7 @@ export default function RootLayout() {
                 <ThemeProvider value={getTheme()}>
                     <ClerkProvider tokenCache={tokenCache}>
                         <QueryClientProvider client={queryClient}>
+                            <NotificationBridge />
                             {isFontsLoaded ? (
                                 <Stack
                                     screenOptions={{
@@ -121,3 +122,46 @@ export const queryClient = new QueryClient({
         },
     },
 });
+
+function NotificationBridge() {
+    const { isLoaded, isSignedIn } = useAuth();
+    const { startTracking, stopTracking  } = useLocationNotificationStore();
+    const notificationListener = useRef<Notifications.Subscription | null>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isLoaded) return;
+
+        if (isSignedIn) {
+            void startTracking();
+        } else {
+            stopTracking();
+        }
+
+        return () => {
+            stopTracking()
+        }
+    }, [isLoaded, isSignedIn, startTracking, stopTracking]);
+
+    useEffect(() => {
+        notificationListener.current =
+            Notifications.addNotificationResponseReceivedListener((response) => {
+                const data = response.notification.request.content.data as {
+                    questionId?: string;
+                };
+                if (data?.questionId) {
+                    router.push({
+                        pathname: "/question/[id]",
+                        params: { id: data.questionId },
+                    });
+                }
+            });
+
+        return () => {
+            notificationListener.current?.remove();
+            notificationListener.current = null;
+        };
+    }, [router]);
+
+    return null;
+}

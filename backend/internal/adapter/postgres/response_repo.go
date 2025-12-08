@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres/sqlc"
@@ -25,7 +26,7 @@ func (r *responseRepo) CreateResponse(ctx context.Context, userID string, params
 	var responseRow sqlc.CreateResponseRow
 	err := execTx(ctx, r.db, func(query *sqlc.Queries) error {
 		// create response
-		row, err := r.query.CreateResponse(ctx, params.QuestionID, userID, params.Body, params.ImageURLs)
+		row, err := r.query.CreateResponse(ctx, userID, params.QuestionID, params.Body, params.ImageURLs)
 		if err != nil {
 			return fmt.Errorf("CreateResponse: %w", wrapError(err))
 		}

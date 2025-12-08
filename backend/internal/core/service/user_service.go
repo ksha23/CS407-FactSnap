@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
 )
 
@@ -16,3 +18,15 @@ func NewUserService(userRepo port.UserRepository) *userService {
 //	//TODO implement me
 //	panic("implement me")
 //}
+
+func (s *userService) UpdateLocation(ctx context.Context, userID string, lat, long float64) error {
+	return s.userRepo.UpdateLocation(ctx, userID, lat, long)
+}
+
+func (s *userService) UpdatePushToken(ctx context.Context, userID, token string) error {
+	return s.userRepo.UpdatePushToken(ctx, userID, token)
+}
+
+func (s *userService) DeletePushToken(ctx context.Context, userID string) error {
+	return s.userRepo.DeletePushToken(ctx, userID)
+}

@@ -5,10 +5,11 @@ import { useEffect } from "react";
 import { Alert, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LocationNotificationSettings from "@/components/settings/location-notification-settings";
-import { isAxiosError } from "axios";
+import { useLocationNotificationStore } from "@/hooks/zustand/location-notification-store";
 
 export default function ProfilePage() {
     const authUserQuery = useGetAuthUser();
+    const {stopTracking} = useLocationNotificationStore()
     const { signOut } = useClerk();
 
     useEffect(() => {
@@ -56,7 +57,7 @@ export default function ProfilePage() {
                             <View alignItems="center" gap="$3">
                                 <Avatar circular size={100}>
                                     <Avatar.Image
-                                        srcSet={authUserQuery.data.avatar_url}
+                                        src={authUserQuery.data.avatar_url}
                                     />
                                     <Avatar.Fallback backgroundColor={"$gray5"} />
                                 </Avatar>
@@ -77,7 +78,10 @@ export default function ProfilePage() {
                     )}
                     <Button
                         backgroundColor={"$red8"}
-                        onPress={() => signOut()}
+                        onPress={() => {
+                            stopTracking()
+                            signOut()
+                        }}
                         theme="red"
                     >
                         Sign Out

@@ -10,14 +10,24 @@ type DomainConverter[T any] interface {
 }
 
 func toDomainUser(user User) model.User {
+	var loc *model.GeoPoint
+	if user.LastKnownLocation != nil {
+		loc = &model.GeoPoint{
+			Latitude:  user.LastKnownLocation.Y,
+			Longitude: user.LastKnownLocation.X,
+		}
+	}
+
 	return model.User{
-		ID:          user.ID,
-		Username:    user.Username,
-		AvatarURL:   user.AvatarUrl,
-		AboutMe:     user.AboutMe,
-		DisplayName: user.DisplayName,
-		Role:        model.Role(user.Role),
-		CreatedAt:   user.CreatedAt,
+		ID:                user.ID,
+		Username:          user.Username,
+		AvatarURL:         user.AvatarUrl,
+		AboutMe:           user.AboutMe,
+		DisplayName:       user.DisplayName,
+		Role:              model.Role(user.Role),
+		CreatedAt:         user.CreatedAt,
+		ExpoPushToken:     user.ExpoPushToken,
+		LastKnownLocation: loc,
 	}
 }
 
