@@ -16,32 +16,7 @@ Notifications.setNotificationHandler({
     }),
 });
 
-export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
-    if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF231F7C',
-        });
-    }
-
-    if (!Device.isDevice) {
-        console.log('WARNING: Must use physical device for Push Notifications');
-        // return undefined; 
-    }
-
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-        console.log('Failed to get push token for push notification!');
-        return;
-    }
-    
+export async function getExpoPushToken() {
     try {
         const projectId =
             Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
@@ -59,6 +34,27 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
         return undefined;
     }
 }
+
+export async function registerPushNotificationChannel() {
+    if (!Device.isDevice) {
+        console.log('WARNING: Must use physical device for Push Notifications');
+        return false;
+    }
+
+    if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+        return true
+    } else {
+        return false
+    }
+}
+
+
 
 export async function sendPushTokenToBackend(token: string) {
     try {
@@ -86,15 +82,4 @@ export async function sendLocationToBackend(latitude: number, longitude: number)
     } catch (error) {
         console.error("Error sending location:", error);
     }
-}
-
-export async function getCurrentLocation() {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-        console.log('Permission to access location was denied');
-        return null;
-    }
-
-    const location = await Location.getCurrentPositionAsync({});
-    return location.coords;
 }

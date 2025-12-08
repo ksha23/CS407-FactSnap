@@ -203,22 +203,20 @@ export default function QuestionCard(props: Props) {
                     </Text>
                 )}
 
+
                 {/* Content */}
-                {question.content.type !== ContentType.NONE &&
-                    (isDetails ? (
-                        question.content.data ? (
-                            question.content.type === ContentType.POLL ? (
-                                <QuestionPollCard poll={question.content.data} />
-                            ) : null
+                {question.content.type !== ContentType.NONE && (
+                    question.content.data ? (
+                        question.content.type === ContentType.POLL ? (
+                            <QuestionPollCard poll={question.content.data} />
+                        ) : null
                         ) : (
-                            <Text color={"red"}>
-                                Error loading {question.content.type.toLowerCase()}
-                            </Text>
-                        )
-                    ) : (
-                        <Text fontWeight={600} fontStyle={"italic"}>This question contains a {question.content.type.toLowerCase()}</Text>
+                        <Text color={"red"}>
+                            Error loading {question.content.type.toLowerCase()}
+                        </Text>
                     )
                 )}
+
                 {/* Section: Creation + Edited Date + Responses Amount */}
                 <XStack gap={"$1"}>
                     <Text color="$gray10">

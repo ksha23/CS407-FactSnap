@@ -14,7 +14,7 @@ import { setBackgroundColorAsync } from "expo-system-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import * as Notifications from "expo-notifications";
-import { useBackgroundLocationNotifications } from "@/hooks/use-background-notifications";
+import { useLocationNotificationStore } from "@/hooks/zustand/location-notification-store";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -125,17 +125,23 @@ export const queryClient = new QueryClient({
 
 function NotificationBridge() {
     const { isLoaded, isSignedIn } = useAuth();
-    const { startTracking, stopTracking } = useBackgroundLocationNotifications();
+    const { startTracking, stopTracking  } = useLocationNotificationStore();
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        if (isLoaded && isSignedIn) {
-            startTracking();
+        if (!isLoaded) return;
+
+        if (isSignedIn) {
+            void startTracking();
         } else {
             stopTracking();
         }
-    }, [isLoaded, isSignedIn]);
+
+        return () => {
+            stopTracking()
+        }
+    }, [isLoaded, isSignedIn, startTracking, stopTracking]);
 
     useEffect(() => {
         notificationListener.current =

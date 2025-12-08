@@ -1,51 +1,74 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Alert, Linking } from "react-native";
 import { View, Text, YStack, XStack, Switch, Button, Spinner } from "tamagui";
-import { useBackgroundLocationNotifications } from "@/hooks/use-background-notifications";
+import { useLocationNotificationStore } from "@/hooks/zustand/location-notification-store";
 
 /**
  * Component to manage background location notification settings
  * Can be added to a settings page or profile page
  */
 export default function LocationNotificationSettings() {
-    const { isActive, loading, hasPermission: hasNotificationPermission, startTracking, stopTracking, checkStatus } =
-        useBackgroundLocationNotifications();
+    // const { isActive, loading, hasPermission: hasNotificationPermission, startTracking, stopTracking, checkStatus } =
+    //     useBackgroundLocationNotifications();
 
-    const handleToggle = async (enabled: boolean) => {
+    const settings = useLocationNotificationStore()
+    const loading = settings.hasPermissions == null
+
+    useEffect(() => {
+        settings.checkPermissions()
+    }, []);
+
+    // const handleToggle = async (enabled: boolean) => {
+    //     try {
+    //         if (enabled) {
+    //             const started = await startTracking();
+    //             if (!started) {
+    //                 if (!hasNotificationPermission) {
+    //                      Alert.alert(
+    //                         "Permission required",
+    //                         "Notification permission is required. Please enable it in settings.",
+    //                         [
+    //                             { text: "Cancel", style: "cancel" },
+    //                             { text: "Open Settings", onPress: () => Linking.openSettings() }
+    //                         ]
+    //                     );
+    //                 } else {
+    //                     Alert.alert(
+    //                         "Unable to enable",
+    //                         "We couldn't enable background notifications. Please try again.",
+    //                     );
+    //                 }
+    //                 await checkStatus();
+    //             }
+    //         } else {
+    //             await stopTracking();
+    //             await checkStatus();
+    //         }
+    //     } catch (error) {
+    //         console.error("Failed to toggle background notifications:", error);
+    //         Alert.alert(
+    //             "Error",
+    //             "We ran into an issue updating your notification settings.",
+    //         );
+    //         await checkStatus();
+    //     }
+    // };
+
+    async function handleToggle(enabled: boolean) {
         try {
             if (enabled) {
-                const started = await startTracking();
-                if (!started) {
-                    if (!hasNotificationPermission) {
-                         Alert.alert(
-                            "Permission required",
-                            "Notification permission is required. Please enable it in settings.",
-                            [
-                                { text: "Cancel", style: "cancel" },
-                                { text: "Open Settings", onPress: () => Linking.openSettings() }
-                            ]
-                        );
-                    } else {
-                        Alert.alert(
-                            "Unable to enable",
-                            "We couldn't enable background notifications. Please try again.",
-                        );
-                    }
-                    await checkStatus();
-                }
+                await settings.startTracking()
             } else {
-                await stopTracking();
-                await checkStatus();
+                settings.stopTracking()
             }
-        } catch (error) {
-            console.error("Failed to toggle background notifications:", error);
+        } catch (e) {
+            console.error("Failed to toggle background notifications:", e);
             Alert.alert(
                 "Error",
                 "We ran into an issue updating your notification settings.",
             );
-            await checkStatus();
         }
-    };
+    }
 
     return (
         <YStack gap="$4" padding="$4" backgroundColor="$background" borderRadius="$4">
@@ -64,7 +87,7 @@ export default function LocationNotificationSettings() {
                         Enable Notifications
                     </Text>
                     <Text fontSize="$2" color="$gray11">
-                        {isActive ? "Active - tracking your location" : "Disabled"}
+                        {settings.isTracking ? "Active - tracking your location" : "Disabled"}
                     </Text>
                 </YStack>
 
@@ -73,7 +96,7 @@ export default function LocationNotificationSettings() {
                 ) : (
                     <Switch
                         size="$4"
-                        checked={isActive}
+                        checked={settings.isTracking}
                         onCheckedChange={(value) => {
                             void handleToggle(Boolean(value));
                         }}
@@ -84,7 +107,7 @@ export default function LocationNotificationSettings() {
                 )}
             </XStack>
 
-            {!hasNotificationPermission && (
+            {!settings.hasPermissions && (
                 <View
                     padding="$3"
                     backgroundColor="$red2"
@@ -100,7 +123,7 @@ export default function LocationNotificationSettings() {
                         size="$3"
                         marginTop="$2"
                         onPress={async () => {
-                            await startTracking();
+                            await settings.startTracking();
                         }}
                         disabled={loading}
                         theme="red"
