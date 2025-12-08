@@ -41,7 +41,7 @@ export const useLocationNotificationStore = create<LocationNotificationState>(
                 const loc = await getCurrentLocation();
                 if (loc) {
                     console.debug("locationLoop: sending location to backend...")
-                    await sendLocationToBackend(loc.coordinates.latitude, loc.coordinates.latitude);
+                    await sendLocationToBackend(loc.coordinates.latitude, loc.coordinates.longitude);
                 }
             } catch (e) {
                 console.error("locationLoop: failed to send location", e);
