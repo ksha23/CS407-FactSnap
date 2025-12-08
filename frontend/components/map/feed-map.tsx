@@ -8,9 +8,21 @@ import {
     forwardGeocode,
 } from "@/services/location-service";
 
-// Debounce delay in milliseconds (wait 1 second after user stops moving map)
 const REGION_CHANGE_DEBOUNCE_MS = 1000;
 const INITIAL_RADIUS_MILES = 10;
+
+// 1. Define defaults constants to use immediately
+const DEFAULT_COORDS: Coordinates = {
+    latitude: 43.0731, // Madison, WI
+    longitude: -89.4012,
+};
+
+const DEFAULT_REGION: Region = {
+    latitude: DEFAULT_COORDS.latitude,
+    longitude: DEFAULT_COORDS.longitude,
+    latitudeDelta: 0.1,
+    longitudeDelta: 0.1,
+};
 
 export interface MapLocation {
     id: string;
@@ -18,59 +30,19 @@ export interface MapLocation {
     coordinates: Coordinates;
     title: string;
     description?: string;
-    // Add any other properties from your API response
 }
 
 interface FeedMapProps {
-    /**
-     * Callback to fetch locations based on center and radius
-     * Should make API call to backend with these params
-     */
     onRegionChange: (center: Coordinates, radiusMiles: number) => void;
-
-    /**
-     * Array of locations to display on the map
-     */
     locations: MapLocation[];
-
-    /**
-     * Callback when a marker is pressed
-     */
     onMarkerPress?: (location: MapLocation) => void;
-
-    /**
-     * Height of the map component
-     */
     height?: number;
-
-    /**
-     * Show radius circle on map
-     */
     showRadiusCircle?: boolean;
-
-    /**
-     * Disable automatic API calls on region change
-     * Useful when backend is not available
-     */
     disableAutoFetch?: boolean;
-
-    /**
-     * Unique key built from all location ids to force map remount when ids change
-     */
     mapKey: string;
-
-    /**
-     * When this token changes we recenter the map to the user's current location.
-     */
     recenterToken?: number;
 }
 
-/**
- * FeedMap Component
- * Displays a map with multiple location markers
- * Updates via API calls based on visible region
- * Defaults to current location but adjustable via search
- */
 export default function FeedMap({
     onRegionChange,
     locations,
@@ -81,83 +53,97 @@ export default function FeedMap({
     mapKey,
     recenterToken,
 }: FeedMapProps) {
-    const [region, setRegion] = useState<Region | null>(null);
+    // 2. Initialize with Default Region immediately (No null state)
+    const [region, setRegion] = useState<Region>(DEFAULT_REGION);
     const [searchQuery, setSearchQuery] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    
+    // We can remove the general loading state since we want to show the map immediately
     const [radiusMiles, setRadiusMiles] = useState<number>(INITIAL_RADIUS_MILES);
     const [isSearching, setIsSearching] = useState<boolean>(false);
+    const [isLocating, setIsLocating] = useState<boolean>(true);
+    
     const mapRef = useRef<MapView>(null);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const ignoreInitialRegionChangeRef = useRef(false);
 
-    const initializeMap = useCallback(async () => {
-        setIsLoading(true);
-
-        const currentLocation = await getCurrentLocation();
-        const coords: Coordinates = currentLocation?.coordinates || {
-            latitude: 43.0731, // Default to Madison, WI
-            longitude: -89.4012,
-        };
-
-        const initialRegion: Region = {
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            latitudeDelta: 0.1,
-            longitudeDelta: 0.1,
-        };
-
-        setRegion(initialRegion);
-        setIsLoading(false);
-        onRegionChange(coords, INITIAL_RADIUS_MILES);
-    }, [onRegionChange]);
-
-    // Initialize with current location
+    // 3. New Initialization Logic
     useEffect(() => {
-        void initializeMap();
+        const init = async () => {
+            // STEP A: Fetch fresh high-accuracy location (Slower)
+            try {
+                const freshLocation = await getCurrentLocation();
+                
+                if (freshLocation && mapRef.current) {
+                    console.log("Refining location with fresh GPS data...");
+                    const refinedRegion = {
+                        latitude: freshLocation.coordinates.latitude,
+                        longitude: freshLocation.coordinates.longitude,
+                        latitudeDelta: 0.1,
+                        longitudeDelta: 0.1,
+                    };
+                    
+                    // Flag to ignore the region change triggered by this animation
+                    ignoreInitialRegionChangeRef.current = true;
+                    mapRef.current.animateToRegion(refinedRegion, 1000);
+                    
+                    onRegionChange(freshLocation.coordinates, INITIAL_RADIUS_MILES);
+                } else {
+                    // If we failed to get fresh location, we just stop locating.
+                    // The map stays at default, but we don't trigger a fetch.
+                    console.log("Could not get fresh location.");
+                }
+            } catch (error) {
+                console.log("Background location fetch failed", error);
+            } finally {
+                setIsLocating(false);
+            }
+        };
 
-        // Cleanup debounce timer on unmount
+        init();
+
         return () => {
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
         };
-    }, [initializeMap]);
+    }, []);
 
-    // Handle region change (when user pans or zooms) with debouncing
     const handleRegionChangeComplete = useCallback(
         (newRegion: Region) => {
+            // Don't trigger updates while we are still determining initial location
+            if (isLocating) return;
+
             setRegion(newRegion);
 
-            // Calculate approximate radius in miles from latitudeDelta
-            // This is a rough approximation: 1 degree ≈ 69 miles
             const calculatedRadius = (newRegion.latitudeDelta * 69) / 2;
-            const radius = Math.min(Math.max(calculatedRadius, 0.1), 50); // Clamp between 0.1-50 miles
+            const radius = Math.min(Math.max(calculatedRadius, 0.1), 50);
 
             setRadiusMiles(radius);
 
-            // Skip API calls if disabled
-            if (disableAutoFetch) {
+            if (disableAutoFetch) return;
+
+            // If this region change was caused by the initial location animation, ignore it
+            // because we already manually triggered the fetch in init()
+            if (ignoreInitialRegionChangeRef.current) {
+                ignoreInitialRegionChangeRef.current = false;
                 return;
             }
 
-            // Clear existing timer
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
 
-            // Set new timer - only call API after user stops moving map for 1 second
             debounceTimerRef.current = setTimeout(() => {
                 const center: Coordinates = {
                     latitude: newRegion.latitude,
                     longitude: newRegion.longitude,
                 };
-
                 onRegionChange(center, radius);
             }, REGION_CHANGE_DEBOUNCE_MS);
         },
-        [disableAutoFetch, onRegionChange],
+        [disableAutoFetch, onRegionChange, isLocating],
     );
 
-    // Handle search
     const handleSearch = async () => {
         if (!searchQuery.trim()) {
             Alert.alert("Enter a location", "Type something to search for first.");
@@ -168,10 +154,7 @@ export default function FeedMap({
             setIsSearching(true);
             const coords = await forwardGeocode(searchQuery.trim());
             if (!coords) {
-                Alert.alert(
-                    "Location not found",
-                    "We couldn't find that place. Try a different search term.",
-                );
+                Alert.alert("Location not found", "Try a different search term.");
                 return;
             }
 
@@ -183,24 +166,17 @@ export default function FeedMap({
             });
         } catch (error) {
             console.error("Search failed:", error);
-            Alert.alert(
-                "Search failed",
-                "We ran into an issue searching for that place. Please try again.",
-            );
+            Alert.alert("Search failed", "Please try again.");
         } finally {
             setIsSearching(false);
         }
     };
 
-    // Reset to current location
     const handleResetToCurrentLocation = async () => {
         try {
             const currentLocation = await getCurrentLocation();
             if (!currentLocation) {
-                Alert.alert(
-                    "Location unavailable",
-                    "We could not determine your current location.",
-                );
+                Alert.alert("Location unavailable", "We could not determine your current location.");
                 return;
             }
 
@@ -211,33 +187,19 @@ export default function FeedMap({
                 longitudeDelta: 0.1,
             });
         } catch (error) {
-            console.error("Failed to reset map to current location:", error);
-            Alert.alert(
-                "Location unavailable",
-                "An error occurred while fetching your current location.",
-            );
+            console.error("Failed to reset map:", error);
         }
     };
 
     useEffect(() => {
-        if (!recenterToken) {
-            return;
-        }
+        if (!recenterToken) return;
         void handleResetToCurrentLocation();
     }, [recenterToken]);
 
-    if (isLoading || !region) {
-        return (
-            <View flex={1} justifyContent="center" alignItems="center" height={height}>
-                <Spinner size="large" />
-                <Text marginTop="$4">Loading map...</Text>
-            </View>
-        );
-    }
+    // 4. Removed the "if (isLoading)" block entirely so MapView renders immediately
 
     return (
         <YStack gap="$3" flex={1}>
-            {/*/!* Search controls *!/*/}
             <XStack gap="$2" paddingHorizontal="$3">
                 <Input
                     flex={1}
@@ -251,28 +213,6 @@ export default function FeedMap({
                 </Button>
             </XStack>
 
-            {/* Search controls */}
-            {/*<XStack gap="$2" paddingHorizontal="$3">*/}
-            {/*    <Input*/}
-            {/*        flex={1}*/}
-            {/*        placeholder="Search location..."*/}
-            {/*        value={searchQuery}*/}
-            {/*        onChangeText={setSearchQuery}*/}
-            {/*        onSubmitEditing={handleSearch}*/}
-            {/*    />*/}
-            {/*    <Button*/}
-            {/*        onPress={handleSearch}*/}
-            {/*        disabled={isSearching}*/}
-            {/*        theme="blue"*/}
-            {/*    >*/}
-            {/*        {isSearching ? "Searching..." : "Search"}*/}
-            {/*    </Button>*/}
-            {/*    <Button onPress={handleResetToCurrentLocation} theme="gray">*/}
-            {/*        📍*/}
-            {/*    </Button>*/}
-            {/*</XStack>*/}
-
-            {/* Info bar */}
             <View paddingHorizontal="$3">
                 <Text fontSize="$2" color="$gray11">
                     Showing {locations.length} location(s) within ~
@@ -280,8 +220,7 @@ export default function FeedMap({
                 </Text>
             </View>
 
-            {/* Map */}
-            <View flex={1} height={height} borderRadius="$4" overflow="hidden">
+            <View flex={1} height={height} borderRadius="$4" overflow="hidden" position="relative">
                 <MapView
                     key={mapKey}
                     ref={mapRef}
@@ -291,13 +230,13 @@ export default function FeedMap({
                             ? PROVIDER_GOOGLE
                             : undefined
                     }
-                    initialRegion={region}
+                    // Use initialRegion to set the start point, but control subsequent updates via animateToRegion
+                    initialRegion={DEFAULT_REGION}
                     onRegionChangeComplete={handleRegionChangeComplete}
-                    showsUserLocation
+                    showsUserLocation={!isLocating}
                     showsMyLocationButton={false}
                     moveOnMarkerPress={false}
                 >
-                    {/* Render location markers */}
                     {locations.map((location, i) => (
                         <Marker
                             key={location.questionId + location.id + i}
@@ -308,20 +247,35 @@ export default function FeedMap({
                         />
                     ))}
 
-                    {/* Optional radius circle */}
                     {showRadiusCircle && region && (
                         <Circle
                             center={{
                                 latitude: region.latitude,
                                 longitude: region.longitude,
                             }}
-                            radius={radiusMiles * 1609.34} // Convert miles to meters
+                            radius={radiusMiles * 1609.34}
                             strokeColor="rgba(0, 122, 255, 0.5)"
                             fillColor="rgba(0, 122, 255, 0.1)"
                             strokeWidth={2}
                         />
                     )}
                 </MapView>
+                
+                {isLocating && (
+                    <View
+                        position="absolute"
+                        top={0}
+                        left={0}
+                        right={0}
+                        bottom={0}
+                        backgroundColor="rgba(0,0,0,0.3)"
+                        justifyContent="center"
+                        alignItems="center"
+                        zIndex={1000}
+                    >
+                        <Spinner size="large" color="white" />
+                    </View>
+                )}
             </View>
         </YStack>
     );

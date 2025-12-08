@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Platform, Alert } from "react-native";
+import { StyleSheet, Platform, Alert, Keyboard } from "react-native";
 import MapView, {
     Marker,
     Region,
@@ -8,12 +8,20 @@ import MapView, {
 } from "react-native-maps";
 import { View, Text, Button, Input, YStack, XStack, Spinner } from "tamagui";
 
-import { getCurrentLocation } from "@/services/location-service";
-import type { Coordinates } from "@/services/location-service";
+import {
+    getCurrentLocation,
+    type Coordinates
+} from "@/services/location-service";
 
 import { usePlaceAutocomplete } from "@/hooks/use-place-autocomplete";
 import { useReverseGeocodeName } from "@/hooks/use-reverse-geocode-name";
 import { Location } from "@/models/location";
+
+// 1. Constant Default
+const DEFAULT_COORDS: Coordinates = {
+    latitude: 43.0731, // Madison, WI
+    longitude: -89.4012,
+};
 
 export interface LocationSelection {
     coords: Coordinates;
@@ -32,21 +40,43 @@ export default function LocationPicker({
     initialLocation,
     height = 400,
 }: LocationPickerProps) {
-    const [coords, setCoords] = useState<Coordinates | null>(null);
-    const [address, setAddress] = useState<string>("");
-    const [label, setLabel] = useState<string>("");
+    // Helper to safely extract coordinates from Location or use Default
+    const getStartCoords = (): Coordinates => {
+        if (initialLocation) {
+            return {
+                latitude: initialLocation.latitude,
+                longitude: initialLocation.longitude
+            };
+        }
+        return DEFAULT_COORDS;
+    };
+
+    const startCoords = getStartCoords();
+
+    // 2. Initialize state immediately using the helper
+    const [coords, setCoords] = useState<Coordinates>(startCoords);
+    
+    // Construct the Region separate from Coordinates
+    const [initialRegion] = useState<Region>({
+        latitude: startCoords.latitude,
+        longitude: startCoords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+    });
+
+    const [address, setAddress] = useState<string>(initialLocation?.address ?? "");
+    const [label, setLabel] = useState<string>(initialLocation?.name ?? "");
 
     const [userEditedLabel, setUserEditedLabel] = useState(false);
     const [userEditedAddress, setUserEditedAddress] = useState(false);
 
-    const [initialRegion, setInitialRegion] = useState<Region | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const mapRef = useRef<MapView>(null);
     const selectionIdRef = useRef(0);
     const isMountedRef = useRef(true);
+    const fetchedLocationRef = useRef<Coordinates | null>(null);
 
-    const [latInput, setLatInput] = useState<string>("");
-    const [lngInput, setLngInput] = useState<string>("");
+    const [latInput, setLatInput] = useState<string>(startCoords.latitude.toFixed(6));
+    const [lngInput, setLngInput] = useState<string>(startCoords.longitude.toFixed(6));
 
     const {
         query,
@@ -60,6 +90,8 @@ export default function LocationPicker({
 
     const { getBestAddressFor } = useReverseGeocodeName();
     const [isEditingDetails, setIsEditingDetails] = useState(false);
+    const [isFetchingCurrentLocation, setIsFetchingCurrentLocation] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(!initialLocation);
 
     const emitChange = (
         nextCoords: Coordinates,
@@ -79,14 +111,17 @@ export default function LocationPicker({
         seedLabel,
         seedAddress,
         source,
+        animate = true,
     }: {
         nextCoords: Coordinates;
         seedLabel?: string;
         seedAddress?: string;
         source: "places" | "map" | "manual" | "current";
+        animate?: boolean;
     }) => {
         const newId = selectionIdRef.current + 1;
         selectionIdRef.current = newId;
+        
         setCoords(nextCoords);
 
         const formattedCoords = `(${nextCoords.latitude.toFixed(5)}, ${nextCoords.longitude.toFixed(5)})`;
@@ -96,34 +131,40 @@ export default function LocationPicker({
         const defaultLabel = trimmedSeedLabel || trimmedSeedAddress || formattedCoords;
         const defaultAddress = trimmedSeedAddress || trimmedSeedLabel || formattedCoords;
 
-        setLabel(defaultLabel);
-        setAddress(defaultAddress);
-        setUserEditedLabel(false);
-        setUserEditedAddress(false);
-        setIsEditingDetails(false);
+        if (isMountedRef.current) {
+            setLabel(defaultLabel);
+            setAddress(defaultAddress);
+            setUserEditedLabel(false);
+            setUserEditedAddress(false);
+            setIsEditingDetails(false);
 
-        setLatInput(nextCoords.latitude.toFixed(6));
-        setLngInput(nextCoords.longitude.toFixed(6));
+            setLatInput(nextCoords.latitude.toFixed(6));
+            setLngInput(nextCoords.longitude.toFixed(6));
+        }
 
-        mapRef.current?.animateToRegion(
-            {
-                latitude: nextCoords.latitude,
-                longitude: nextCoords.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-            },
-            250,
-        );
+        if (animate && mapRef.current) {
+            mapRef.current.animateToRegion(
+                {
+                    latitude: nextCoords.latitude,
+                    longitude: nextCoords.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                },
+                500,
+            );
+        }
 
         emitChange(nextCoords, defaultAddress, defaultLabel);
 
         try {
+            if (seedAddress && seedLabel) return;
+
             const betterAddr = await getBestAddressFor(nextCoords);
+            
             if (selectionIdRef.current !== newId) return;
             if (!isMountedRef.current) return;
 
             const candidateAddress = (betterAddr ?? "").trim();
-
             const resolvedAddress = !userEditedAddress
                 ? candidateAddress || defaultAddress
                 : defaultAddress;
@@ -131,68 +172,59 @@ export default function LocationPicker({
                 ? trimmedSeedLabel || candidateAddress || defaultLabel
                 : defaultLabel;
 
-            if (!userEditedAddress && isMountedRef.current) {
-                setAddress(resolvedAddress);
-            }
-            if (!userEditedLabel && isMountedRef.current) {
-                setLabel(resolvedLabel);
-            }
+            if (!userEditedAddress) setAddress(resolvedAddress);
+            if (!userEditedLabel) setLabel(resolvedLabel);
+            
             emitChange(nextCoords, resolvedAddress, resolvedLabel);
         } catch (error) {
             console.warn("[LocationPicker] reverse geocode failed:", error);
-            if (selectionIdRef.current !== newId) return;
-            if (!isMountedRef.current) return;
-
-            // keep default fallback that was already emitted
         }
     };
 
+    // 3. Smart Initialization Waterfall
     useEffect(() => {
         let cancelled = false;
 
         const init = async () => {
-            setIsLoading(true);
-            try {
-                let startCoords: Coordinates | null = null;
-
-                if (initialLocation) {
-                    startCoords = initialLocation;
-                } else {
-                    const currentLoc = await getCurrentLocation();
-                    if (currentLoc) startCoords = currentLoc.coordinates;
-                }
-
-                if (!startCoords) {
-                    startCoords = { latitude: 43.0731, longitude: -89.4012 };
-                }
-
-                if (!cancelled) {
-                    setInitialRegion({
-                        latitude: startCoords.latitude,
-                        longitude: startCoords.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                    });
-                }
-
+            // Case A: Initial Location provided via props
+            if (initialLocation) {
                 await startNewSelection({
-                    nextCoords: startCoords,
-                    seedAddress: initialLocation?.address ?? undefined,
-                    seedLabel: initialLocation?.name ?? undefined,
+                    // FIX: access lat/long directly, not via .coordinates
+                    nextCoords: {
+                        latitude: initialLocation.latitude,
+                        longitude: initialLocation.longitude
+                    },
+                    seedAddress: initialLocation.address,
+                    seedLabel: initialLocation.name,
                     source: "manual",
+                    animate: false,
                 });
+                return;
+            }
+
+            // Case B: No initial location.
+            
+            // Try GPS Location (Slow)
+            try {
+                const currentLoc = await getCurrentLocation();
+                if (currentLoc && !cancelled) {
+                    console.log("Refining with fresh GPS");
+                    fetchedLocationRef.current = currentLoc.coordinates;
+                    await startNewSelection({
+                        nextCoords: currentLoc.coordinates,
+                        source: "current",
+                    });
+                } else if (!cancelled) {
+                     // Ensure text fields are populated for default location if everything failed
+                     // But we don't want to "set" the location if we failed?
+                     // User said "default location should be shown but not actually used to fetch questions or set the location"
+                     // So we might just stop initializing and let the user manually pick.
+                     console.log("Could not get fresh location.");
+                }
             } catch (error) {
-                console.error("Failed to initialise location picker:", error);
-                if (!cancelled) {
-                    Alert.alert(
-                        "Map unavailable",
-                        "We could not initialise the map. Try again in a moment.",
-                    );
-                }
+                console.error("Failed to get fresh location", error);
             } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
+                if (!cancelled) setIsInitializing(false);
             }
         };
 
@@ -202,9 +234,8 @@ export default function LocationPicker({
             cancelled = true;
             isMountedRef.current = false;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
+    
     const handleMapPress = (event: MapPressEvent) => {
         const { latitude, longitude } = event.nativeEvent.coordinate;
         startNewSelection({
@@ -223,13 +254,9 @@ export default function LocationPicker({
         try {
             const result = await resolveFreeText(trimmed);
             if (!result) {
-                Alert.alert(
-                    "Location not found",
-                    "We could not find a match for that search.",
-                );
+                Alert.alert("Location not found", "No match found.");
                 return;
             }
-
             await startNewSelection({
                 nextCoords: result.coordinates,
                 seedLabel: result.label,
@@ -239,11 +266,8 @@ export default function LocationPicker({
             setQuery(result.label);
             clearSuggestions();
         } catch (error) {
-            console.error("Free text search failed:", error);
-            Alert.alert(
-                "Search failed",
-                "We ran into an issue searching for that place.",
-            );
+            console.error("Search failed:", error);
+            Alert.alert("Search failed", "Error searching for place.");
         }
     };
 
@@ -251,10 +275,7 @@ export default function LocationPicker({
         try {
             const result = await resolveSuggestion(place_id, description);
             if (!result) {
-                Alert.alert(
-                    "Place unavailable",
-                    "We could not fetch details for that suggestion.",
-                );
+                Alert.alert("Place unavailable", "Could not fetch details.");
                 return;
             }
             await startNewSelection({
@@ -263,14 +284,12 @@ export default function LocationPicker({
                 seedAddress: result.address,
                 source: "places",
             });
-            setQuery(result.label);
+            setQuery("");
             clearSuggestions();
+            Keyboard.dismiss();
         } catch (error) {
-            console.error("Autocomplete suggestion failed:", error);
-            Alert.alert(
-                "Place lookup failed",
-                "We could not load that suggestion. Please try another.",
-            );
+            console.error("Suggestion failed:", error);
+            Alert.alert("Error", "Could not load suggestion.");
         }
     };
 
@@ -281,13 +300,6 @@ export default function LocationPicker({
             Alert.alert("Invalid coordinates", "Please enter valid numbers.");
             return;
         }
-        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            Alert.alert(
-                "Out of range",
-                "Latitude must be [-90,90], longitude [-180,180].",
-            );
-            return;
-        }
         startNewSelection({
             nextCoords: { latitude: lat, longitude: lng },
             source: "manual",
@@ -295,25 +307,30 @@ export default function LocationPicker({
     };
 
     const handleUseCurrent = async () => {
+        if (fetchedLocationRef.current) {
+            await startNewSelection({
+                nextCoords: fetchedLocationRef.current,
+                source: "map",
+            });
+            return;
+        }
+
+        setIsFetchingCurrentLocation(true);
         try {
             const currentLoc = await getCurrentLocation();
             if (!currentLoc) {
-                Alert.alert(
-                    "Location unavailable",
-                    "We could not determine your current location.",
-                );
+                Alert.alert("Location unavailable", "Could not determine location.");
                 return;
             }
+            fetchedLocationRef.current = currentLoc.coordinates;
             await startNewSelection({
                 nextCoords: currentLoc.coordinates,
                 source: "map",
             });
         } catch (error) {
             console.error("Failed to load current location:", error);
-            Alert.alert(
-                "Location unavailable",
-                "An error occurred while fetching your current location.",
-            );
+        } finally {
+            setIsFetchingCurrentLocation(false);
         }
     };
 
@@ -329,51 +346,36 @@ export default function LocationPicker({
         if (coords) emitChange(coords, txt, label);
     };
 
-    // ---------------- render ----------------
-    if (isLoading || !initialRegion || !coords) {
-        return (
-            <View flex={1} justifyContent="center" alignItems="center" height={height}>
-                <Spinner size="large" />
-                <Text marginTop="$4">Loading map...</Text>
-            </View>
-        );
-    }
-
     return (
-        <YStack gap="$3">
-            <XStack gap="$2">
+        <YStack gap="$3" position="relative">
                 <Input
                     flex={1}
                     placeholder="Search for a place..."
                     value={query}
                     onChangeText={setQuery}
                     onSubmitEditing={handleSearchSubmit}
-                    size="$3"
+                    size="$4"
+                    py="$2"
                 />
-                <Button size="$3" onPress={handleSearchSubmit}>
-                    Search
-                </Button>
-            </XStack>
 
             {suggestionsLoading && <Spinner size="small" />}
             {suggestions.length > 0 && (
                 <YStack
-                    backgroundColor="$background"
-                    borderRadius="$3"
-                    padding="$2"
+                    // backgroundColor="$background"
+                    // borderRadius="$3"
+                    // padding="$2"
                     maxHeight={200}
-                    borderWidth={1}
+                    // borderWidth={1}
                     borderColor="$gray5"
                 >
                     {suggestions.map((s) => (
                         <Button
                             key={s.place_id}
-                            onPress={() =>
-                                handlePickSuggestion(s.place_id, s.description)
-                            }
+                            onPress={() => handlePickSuggestion(s.place_id, s.description)}
                             size="$3"
                             theme="gray"
                             justifyContent="flex-start"
+                            marginBottom="$1"
                         >
                             {s.description}
                         </Button>
@@ -389,6 +391,7 @@ export default function LocationPicker({
                     onChangeText={setLatInput}
                     keyboardType="numeric"
                     size="$3"
+                    py = "$2"
                 />
                 <Input
                     flex={1}
@@ -397,6 +400,7 @@ export default function LocationPicker({
                     onChangeText={setLngInput}
                     keyboardType="numeric"
                     size="$3"
+                    py = "$2"
                 />
                 <Button size="$3" onPress={handleLatLngGo}>
                     Go
@@ -407,7 +411,7 @@ export default function LocationPicker({
                 Use Current Location
             </Button>
 
-            <View height={height} borderRadius="$4" overflow="hidden">
+            <View height={height} borderRadius="$4" overflow="hidden" position="relative">
                 <MapView
                     ref={mapRef}
                     style={styles.map}
@@ -418,7 +422,7 @@ export default function LocationPicker({
                     }
                     initialRegion={initialRegion}
                     onPress={handleMapPress}
-                    showsUserLocation
+                    showsUserLocation={!isInitializing}
                     showsMyLocationButton={false}
                 >
                     <Marker
@@ -427,6 +431,22 @@ export default function LocationPicker({
                         description={address}
                     />
                 </MapView>
+                
+                {isInitializing && (
+                    <View
+                        position="absolute"
+                        top={0}
+                        left={0}
+                        right={0}
+                        bottom={0}
+                        backgroundColor="rgba(0,0,0,0.3)"
+                        justifyContent="center"
+                        alignItems="center"
+                        zIndex={1000}
+                    >
+                        <Spinner size="large" color="white" />
+                    </View>
+                )}
             </View>
 
             {!isEditingDetails ? (
@@ -439,48 +459,30 @@ export default function LocationPicker({
                     borderColor="$gray5"
                 >
                     <XStack justifyContent="space-between" alignItems="center">
-                        <Text fontSize="$4" fontWeight="bold">
-                            Selected Location
-                        </Text>
-                        <Button
-                            size="$2"
-                            theme="gray"
-                            onPress={() => setIsEditingDetails(true)}
-                        >
+                        <Text fontSize="$4" fontWeight="bold">Selected Location</Text>
+                        <Button size="$2" theme="gray" onPress={() => setIsEditingDetails(true)}>
                             Edit ✎
                         </Button>
                     </XStack>
 
-                    <Text fontSize="$3" color="$gray10">
-                        Name:
-                    </Text>
+                    <Text fontSize="$3" color="$gray10">Name:</Text>
                     <Text fontSize="$3" fontWeight="600" color="$color">
                         {label?.trim() ? label : "Unnamed location"}
                     </Text>
 
                     {address?.trim() ? (
                         <>
-                            <Text fontSize="$3" color="$gray10" marginTop="$2">
-                                Address:
-                            </Text>
-                            <Text fontSize="$3" color="$color" fontWeight="600">
-                                {address}
-                            </Text>
+                            <Text fontSize="$3" color="$gray10" marginTop="$2">Address:</Text>
+                            <Text fontSize="$3" color="$color" fontWeight="600">{address}</Text>
                         </>
                     ) : null}
 
                     <XStack gap="$2" flexWrap="wrap" marginTop="$2">
                         <Text color="$gray11" fontSize="$2">
-                            Lat:{" "}
-                            <Text color="$color" fontWeight="600">
-                                {coords.latitude.toFixed(6)}
-                            </Text>
+                            Lat: <Text color="$color" fontWeight="600">{coords.latitude.toFixed(6)}</Text>
                         </Text>
                         <Text color="$gray11" fontSize="$2">
-                            Lng:{" "}
-                            <Text color="$color" fontWeight="600">
-                                {coords.longitude.toFixed(6)}
-                            </Text>
+                            Lng: <Text color="$color" fontWeight="600">{coords.longitude.toFixed(6)}</Text>
                         </Text>
                     </XStack>
                 </YStack>
@@ -494,39 +496,29 @@ export default function LocationPicker({
                     borderColor="$gray5"
                 >
                     <XStack justifyContent="space-between" alignItems="center">
-                        <Text fontSize="$4" fontWeight="bold">
-                            Edit Location Details
-                        </Text>
-                        <Button
-                            size="$2"
-                            theme="blue"
-                            onPress={() => setIsEditingDetails(false)}
-                        >
+                        <Text fontSize="$4" fontWeight="bold">Edit Location Details</Text>
+                        <Button size="$2" theme="blue" onPress={() => setIsEditingDetails(false)}>
                             Done
                         </Button>
                     </XStack>
 
                     <YStack gap="$1">
-                        <Text fontSize="$3" color="$gray10">
-                            Name
-                        </Text>
+                        <Text fontSize="$3" color="$gray10">Name</Text>
                         <Input
                             value={label}
                             onChangeText={handleLabelChange}
-                            placeholder="Location name (e.g. Home, Lot 32...)"
+                            placeholder="Location name..."
                             size="$3"
                             paddingVertical={8}
                         />
                     </YStack>
 
                     <YStack gap="$1">
-                        <Text fontSize="$3" color="$gray10">
-                            Address
-                        </Text>
+                        <Text fontSize="$3" color="$gray10">Address</Text>
                         <Input
                             value={address}
                             onChangeText={handleAddressChange}
-                            placeholder="Street / nearest address"
+                            placeholder="Address..."
                             size="$3"
                             paddingVertical={8}
                         />
@@ -547,6 +539,23 @@ export default function LocationPicker({
                         </Text>
                     </XStack>
                 </YStack>
+            )}
+
+            {isFetchingCurrentLocation && (
+                <View
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                    backgroundColor="rgba(0,0,0,0.5)"
+                    zIndex={1000}
+                    justifyContent="center"
+                    alignItems="center"
+                    borderRadius="$3"
+                >
+                    <Spinner size="large" color="white" />
+                </View>
             )}
         </YStack>
     );
