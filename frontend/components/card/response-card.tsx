@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Alert, useColorScheme } from "react-native";
-import { Avatar, Button, Card, Text, XStack, YStack } from "tamagui";
-import { SquarePen, Trash } from "@tamagui/lucide-icons";
+import { Avatar, Button, Card, Text, XStack, YStack, Popover, Adapt, View } from "tamagui";
+import { SquarePen, Trash, MoreVertical } from "@tamagui/lucide-icons";
 import { useDeleteResponse, useGetResponseById } from "@/hooks/tanstack/response";
 import { Response } from "@/models/response";
 import { multiFormatDateString } from "@/utils/formatter";
@@ -17,6 +17,7 @@ export default function ResponseCard(props: Props) {
     const responseQuery = useGetResponseById(props.responseId, props.questionId);
     const deleteResponseMutation = useDeleteResponse()
     const [editModalOpen, setEditModalOpen] = useState(false)
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const colorScheme = useColorScheme();
     const response = responseQuery.data as Response | undefined;
@@ -44,44 +45,102 @@ export default function ResponseCard(props: Props) {
             >
                 {/* Owner actions */}
                 {response.is_owned && (
-                    <XStack position="absolute" top="$3" right="$3" gap="$3">
-                        <Button
-                            size="$2"
-                            backgroundColor="$blue4"
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                setEditModalOpen(true)
-                            }}
+                    <View position="absolute" top="$3" right="$3" zIndex={10}>
+                        <Popover 
+                            size="$5" 
+                            allowFlip 
+                            placement="bottom-end"
+                            open={menuOpen}
+                            onOpenChange={setMenuOpen}
                         >
-                            <SquarePen size={20} color="$blue11" />
-                        </Button>
+                            <Popover.Trigger asChild>
+                                <Button 
+                                    size="$3" 
+                                    circular 
+                                    chromeless 
+                                    icon={MoreVertical} 
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        setMenuOpen(true);
+                                    }}
+                                />
+                            </Popover.Trigger>
 
-                        <Button
-                            size="$2"
-                            backgroundColor="$red4"
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                Alert.alert(
-                                    "Confirm Action",
-                                    "Are you sure you want to delete this response?",
-                                    [
-                                        {
-                                            text: "Cancel",
-                                            onPress: () => {
-                                            },
-                                            style: "cancel",
+                            <Adapt when="sm" platform="touch">
+                                <Popover.Sheet modal dismissOnSnapToBottom snapPoints={[25]}>
+                                    <Popover.Sheet.Frame padding="$4">
+                                        <Adapt.Contents />
+                                    </Popover.Sheet.Frame>
+                                    <Popover.Sheet.Overlay
+                                        animation="lazy"
+                                        enterStyle={{ opacity: 0 }}
+                                        exitStyle={{ opacity: 0 }}
+                                    />
+                                </Popover.Sheet>
+                            </Adapt>
+
+                            <Popover.Content
+                                borderWidth={1}
+                                borderColor="$borderColor"
+                                enterStyle={{ y: -10, opacity: 0 }}
+                                exitStyle={{ y: -10, opacity: 0 }}
+                                elevate
+                                animation={[
+                                    'quick',
+                                    {
+                                        opacity: {
+                                            overshootClamping: true,
                                         },
-                                        {
-                                            text: "OK",
-                                            onPress: handleDelete,
-                                        },
-                                    ],
-                                );
-                            }}
-                        >
-                            <Trash size={20} color="$red11" />
-                        </Button>
-                    </XStack>
+                                    },
+                                ]}
+                            >
+                                <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+
+                                <YStack gap="$2" minWidth={150}>
+                                    <Button
+                                        size="$4"
+                                        icon={SquarePen}
+                                        justifyContent="flex-start"
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            setMenuOpen(false);
+                                            setEditModalOpen(true);
+                                        }}
+                                    >
+                                        Edit Response
+                                    </Button>
+
+                                    <Button
+                                        size="$4"
+                                        icon={Trash}
+                                        theme="red"
+                                        justifyContent="flex-start"
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            setMenuOpen(false);
+                                            Alert.alert(
+                                                "Confirm Action",
+                                                "Are you sure you want to delete this response?",
+                                                [
+                                                    {
+                                                        text: "Cancel",
+                                                        onPress: () => {},
+                                                        style: "cancel",
+                                                    },
+                                                    {
+                                                        text: "OK",
+                                                        onPress: handleDelete,
+                                                    },
+                                                ],
+                                            );
+                                        }}
+                                    >
+                                        Delete Response
+                                    </Button>
+                                </YStack>
+                            </Popover.Content>
+                        </Popover>
+                    </View>
                 )}
 
 

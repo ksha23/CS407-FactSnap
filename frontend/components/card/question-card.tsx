@@ -307,8 +307,8 @@ export default function QuestionCard(props: Props) {
                     <XStack gap="$3">
                         <Image
                             source={{ uri: question.image_urls![0] }}
-                            width={100}
-                            height={100}
+                            width={65}
+                            height={65}
                             borderRadius="$4"
                             objectFit="cover"
                         />
