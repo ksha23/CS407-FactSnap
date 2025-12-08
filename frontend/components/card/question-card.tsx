@@ -141,7 +141,7 @@ export default function QuestionCard(props: Props) {
 
 
             {/* Content */}
-            {question.content.type !== ContentType.NONE && (
+            {isDetails && question.content.type !== ContentType.NONE && (
                 question.content.data ? (
                     question.content.type === ContentType.POLL ? (
                         <QuestionPollCard poll={question.content.data} />
@@ -159,7 +159,6 @@ export default function QuestionCard(props: Props) {
                     📍 {question.location.name}
                 </Text>
             )}
-
         </>
     );
 
@@ -318,6 +317,10 @@ export default function QuestionCard(props: Props) {
                     </XStack>
                 ) : (
                     BodyContent
+                )}
+
+                {!isDetails && question.content.type !== ContentType.NONE && (
+                    <Text fontWeight={600} fontStyle={"italic"}>This question contains a {question.content.type.toLowerCase()}</Text>
                 )}
 
                 {FooterContent}

@@ -99,8 +99,6 @@ export default function AskQuestionForm() {
                 image_urls: uploadedImageUrls,
             };
             questionId = await createQuestionMutation.mutateAsync(req);
-            // clear form
-            reset();
         } catch {
             // error notification will be shown
             return;
