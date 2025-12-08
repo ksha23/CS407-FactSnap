@@ -125,8 +125,8 @@ export default function QuestionCard(props: Props) {
                 </YStack>
             )}
 
-            {/* Map + Location */}
-            {isDetails ? (
+            {/* Map + Location (Details) */}
+            {isDetails &&
                 <YStack>
                     <View>
                         <QuestionMap
@@ -136,11 +136,8 @@ export default function QuestionCard(props: Props) {
                     </View>
                     <Text color="$gray10">Location: {question.location.name}</Text>
                 </YStack>
-            ) : (
-                <Text color="$gray10" numberOfLines={1}>
-                    📍 {question.location.name}
-                </Text>
-            )}
+            }
+
 
 
             {/* Content */}
@@ -156,7 +153,13 @@ export default function QuestionCard(props: Props) {
                 )
             )}
 
-            {/* Section: Creation + Edited Date + Responses Amount */}
+            {/* Location (not details) */}
+            {!isDetails && (
+                <Text color="$gray10" numberOfLines={1}>
+                    📍 {question.location.name}
+                </Text>
+            )}
+
         </>
     );
 
@@ -265,7 +268,7 @@ export default function QuestionCard(props: Props) {
                                 </Button>
 
                                 <Button
-                                    size="$3"
+                                    size="$4"
                                     icon={Trash}
                                     theme="red"
                                     justifyContent="flex-start"
