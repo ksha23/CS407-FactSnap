@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from "@clerk/clerk-expo";
@@ -12,64 +12,58 @@ import {
 
 const NOTIFICATION_ENABLED_KEY = 'notifications_enabled';
 
-/**
- * Hook to manage background location notifications
- */
 export function useBackgroundLocationNotifications() {
     const [isActive, setIsActive] = useState(false);
     const [loading, setLoading] = useState(true);
     const [hasPermission, setHasPermission] = useState(false);
     const { isSignedIn } = useAuth();
+    
+    // Use a Ref to ensure we don't create duplicate intervals even if state flickers
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const checkStatus = useCallback(async () => {
+    // 1. Wrap stopTracking in useCallback so it can be used in useEffect
+    const stopTracking = useCallback(async () => {
         try {
-            // Check actual permissions
-            const { status } = await Notifications.getPermissionsAsync();
-            setHasPermission(status === 'granted');
-
-            // Check if we have stored preference
-            const enabled = await SecureStore.getItemAsync(NOTIFICATION_ENABLED_KEY);
+            setLoading(true);
+            await SecureStore.setItemAsync(NOTIFICATION_ENABLED_KEY, 'false');
             
-            if (enabled === 'true' && status === 'granted') {
-                setIsActive(true);
-            } else {
-                setIsActive(false);
+            // Only attempt backend cleanup if we are still signed in
+            if (isSignedIn) {
+                deletePushTokenFromBackend().catch(err => 
+                    console.error("Error deleting push token in background:", err)
+                );
+            }
+            setIsActive(false);
+            
+            // Explicitly clear interval here as a safety measure
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
             }
         } catch (error) {
-            console.error("Error checking notification status:", error);
+            console.error("Error stopping tracking:", error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [isSignedIn]);
 
-    useEffect(() => {
-        checkStatus();
-    }, [checkStatus]);
-
-    const startTracking = async () => {
+    // 2. Wrap startTracking in useCallback
+    const startTracking = useCallback(async () => {
         try {
             console.log("Starting background notification tracking...");
             setLoading(true);
             
-            // 1. Register for push notifications
-            console.log("Registering for push notifications...");
             const token = await registerForPushNotificationsAsync();
             if (!token) {
-                console.log("Failed to get push token");
                 const { status } = await Notifications.getPermissionsAsync();
                 setHasPermission(status === 'granted');
                 return false;
             }
 
-            // 2. Send token to backend
-            console.log("Got token, sending to backend...");
             await sendPushTokenToBackend(token);
 
-            // 3. Send initial location (Async - don't await)
-            console.log("Getting current location (async)...");
             getCurrentLocation().then(location => {
                 if (location) {
-                    console.log("Got location, sending to backend...", location.latitude, location.longitude);
                     sendLocationToBackend(location.latitude, location.longitude).catch(err => 
                         console.error("Error sending location in background:", err)
                     );
@@ -81,7 +75,6 @@ export function useBackgroundLocationNotifications() {
             await SecureStore.setItemAsync(NOTIFICATION_ENABLED_KEY, 'true');
             setIsActive(true);
             setHasPermission(true);
-            console.log("Tracking started successfully");
             return true;
         } catch (error) {
             console.error("Error starting tracking:", error);
@@ -89,39 +82,66 @@ export function useBackgroundLocationNotifications() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const stopTracking = async () => {
+    const checkStatus = useCallback(async () => {
         try {
-            setLoading(true);
-            await SecureStore.setItemAsync(NOTIFICATION_ENABLED_KEY, 'false');
-            if (isSignedIn) {
-                deletePushTokenFromBackend().catch(err => 
-                    console.error("Error deleting push token in background:", err)
-                );
+            const { status } = await Notifications.getPermissionsAsync();
+            setHasPermission(status === 'granted');
+            const enabled = await SecureStore.getItemAsync(NOTIFICATION_ENABLED_KEY);
+            
+            // Only set active if enabled AND currently signed in
+            if (enabled === 'true' && status === 'granted' && isSignedIn) {
+                setIsActive(true);
+            } else {
+                setIsActive(false);
             }
-            setIsActive(false);
         } catch (error) {
-            console.error("Error stopping tracking:", error);
+            console.error("Error checking notification status:", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [isSignedIn]); // Add isSignedIn as dependency
 
     useEffect(() => {
-        let intervalId: ReturnType<typeof setInterval>;
-        if (isActive) {
-            intervalId = setInterval(async () => {
+        checkStatus();
+    }, [checkStatus]);
+
+    // 3. Force stop if user signs out
+    useEffect(() => {
+        if (!isSignedIn && isActive) {
+            console.log("User signed out - forcing tracking stop");
+            stopTracking();
+        }
+    }, [isSignedIn, isActive, stopTracking]);
+
+    // 4. INTERVAL: Depends on isSignedIn so it cuts immediately on logout
+    useEffect(() => {
+        // Clear any existing interval first
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+
+        // Only start if active AND signed in
+        if (isActive && isSignedIn) {
+            console.log("Initializing tracking interval");
+            intervalRef.current = setInterval(async () => {
                 const location = await getCurrentLocation();
                 if (location) {
                     await sendLocationToBackend(location.latitude, location.longitude);
                 }
-            }, 30000); // 30 seconds
+            }, 30000);
         }
+
+        // Cleanup function
         return () => {
-            if (intervalId) clearInterval(intervalId);
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
         };
-    }, [isActive]);
+    }, [isActive, isSignedIn]);
 
     return {
         isActive,

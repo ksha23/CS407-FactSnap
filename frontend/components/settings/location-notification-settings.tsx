@@ -109,19 +109,6 @@ export default function LocationNotificationSettings() {
                     </Button>
                 </View>
             )}
-
-            <View
-                padding="$3"
-                backgroundColor="$blue2"
-                borderRadius="$3"
-                borderWidth={1}
-                borderColor="$blue6"
-            >
-                <Text fontSize="$2" color="$blue11">
-                    💡 This feature runs in the background and will notify you about
-                    nearby questions even when the app is closed.
-                </Text>
-            </View>
         </YStack>
     );
 }
