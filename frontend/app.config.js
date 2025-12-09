@@ -129,6 +129,15 @@ export default ({ config }) => ({
             ],
 
             "expo-font",
+
+            [
+                "expo-build-properties",
+                {
+                    "android": {
+                        "usesCleartextTraffic": true
+                    }
+                }
+            ]
         ],
 
         experiments: {

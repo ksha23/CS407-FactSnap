@@ -61,7 +61,7 @@ export default function RootLayout() {
         >
             <PortalProvider shouldAddRootHost>
                 <ThemeProvider value={getTheme()}>
-                    <ClerkProvider tokenCache={tokenCache}>
+                    <ClerkProvider tokenCache={tokenCache} publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}>
                         <QueryClientProvider client={queryClient}>
                             <NotificationBridge />
                             {isFontsLoaded ? (
