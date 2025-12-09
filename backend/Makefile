@@ -42,3 +42,10 @@ docker-stop:
 	docker-compose stop
 
 docker-restart: docker-down docker-up
+
+# Docker
+docker-build:
+	docker build -t factsnap-api -f Dockerfile-app .
+
+docker-run:
+	docker run -p 8080:8080 factsnap-api

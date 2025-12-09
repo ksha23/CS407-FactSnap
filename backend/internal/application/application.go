@@ -3,11 +3,11 @@ package application
 import (
 	"context"
 	"fmt"
+	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ksha23/CS407-FactSnap/internal/adapter/ginhttp"
-	"github.com/ksha23/CS407-FactSnap/internal/adapter/postgres"
 	"github.com/ksha23/CS407-FactSnap/internal/clerk"
 	"github.com/ksha23/CS407-FactSnap/internal/config"
 	"github.com/ksha23/CS407-FactSnap/internal/core/port"
