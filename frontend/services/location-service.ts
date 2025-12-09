@@ -21,16 +21,14 @@ export interface PlaceDetails {
     formattedAddress?: string; // "1102 Regent St, Madison, WI 53715, USA"
 }
 
-const PLACES_API_KEY = "EXPO_PUBLIC_GOOGLE_PLACES_API_KEY";
-
 function resolvePlacesApiKey(): string | null {
     const manifestExtra = (Constants.manifest as any)?.extra ?? {};
     const expoConfigExtra = (Constants.expoConfig as any)?.extra ?? {};
 
     return (
-        process.env[PLACES_API_KEY] ??
-        manifestExtra?.[PLACES_API_KEY] ??
-        expoConfigExtra?.[PLACES_API_KEY] ??
+        process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ??
+        manifestExtra?.["EXPO_PUBLIC_GOOGLE_PLACES_API_KEY"] ??
+        expoConfigExtra?.["EXPO_PUBLIC_GOOGLE_PLACES_API_KEY"] ??
         null
     );
 }
