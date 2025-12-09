@@ -91,6 +91,13 @@ func (app *App) initGinServer() error {
 		requestTimeoutDuration = 20 * time.Second
 	)
 
+	// set mode based on env
+	if config.IsLocal(app.Config.Env) {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	baseUrl := fmt.Sprintf("/%s", app.Config.Server.BaseURL)
 	port := app.Config.Server.Port
 
@@ -137,7 +144,7 @@ func (app *App) initGinServer() error {
 	mediaHandler.RegisterRoutes(baseRouter)
 
 	// init gin server
-	server, err := ginhttp.NewServer(baseUrl, port, config.IsLocal(app.Config.Env), router)
+	server, err := ginhttp.NewServer(baseUrl, port, router)
 	if err != nil {
 		return fmt.Errorf("error instantiating Gin HTTP server: %w", err)
 	}

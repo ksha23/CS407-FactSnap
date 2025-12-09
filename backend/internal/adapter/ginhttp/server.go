@@ -18,18 +18,11 @@ type Server struct {
 	Router  *gin.Engine
 }
 
-func NewServer(baseURL string, port string, isLocal bool, router *gin.Engine) (*Server, error) {
+func NewServer(baseURL string, port string, router *gin.Engine) (*Server, error) {
 	server := &Server{
 		BaseURL: baseURL,
 		Port:    port,
 		Router:  router,
-	}
-
-	// set mode based on env
-	if isLocal {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
 	}
 
 	// init underlying http server

@@ -10,6 +10,9 @@ install:
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
+build-api:
+	go build -o factsnap-api ./cmd/api
+
 # SQLC
 sqlc:
 	sqlc generate
@@ -42,3 +45,10 @@ docker-stop:
 	docker-compose stop
 
 docker-restart: docker-down docker-up
+
+# Docker
+docker-build:
+	docker build -t factsnap-api -f Dockerfile-app .
+
+docker-run:
+	docker run -p 8080:8080 factsnap-api
