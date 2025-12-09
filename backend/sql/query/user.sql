@@ -32,3 +32,18 @@ WHERE ST_DWithin(
     sqlc.arg(radius_meters)::float8
 )
 AND expo_push_token IS NOT NULL;
+
+-- name: GetUserQuestionCount :one
+SELECT COUNT(*) FROM questions
+WHERE author_id = $1;
+
+-- name: GetUserResponseCount :one
+SELECT COUNT(*) FROM responses
+WHERE author_id = $1;
+
+
+-- name: UpdateUserDisplayName :one
+UPDATE users
+SET display_name = $1
+WHERE id = $2
+RETURNING id, username, email, display_name, role, about_me, avatar_url, created_at, last_known_location, expo_push_token;

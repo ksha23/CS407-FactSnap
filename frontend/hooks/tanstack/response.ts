@@ -7,7 +7,7 @@ import {
     useQueryClient,
 } from "@tanstack/react-query";
 import { produce } from "immer";
-import { questionKeys, responseKeys } from "@/hooks/tanstack/query-keys";
+import { questionKeys, responseKeys, userKeys } from "@/hooks/tanstack/query-keys";
 import {
     createResponse,
     deleteResponse, getQuestionSummary,
@@ -20,6 +20,7 @@ import { CreateQuestionReq, Question } from "@/models/question";
 import { createQuestion } from "@/services/question-service";
 import { Alert } from "react-native";
 import { CreateResponseReq, EditResponseReq, Response } from "@/models/response";
+import { GetUserStatistics } from "@/models/user";
 
 export type InfiniteResponses = {
     responseIds: string[];
@@ -116,6 +117,9 @@ export function useCreateResponse() {
                 })
                 queryClient.setQueryData(questionKeys.getQuestionById(variables.question_id), modifiedQuestion)
             }
+
+            // invalidate stats
+            queryClient.invalidateQueries({queryKey: userKeys.statistics()})
         },
     });
 }
@@ -182,6 +186,9 @@ export function useDeleteResponse() {
                 })
                 queryClient.setQueryData(questionKeys.getQuestionById(variables.questionId), modifiedQuestion)
             }
+
+            // invalidate stats
+            queryClient.invalidateQueries({queryKey: userKeys.statistics()})
         }
     })
 }

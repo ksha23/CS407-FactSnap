@@ -227,3 +227,60 @@ type GetQuestionsInRadiusFeedRes struct {
 	// Questions will not have the content data populated.
 	Questions []model.Question `json:"questions"`
 }
+
+
+// GET MY QUESTIONS (BY AUTH USER)
+type GetMyQuestionsReq struct {
+    Limit  int `json:"limit" binding:"omitempty"`
+    Offset int `json:"offset" binding:"omitempty"`
+}
+
+
+func (r *GetMyQuestionsReq) Validate() error {
+    errsMap := make(ValidationErrs)
+
+    // 校验 limit/offset，复用你已有的 validate.PageLimit / PageOffset
+    if err := validate.PageLimit(r.Limit); err != nil {
+        errsMap["limit"] = err
+    }
+    if err := validate.PageOffset(r.Offset); err != nil {
+        errsMap["offset"] = err
+    }
+
+    if len(errsMap) > 0 {
+        return errsMap
+    }
+    return nil
+}
+
+type GetMyQuestionsRes struct {
+    Questions []model.Question `json:"questions"`
+}
+
+// GET QUESTIONS RESPONDED BY AUTH USER
+
+type GetRespondedQuestionsReq struct {
+	Limit  int `json:"limit" binding:"omitempty"`
+	Offset int `json:"offset" binding:"omitempty"`
+}
+
+func (r *GetRespondedQuestionsReq) Validate() error {
+	errsMap := make(ValidationErrs)
+
+	if err := validate.PageLimit(r.Limit); err != nil {
+		errsMap["limit"] = err
+	}
+	if err := validate.PageOffset(r.Offset); err != nil {
+		errsMap["offset"] = err
+	}
+
+	if len(errsMap) > 0 {
+		return errsMap
+	}
+	return nil
+}
+
+type GetRespondedQuestionsRes struct {
+	Questions []model.Question `json:"questions"`
+}
+

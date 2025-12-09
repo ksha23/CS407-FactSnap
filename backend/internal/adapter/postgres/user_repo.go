@@ -46,6 +46,21 @@ func (r *userRepo) GetAuthUserByID(ctx context.Context, clerkID string) (model.A
 	return authUser.ToDomainModel(), nil
 }
 
+func (r *userRepo) GetUserQuestionCount(ctx context.Context, userID string) (int, error) {
+	count, err := r.query.GetUserQuestionCount(ctx, userID)
+	if err != nil {
+		return 0, fmt.Errorf("UserRepo::GetUserQuestionCount: %w", wrapError(err))
+	}
+	return count, nil
+}
+
+func (r *userRepo) GetUserResponseCount(ctx context.Context, userID string) (int, error) {
+	count, err := r.query.GetUserResponseCount(ctx, userID)
+	if err != nil {
+		return 0, fmt.Errorf("UserRepo::GetUserResponseCount: %w", wrapError(err))
+	}
+	return count, nil
+}
 func (r *userRepo) UpdateLocation(ctx context.Context, userID string, lat, long float64) error {
 	err := r.query.UpdateUserLocation(ctx, userID, lat, long)
 	if err != nil {
@@ -84,4 +99,13 @@ func (r *userRepo) GetUsersInRadius(ctx context.Context, lat, long, radius float
 		})
 	}
 	return domainUsers, nil
+}
+
+
+func (r *userRepo) UpdateDisplayName(ctx context.Context, userID string, displayName string) (model.AuthUser, error) {
+    row, err := r.query.UpdateUserDisplayName(ctx, displayName, userID)
+    if err != nil {
+        return model.AuthUser{}, fmt.Errorf("UserRepo::UpdateDisplayName: %w", wrapError(err))
+    }
+    return row.ToDomainModel(), nil
 }

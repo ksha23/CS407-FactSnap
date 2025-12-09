@@ -4,6 +4,7 @@ export const userKeys = {
     all: ["users"] as const,
 
     authUser: () => [...userKeys.all, "auth"] as const,
+    statistics: () => [...userKeys.all, "statistics"] as const,
 };
 
 export const questionKeys = {
@@ -11,6 +12,8 @@ export const questionKeys = {
 
     // list
     lists: () => [...questionKeys.all, "list"] as const,
+    mine: () => [...questionKeys.all, "mine"] as const,
+    responded: () => [...questionKeys.all, "responded"] as const,
     getQuestionsFeed: (
         lat: number,
         lon: number,
@@ -22,6 +25,8 @@ export const questionKeys = {
             ...questionKeys.lists(),
             { lat, lon, radiusMiles, pageFilter, pageFilterValue },
         ] as const,
+
+    myQuestions: () => [...questionKeys.lists(), "my"] as const,
 
     // detail
     details: () => [...questionKeys.all, "detail"] as const,

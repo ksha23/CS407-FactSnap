@@ -319,3 +319,59 @@ func (r *questionRepo) getPoll(ctx context.Context, question model.Question, use
 
 	return poll, nil
 }
+
+
+
+func (r *questionRepo) GetQuestionsByUserID(
+    ctx context.Context,
+    userID string,
+    page model.PageParams,
+) ([]model.Question, error) {
+    rows, err := r.query.GetQuestionsByUserID(
+        ctx,
+        userID,
+        int32(page.Offset),
+        int32(page.Limit),
+    )
+    if err != nil {
+        return nil, fmt.Errorf("QuestionRepo::GetQuestionsByUserID: %w", wrapError(err))
+    }
+
+    questions := make([]model.Question, len(rows))
+    for i, row := range rows {
+        questions[i] = row.ToDomainModel()
+    }
+
+    return questions, nil
+}
+
+
+func (r *questionRepo) GetQuestionsRespondedByUserID(
+	ctx context.Context,
+	userID string,
+	page model.PageParams,
+) ([]model.Question, error) {
+	rows, err := r.query.GetQuestionsRespondedByUserID(
+		ctx,
+		userID,
+		int32(page.Offset),
+		int32(page.Limit),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("QuestionRepo::GetQuestionsRespondedByUserID: %w", wrapError(err))
+	}
+
+	questions := convertRowsToDomain(rows)
+
+	seen := make(map[uuid.UUID]bool)
+	result := make([]model.Question, 0, len(questions))
+
+	for _, q := range questions {
+		if !seen[q.ID] {
+			seen[q.ID] = true
+			result = append(result, q)
+		}
+	}
+
+	return result, nil
+}

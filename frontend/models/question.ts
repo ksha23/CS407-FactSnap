@@ -117,3 +117,23 @@ export type UpdateQuestionReq = {
 export type UpdateQuestionRes = {
     question: Question;
 };
+
+
+export type GetMyQuestionsReq = {
+    limit: number;
+    offset: number;
+};
+
+export type GetMyQuestionsRes = {
+    questions: Question[];
+};
+
+
+export type GetRespondedQuestionsReq = {
+    limit: number;
+    offset: number;
+};
+
+export type GetRespondedQuestionsRes = {
+    questions: Question[];
+};

@@ -32,6 +32,8 @@ func (h *QuestionHandler) RegisterRoutes(r *gin.RouterGroup) {
 	questionRoutes.PUT("", h.UpdateQuestion)
 	questionRoutes.DELETE("/:question_id", h.DeleteQuestion)
 	questionRoutes.POST("/:question_id/summary", h.GenerateSummaryTest)
+	questionRoutes.POST("/mine", h.GetMyQuestions)
+	questionRoutes.POST("/responded", h.GetRespondedQuestions)
 
 	pollRoutes := questionRoutes.Group("/poll")
 	pollRoutes.POST("", h.CreatePoll)
@@ -353,4 +355,73 @@ func (h *QuestionHandler) GenerateSummaryTest(c *gin.Context) {
         "summary": candidate,     // may be empty string if we couldn't find it
         "raw":     respText,      // raw OpenAI response for debugging on the client
     })
+}
+
+
+
+func (h *QuestionHandler) GetMyQuestions(c *gin.Context) {
+    userID := getAuthUserID(c)
+
+    var req dto.GetMyQuestionsReq
+    if err := unmarshalAndValidateReq(c, &req); err != nil {
+        c.Error(BadRequestJSON(c, err, fmt.Errorf("%s: %w", "QuestionHandler::GetMyQuestions", err)))
+        return
+    }
+
+    page := model.PageParams{
+        Limit:  req.Limit,
+        Offset: req.Offset,
+        Filter: model.PageFilter{
+            Type:  model.PageFilterTypeNone,
+            Value: "",
+        },
+    }
+
+    questions, err := h.QuestionService.GetQuestionsByUserID(
+        c.Request.Context(),
+        userID,
+        page,
+    )
+    if err != nil {
+        HandleErr(c, fmt.Errorf("%s: %w", "QuestionHandler::GetMyQuestions", err))
+        return
+    }
+
+    c.JSON(http.StatusOK, dto.GetMyQuestionsRes{
+        Questions: questions,
+    })
+}
+
+
+func (h *QuestionHandler) GetRespondedQuestions(c *gin.Context) {
+	userID := getAuthUserID(c)
+
+	var req dto.GetRespondedQuestionsReq
+	if err := unmarshalAndValidateReq(c, &req); err != nil {
+		c.Error(BadRequestJSON(c, err, fmt.Errorf("%s: %w", "QuestionHandler::GetRespondedQuestions", err)))
+		return
+	}
+
+	page := model.PageParams{
+		Limit:  req.Limit,
+		Offset: req.Offset,
+		Filter: model.PageFilter{
+			Type:  model.PageFilterTypeNone,
+			Value: "",
+		},
+	}
+
+	questions, err := h.QuestionService.GetQuestionsRespondedByUserID(
+		c.Request.Context(),
+		userID,
+		page,
+	)
+	if err != nil {
+		HandleErr(c, fmt.Errorf("%s: %w", "QuestionHandler::GetRespondedQuestions", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.GetRespondedQuestionsRes{
+		Questions: questions,
+	})
 }

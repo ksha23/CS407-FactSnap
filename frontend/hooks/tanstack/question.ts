@@ -13,6 +13,7 @@ import {
     CreateQuestionReq,
     GetQuestionsInRadiusFeedReq,
     Poll,
+    GetMyQuestionsReq,
     Question,
     UpdateQuestionReq,
     VotePollReq,
@@ -25,12 +26,15 @@ import {
     getQuestionsInRadiusFeed,
     updateQuestion,
     votePoll,
+    getMyQuestions,
+    getMyRespondedQuestions,
 } from "@/services/question-service";
 import { Alert } from "react-native";
-import { questionKeys, responseKeys } from "@/hooks/tanstack/query-keys";
+import { questionKeys, responseKeys, userKeys } from "@/hooks/tanstack/query-keys";
 import { produce } from "immer";
 import { Coordinates } from "@/services/location-service";
 import { PAGE_SIZE, PageFilterType } from "@/services/axios-client";
+import { GetUserStatistics } from "@/models/user";
 
 export type InfiniteQuestions = {
     questionIds: string[];
@@ -54,8 +58,13 @@ export function resetInfiniteQuestionsList(
 
             return produce(oldData, (draft) => {
                 // Reset to the first page
-                draft.pages = draft.pages?.slice(0, 1) || [];
-                draft.pageParams = draft.pageParams?.slice(0, 1) || [];
+                if (draft.pages && draft.pages.length > 1) {
+                    draft.pages.splice(1);
+                }
+
+                if (draft.pageParams && draft.pageParams.length > 1) {
+                    draft.pageParams.splice(1);
+                }
             });
         },
     );
@@ -143,6 +152,9 @@ export function useCreateQuestion() {
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({queryKey: questionKeys.lists()})
+
+            // invalidate stats
+            queryClient.invalidateQueries({queryKey: userKeys.statistics()})
         },
     });
 }
@@ -197,11 +209,16 @@ export function useDeleteQuestion() {
                     if (!oldData) return oldData;
 
                     return produce(oldData, (draft) => {
+
+                        if (!draft.pages || !Array.isArray(draft.pages)) return;
+
                         draft.pages.forEach((page) => {
+                            if (!page.questionIds) return;
                             page.questionIds = page.questionIds.filter(
                                 (questionId) => questionId !== variables,
                             );
                         });
+
                     });
                 },
             );
@@ -214,6 +231,10 @@ export function useDeleteQuestion() {
 
             // also delete all response details cache for this question
             queryClient.removeQueries({queryKey: responseKeys.responseByQuestionId(variables)})
+
+            // invalidate stats
+            queryClient.invalidateQueries({queryKey: userKeys.statistics()})
+
         },
     });
 }
@@ -293,5 +314,39 @@ export function useVotePoll() {
 
             Alert.alert("Error voting on poll. Please try again.", error.message);
         },
+    });
+}
+
+
+export function useGetMyQuestions(limit: number = PAGE_SIZE) {
+    const queryClient = useQueryClient();
+
+    return useQuery({
+        queryKey: questionKeys.myQuestions(),
+        queryFn: async () => {
+            const req: GetMyQuestionsReq = {
+                limit,
+                offset: 0,
+            };
+            const questions = await getMyQuestions(req);
+
+            // 像 feed 一样把每个 question 写进 details cache
+            questions.forEach((q) => {
+                queryClient.setQueryData(questionKeys.getQuestionById(q.id), q);
+            });
+
+            return questions;
+        },
+    });
+}
+
+export function useGetRespondedQuestions() {
+    return useQuery({
+        queryKey: questionKeys.responded(),
+        queryFn: () =>
+            getMyRespondedQuestions({
+                limit: PAGE_SIZE,
+                offset: 0,
+            }),
     });
 }

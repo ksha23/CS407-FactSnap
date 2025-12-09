@@ -198,3 +198,28 @@ func (s *questionService) authorizeUser(ctx context.Context, userID string, ques
 
 	return question, nil
 }
+
+// Jerry: service level GetQuestionsByUserID
+func (s *questionService) GetQuestionsByUserID(
+    ctx context.Context,
+    userID string,
+    page model.PageParams,
+) ([]model.Question, error) {
+    questions, err := s.questionRepo.GetQuestionsByUserID(ctx, userID, page)
+    if err != nil {
+        return nil, fmt.Errorf("QuestionService::GetQuestionsByUserID: %w", err)
+    }
+    return questions, nil
+}
+
+func (s *questionService) GetQuestionsRespondedByUserID(
+	ctx context.Context,
+	userID string,
+	page model.PageParams,
+) ([]model.Question, error) {
+	questions, err := s.questionRepo.GetQuestionsRespondedByUserID(ctx, userID, page)
+	if err != nil {
+		return nil, fmt.Errorf("QuestionService::GetQuestionsRespondedByUserID: %w", err)
+	}
+	return questions, nil
+}
