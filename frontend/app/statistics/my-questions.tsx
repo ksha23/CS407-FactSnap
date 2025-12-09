@@ -14,34 +14,9 @@ export default function MyQuestionsScreen() {
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "$background" }}
-      edges={["top", "left", "right", "bottom"]}
+      edges={["left", "right", "bottom"]}
     >
       <YStack flex={1}>
-        {/* Header */}
-        <XStack
-          alignItems="center"
-          paddingHorizontal="$3"
-          paddingVertical="$2"
-          gap="$3"
-          borderBottomWidth={1}
-          borderBottomColor="$gray4"
-        >
-          <Button
-            size="$2"
-            circular
-            backgroundColor="$gray3"
-            onPress={() => router.back()}
-          >
-            <ChevronLeft size={18} />
-          </Button>
-
-          <Text flex={1} textAlign="center" fontSize="$6" fontWeight="700">
-            My Questions
-          </Text>
-
-          <View width={32} />
-        </XStack>
-
         {/* Content list */}
         <ScrollView
           style={{ flex: 1 }}

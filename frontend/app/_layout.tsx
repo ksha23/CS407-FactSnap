@@ -100,9 +100,19 @@ export default function RootLayout() {
 
                                     {/* Statistics stack (contains /statistics/my-questions and /statistics/my-responses) */}
                                     <Stack.Screen
-                                      name="statistics"
-                                      options={{ headerShown: false }}
+                                      name="statistics/my-questions"
+                                      options={{
+                                          title: "Questions Asked",
+                                      }}
                                     />
+
+                                    <Stack.Screen
+                                        name="statistics/my-responses"
+                                        options={{
+                                            title: "Questions Answered",
+                                        }}
+                                    />
+
                                 </Stack>
                             ) : null}
                         </QueryClientProvider>

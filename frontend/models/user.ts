@@ -44,8 +44,3 @@ export type GetUserStatistics = {
     question_count: number;
     response_count: number;
 };
-
-// UpdateUserProfileParams is used when editing the user's profile.
-type UpdateUserProfileParams struct {
-    DisplayName string
-}

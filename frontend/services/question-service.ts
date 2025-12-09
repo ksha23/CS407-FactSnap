@@ -11,7 +11,7 @@ import {
     VotePollReq,
 
     GetMyQuestionsReq,
-    GetMyQuestionsRes,
+    GetMyQuestionsRes, GetRespondedQuestionsReq, GetRespondedQuestionsRes,
 } from "@/models/question";
 import { apiClient } from "@/services/axios-client";
 import { Coordinates } from "@/services/location-service";

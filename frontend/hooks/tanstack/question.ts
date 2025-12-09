@@ -30,10 +30,11 @@ import {
     getMyRespondedQuestions,
 } from "@/services/question-service";
 import { Alert } from "react-native";
-import { questionKeys, responseKeys } from "@/hooks/tanstack/query-keys";
+import { questionKeys, responseKeys, userKeys } from "@/hooks/tanstack/query-keys";
 import { produce } from "immer";
 import { Coordinates } from "@/services/location-service";
 import { PAGE_SIZE, PageFilterType } from "@/services/axios-client";
+import { GetUserStatistics } from "@/models/user";
 
 export type InfiniteQuestions = {
     questionIds: string[];
@@ -151,6 +152,9 @@ export function useCreateQuestion() {
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({queryKey: questionKeys.lists()})
+
+            // invalidate stats
+            queryClient.invalidateQueries({queryKey: userKeys.statistics()})
         },
     });
 }
@@ -227,6 +231,10 @@ export function useDeleteQuestion() {
 
             // also delete all response details cache for this question
             queryClient.removeQueries({queryKey: responseKeys.responseByQuestionId(variables)})
+
+            // invalidate stats
+            queryClient.invalidateQueries({queryKey: userKeys.statistics()})
+
         },
     });
 }

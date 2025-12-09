@@ -226,10 +226,10 @@ export default function ProfilePage() {
                                                 justifyContent="space-between"
                                                 paddingVertical="$2"
                                             >
-                                                <Text fontSize="$4">Responses Given</Text>
+                                                <Text fontSize="$4">Questions Answered</Text>
                                                 <XStack alignItems="center" gap="$2">
                                                     <Text fontSize="$4" fontWeight="bold">
-                                                        {statisticsQuery.data?.response_count ?? 0}
+                                                        {statisticsQuery.data?.response_count ?? 0} responses
                                                     </Text>
                                                     <Text fontSize="$3" color="$gray10">
                                                       View
